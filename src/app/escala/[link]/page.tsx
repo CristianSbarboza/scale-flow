@@ -44,7 +44,6 @@ export default async function PublicSchedulePage({ params }: { params: Promise<{
         </div>
 
         <AvailabilityForm 
-          scheduleId={schedule.id} 
           dates={schedule.dates} 
           servants={sectorServants} 
         />

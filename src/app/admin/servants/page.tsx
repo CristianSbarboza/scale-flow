@@ -63,7 +63,7 @@ export default function ServantsPage() {
     e.preventDefault();
     setLoading(true);
     const result = await createServant(name, email, parseInt(sectorId));
-    setGeneratedPassword(result.password);
+    setGeneratedPassword(result.password || "");
     setName("");
     setEmail("");
     setSectorId("");
