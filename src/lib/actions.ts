@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { eq, and } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { hash } from "bcryptjs";
 
 // Helper to check role and filter
 async function getAuthFilter() {
@@ -28,10 +29,11 @@ async function getOrCreateUser(name: string, email: string, targetRole: "leader"
 
   if (!user) {
     generatedPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await hash(generatedPassword, 10);
     [user] = await db.insert(users).values({
       name,
       email,
-      password: generatedPassword, // Em produção, usar hash!
+      password: hashedPassword,
       role: targetRole,
     }).returning();
   } else {

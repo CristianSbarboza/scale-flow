@@ -3,9 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-// Note: In a real app, use bcrypt to compare passwords.
-// For this demo, I'll use a simple comparison or mock it.
-// I'll add bcryptjs to dependencies.
+import { compare } from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,12 +16,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const [user] = await db.select().from(users).where(eq(users.email, credentials.email));
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, credentials.email)
+        });
 
         if (!user) return null;
 
-        // Simple comparison for now (user should use bcrypt in production)
-        if (user.password !== credentials.password) return null;
+        const isPasswordValid = await compare(credentials.password, user.password);
+        if (!isPasswordValid) return null;
 
         return {
           id: user.id,
