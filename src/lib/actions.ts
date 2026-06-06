@@ -304,3 +304,20 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
   }
   revalidatePath("/admin/schedules");
 }
+
+export async function registerUser(name: string, email: string, password: string) {
+  const [existingUser] = await db.select().from(users).where(eq(users.email, email));
+  if (existingUser) {
+    throw new Error("E-mail já cadastrado");
+  }
+
+  const hashedPassword = await hash(password, 10);
+  await db.insert(users).values({
+    name,
+    email,
+    password: hashedPassword,
+    role: "admin",
+  });
+
+  return { success: true };
+}

@@ -1,38 +1,40 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { registerUser } from "@/lib/actions";
 import { Eye, EyeOff } from "lucide-react";
 
-function LoginForm() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const registered = searchParams.get("registered");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      setError("Credenciais inválidas. Tente novamente.");
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem.");
       setLoading(false);
-    } else {
-      router.push("/");
-      router.refresh();
+      return;
+    }
+
+    try {
+      await registerUser(name, email, password);
+      router.push("/login?registered=true");
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || "Erro ao realizar cadastro.");
+      setLoading(false);
     }
   };
 
@@ -54,25 +56,23 @@ function LoginForm() {
           }}>
             ScaleFlow
           </h1>
-          <p style={{ color: 'var(--muted-foreground)' }}>Gestão de Escalas Ministeriais</p>
+          <p style={{ color: 'var(--muted-foreground)' }}>Crie sua conta administrativa</p>
         </div>
 
-        {registered && (
-          <div style={{ 
-            padding: '0.75rem', 
-            background: 'rgba(16, 185, 129, 0.1)', 
-            border: '1px solid #10b981', 
-            borderRadius: 'var(--radius)', 
-            color: '#10b981', 
-            fontSize: '0.875rem', 
-            textAlign: 'center',
-            marginBottom: '1.5rem'
-          }}>
-            Cadastro realizado com sucesso! Faça login abaixo.
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="grid">
+          <div className="grid" style={{ gap: '0.5rem' }}>
+            <label htmlFor="name">Nome Completo</label>
+            <input 
+              id="name"
+              type="text" 
+              className="input" 
+              placeholder="Seu nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="grid" style={{ gap: '0.5rem' }}>
             <label htmlFor="email">E-mail</label>
             <input 
@@ -116,6 +116,36 @@ function LoginForm() {
             </div>
           </div>
 
+          <div className="grid" style={{ gap: '0.5rem' }}>
+            <label htmlFor="confirmPassword">Confirmar Senha</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"} 
+                className="input" 
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--muted-foreground)',
+                  padding: '0.25rem'
+                }}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
           {error && (
             <p style={{ color: '#ef4444', fontSize: '0.875rem', textAlign: 'center' }}>{error}</p>
           )}
@@ -126,25 +156,17 @@ function LoginForm() {
             disabled={loading}
             style={{ marginTop: '1rem' }}
           >
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? "Cadastrando..." : "Cadastrar"}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.875rem', marginTop: '1rem', color: 'var(--muted-foreground)' }}>
-            Não tem uma conta?{" "}
-            <Link href="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-              Cadastre-se
+            Já tem uma conta?{" "}
+            <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+              Entre aqui
             </Link>
           </p>
         </form>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <LoginForm />
-    </Suspense>
   );
 }

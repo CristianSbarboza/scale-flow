@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/db";
 import { servants, scheduleAssignments, scheduleAvailability } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -96,9 +97,9 @@ export default async function ServantDashboard() {
               <User size={20} color="white" />
             </div>
           </div>
-          <a href="/api/auth/signout" className="btn btn-ghost" style={{ padding: '0.5rem', color: '#ef4444' }}>
+          <Link href="/api/auth/signout" className="btn btn-ghost" style={{ padding: '0.5rem', color: '#ef4444' }}>
             Sair
-          </a>
+          </Link>
         </div>
       </header>
 
