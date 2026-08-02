@@ -5,8 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getScheduleResponses, assignServant, removeAssignment } from "@/lib/actions";
 import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
 
+interface ScheduleSummary {
+  id: number;
+  name: string;
+  status: "draft" | "published";
+  ministry: { name: string };
+  sector: { name: string };
+  dates: { id: number }[];
+}
+
 interface Props {
-  scheduleId: number;
+  schedule: ScheduleSummary;
   onClose: () => void;
 }
 
@@ -21,7 +30,6 @@ interface ResponseDate {
   id: number;
   date: string;
   startTime: string;
-  endTime: string;
   availabilities: {
     id: number;
     servantId: number;
@@ -34,15 +42,15 @@ interface ResponseDate {
   }[];
 }
 
-export default function ScheduleManager({ scheduleId, onClose }: Props) {
+export default function ScheduleManager({ schedule, onClose }: Props) {
   const [dates, setDates] = useState<ResponseDate[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const data = await getScheduleResponses(scheduleId);
+    const data = await getScheduleResponses(schedule.id);
     setDates(data as ResponseDate[]);
     setLoading(false);
-  }, [scheduleId]);
+  }, [schedule.id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -60,40 +68,61 @@ export default function ScheduleManager({ scheduleId, onClose }: Props) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
     >
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="glass w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col"
-        style={{ 
-          padding: 0, 
-          borderRadius: '1.5rem',
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        className="glass w-full max-w-5xl max-h-[90vh]"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 0,
+          borderRadius: 'var(--radius)',
+          border: '1px solid var(--card-border)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
+        <div className="flex justify-between items-center" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
           <div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--primary)', letterSpacing: '-0.02em' }}>Gestão de Disponibilidade</h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Visualize as respostas e escale os servos para cada data.</p>
+            <h3 style={{ marginBottom: '0.25rem' }}>{schedule.name}</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+              {schedule.ministry.name} · {schedule.sector.name}
+            </p>
+            <div className="flex items-center" style={{ gap: '0.75rem', marginTop: '0.75rem' }}>
+              <span style={{
+                padding: '0.25rem 0.75rem',
+                background: schedule.status === 'published' ? 'rgba(16, 185, 129, 0.15)' : 'var(--muted)',
+                color: schedule.status === 'published' ? '#10b981' : 'var(--muted-foreground)',
+                borderRadius: '1rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+              }}>
+                {schedule.status === 'published' ? 'Publicada' : 'Rascunho'}
+              </span>
+              <span className="flex items-center" style={{ gap: '0.375rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                <Calendar size={14} /> {schedule.dates.length} {schedule.dates.length === 1 ? 'data' : 'datas'}
+              </span>
+            </div>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="btn btn-ghost"
             style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6" style={{ scrollbarWidth: 'thin' }}>
+        <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin' }}>
+          <label style={{ display: 'block', marginBottom: '1rem' }}>Respostas e Escalação</label>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="animate-spin" style={{ width: '40px', height: '40px', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
@@ -103,57 +132,50 @@ export default function ScheduleManager({ scheduleId, onClose }: Props) {
             <div className="grid" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
               <AnimatePresence mode="popLayout">
                 {dates.map((d) => (
-                  <motion.div 
+                  <motion.div
                     layout
-                    key={d.id} 
+                    key={d.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="card" 
-                    style={{ 
-                      background: 'rgba(255,255,255,0.03)', 
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      padding: '1.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1.25rem'
-                    }}
+                    className="card"
+                    style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
                   >
-                    <div className="flex items-start gap-3">
-                      <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: '0.75rem', color: 'white' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                      <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: 'var(--radius)', color: 'white' }}>
                         <Calendar size={20} />
                       </div>
                       <div>
                         <h4 style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                          {new Date(d.date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}
+                          {new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}
                         </h4>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1 gap-1">
-                          <Clock size={12} /> {d.startTime} - {d.endTime}
+                        <div className="flex items-center" style={{ gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                          <Clock size={12} /> {d.startTime}
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="grid" style={{ gap: '1rem' }}>
                       {/* Assigned Section */}
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>Confirmados ({d.assignments.length})</span>
-                        </div>
-                        <div className="grid gap-2">
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', display: 'block', marginBottom: '0.75rem' }}>
+                          Confirmados ({d.assignments.length})
+                        </span>
+                        <div className="grid" style={{ gap: '0.5rem' }}>
                           {d.assignments.map((as) => (
-                            <motion.div 
+                            <motion.div
                               initial={{ x: -10, opacity: 0 }}
                               animate={{ x: 0, opacity: 1 }}
-                              key={as.id} 
-                              className="flex justify-between items-center p-2.5 rounded-lg" 
-                              style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                              key={as.id}
+                              className="flex justify-between items-center"
+                              style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius)', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)' }}
                             >
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center" style={{ gap: '0.5rem' }}>
                                 <CheckCircle2 size={14} color="#10b981" />
                                 <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{as.servant.user.name}</span>
                               </div>
-                              <button 
-                                onClick={() => handleRemove(as.id)} 
-                                className="hover:text-red-400 transition-colors"
+                              <button
+                                onClick={() => handleRemove(as.id)}
+                                style={{ color: 'var(--muted-foreground)' }}
                                 title="Remover da escala"
                               >
                                 <X size={16} />
@@ -161,7 +183,7 @@ export default function ScheduleManager({ scheduleId, onClose }: Props) {
                             </motion.div>
                           ))}
                           {d.assignments.length === 0 && (
-                            <div style={{ padding: '1rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '0.75rem', textAlign: 'center' }}>
+                            <div style={{ padding: '0.75rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius)', textAlign: 'center' }}>
                               <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Nenhum servo confirmado</p>
                             </div>
                           )}
@@ -170,25 +192,27 @@ export default function ScheduleManager({ scheduleId, onClose }: Props) {
 
                       {/* Available Section */}
                       <div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', display: 'block', marginBottom: '0.75rem' }}>Disponíveis</span>
-                        <div className="grid gap-2">
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', display: 'block', marginBottom: '0.75rem' }}>
+                          Disponíveis
+                        </span>
+                        <div className="grid" style={{ gap: '0.5rem' }}>
                           {d.availabilities
                             .filter((av) => !d.assignments.some((as) => as.servantId === av.servantId))
                             .map((av) => (
-                              <motion.div 
+                              <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                key={av.id} 
-                                className="flex justify-between items-center p-2.5 rounded-lg" 
-                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                                key={av.id}
+                                className="flex justify-between items-center"
+                                style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius)', background: 'var(--muted)' }}
                               >
                                 <span style={{ fontSize: '0.875rem' }}>{av.servant.user.name}</span>
-                                <button 
-                                  onClick={() => handleAssign(d.id, av.servantId)} 
-                                  className="btn btn-primary" 
-                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: 'auto', borderRadius: '0.5rem' }}
+                                <button
+                                  onClick={() => handleAssign(d.id, av.servantId)}
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: 'auto' }}
                                 >
-                                  <UserPlus size={12} style={{ marginRight: '0.4rem' }} /> Escalar
+                                  <UserPlus size={12} /> Escalar
                                 </button>
                               </motion.div>
                             ))}
@@ -210,7 +234,7 @@ export default function ScheduleManager({ scheduleId, onClose }: Props) {
 
         {/* Footer info */}
         {!loading && (
-          <div className="p-4 bg-white/5 border-t border-white/10 flex justify-center">
+          <div className="flex justify-center" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
               As alterações são salvas automaticamente e refletidas na agenda dos servos.
             </p>

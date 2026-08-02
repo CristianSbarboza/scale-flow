@@ -4,7 +4,8 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  username: text("username").unique(),
+  email: text("email").unique(),
   password: text("password").notNull(),
   role: text("role", { enum: ["admin", "leader", "servant"] }).default("servant").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -47,7 +48,6 @@ export const scheduleDates = pgTable("schedule_dates", {
   scheduleId: integer("schedule_id").references(() => schedules.id, { onDelete: "cascade" }).notNull(),
   date: date("date").notNull(),
   startTime: time("start_time").notNull(),
-  endTime: time("end_time").notNull(),
 });
 
 export const scheduleAvailability = pgTable("schedule_availability", {

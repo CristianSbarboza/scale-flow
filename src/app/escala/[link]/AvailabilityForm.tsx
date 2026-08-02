@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, Send } from "lucide-react";
 import { saveAvailability } from "@/lib/actions";
 
@@ -9,16 +10,18 @@ interface AvailabilityFormProps {
     id: number;
     date: string;
     startTime: string;
-    endTime: string;
   }>;
   servants: Array<{
     id: number;
     user: { name: string };
   }>;
+  initialServantId?: string;
+  returnToServant?: boolean;
 }
 
-export default function AvailabilityForm({ dates, servants }: AvailabilityFormProps) {
-  const [selectedServant, setSelectedServant] = useState("");
+export default function AvailabilityForm({ dates, servants, initialServantId, returnToServant }: AvailabilityFormProps) {
+  const validInitialServantId = servants.some((s) => String(s.id) === initialServantId) ? initialServantId! : "";
+  const [selectedServant, setSelectedServant] = useState(validInitialServantId);
   const [selectedDates, setSelectedDates] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,6 +68,11 @@ export default function AvailabilityForm({ dates, servants }: AvailabilityFormPr
         </div>
         <h2 style={{ marginBottom: '0.5rem' }}>Obrigado!</h2>
         <p style={{ color: 'var(--muted-foreground)' }}>Sua disponibilidade foi enviada com sucesso ao administrador.</p>
+        {returnToServant && (
+          <Link href="/servant" className="btn btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+            Voltar ao meu painel
+          </Link>
+        )}
       </div>
     );
   }
@@ -98,7 +106,7 @@ export default function AvailabilityForm({ dates, servants }: AvailabilityFormPr
                 cursor: 'pointer', 
                 border: 'none',
                 borderBottom: isSelected ? '3px solid var(--primary)' : '3px solid transparent',
-                background: 'rgba(30, 41, 59, 0.4)',
+                background: 'var(--muted)',
                 transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
@@ -120,8 +128,8 @@ export default function AvailabilityForm({ dates, servants }: AvailabilityFormPr
                 {isSelected && <Check size={16} color="white" />}
               </div>
               <div>
-                <p style={{ fontWeight: 600 }}>{new Date(d.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{d.startTime} até {d.endTime}</p>
+                <p style={{ fontWeight: 600 }}>{new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{d.startTime}</p>
               </div>
             </div>
           );

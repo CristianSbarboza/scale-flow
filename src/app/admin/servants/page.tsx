@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { createServant, getServants, getSectors, getMinistries } from "@/lib/actions";
 import { UserPlus, Copy, Check, ShieldAlert, Search, Filter } from "lucide-react";
 
 interface Servant {
   id: number;
-  user: { name: string; email: string };
+  user: { name: string; username: string | null; email: string | null };
   sector: { id: number; name: string; ministry: { id: number; name: string } };
 }
 
@@ -23,11 +24,14 @@ interface Ministry {
 }
 
 export default function ServantsPage() {
+  const { data: session } = useSession();
+  const isLeader = session?.user.role === "leader";
   const [servants, setServants] = useState<Servant[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [sectorId, setSectorId] = useState("");
   
@@ -62,12 +66,13 @@ export default function ServantsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = await createServant(name, email, parseInt(sectorId));
+    const result = await createServant(name, username, email || null, parseInt(sectorId));
     setGeneratedPassword(result.password || "");
     setName("");
+    setUsername("");
     setEmail("");
     setSectorId("");
-    
+
     // Refresh list
     const srv = await getServants();
     setServants(srv as unknown as Servant[]);
@@ -82,8 +87,9 @@ export default function ServantsPage() {
   };
 
   const filteredServants = servants.filter(s => {
-    const matchesSearch = s.user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          s.user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = s.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+                          (s.user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     const matchesMinistry = filterMinistryId === "all" || s.sector.ministry.id === parseInt(filterMinistryId);
     const matchesSector = filterSectorId === "all" || s.sector.id === parseInt(filterSectorId);
     return matchesSearch && matchesMinistry && matchesSector;
@@ -111,13 +117,22 @@ export default function ServantsPage() {
               />
             </div>
             <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>E-mail</label>
-              <input 
-                className="input" 
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                required 
+              <label>Usuário</label>
+              <input
+                className="input"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Ex: joao.silva"
+                required
+              />
+            </div>
+            <div className="grid" style={{ gap: '0.5rem' }}>
+              <label>E-mail (opcional)</label>
+              <input
+                className="input"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div className="grid" style={{ gap: '0.5rem' }}>
@@ -178,22 +193,24 @@ export default function ServantsPage() {
             
             <div className="flex flex-wrap gap-3">
               {/* Ministry Filter */}
-              <div className="flex flex-1" style={{ minWidth: '180px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                <select 
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
-                  value={filterMinistryId}
-                  onChange={e => {
-                    setFilterMinistryId(e.target.value);
-                    setFilterSectorId("all"); // Reset sector when ministry changes
-                  }}
-                >
-                  <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
-                  {ministries.map(m => (
-                    <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!isLeader && (
+                <div className="flex flex-1" style={{ minWidth: '180px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
+                  <select
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
+                    value={filterMinistryId}
+                    onChange={e => {
+                      setFilterMinistryId(e.target.value);
+                      setFilterSectorId("all"); // Reset sector when ministry changes
+                    }}
+                  >
+                    <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
+                    {ministries.map(m => (
+                      <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Sector Filter */}
               <div className="flex flex-1" style={{ minWidth: '180px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -216,7 +233,7 @@ export default function ServantsPage() {
               <div className="flex flex-1" style={{ minWidth: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
                 <input 
-                  placeholder="Pesquisar nome ou e-mail..." 
+                  placeholder="Pesquisar nome, usuário ou e-mail..."
                   style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
@@ -230,6 +247,7 @@ export default function ServantsPage() {
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '1rem 0.5rem' }}>Nome</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Usuário</th>
                   <th style={{ padding: '1rem 0.5rem' }}>Setor</th>
                   <th style={{ padding: '1rem 0.5rem' }}>Ministério</th>
                   <th style={{ padding: '1rem 0.5rem' }}>E-mail</th>
@@ -239,12 +257,13 @@ export default function ServantsPage() {
                 {filteredServants.map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '1rem 0.5rem' }}>{s.user.name}</td>
+                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.user.username || "-"}</td>
                     <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        padding: '0.25rem 0.5rem', 
-                        background: 'var(--muted)', 
-                        borderRadius: '1rem' 
+                      <span style={{
+                        fontSize: '0.75rem',
+                        padding: '0.25rem 0.5rem',
+                        background: 'var(--muted)',
+                        borderRadius: '1rem'
                       }}>
                         {s.sector.name}
                       </span>
@@ -252,12 +271,12 @@ export default function ServantsPage() {
                     <td style={{ padding: '1rem 0.5rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.sector.ministry.name}</span>
                     </td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.user.email}</td>
+                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.user.email || "-"}</td>
                   </tr>
                 ))}
                 {filteredServants.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>
                       Nenhum servo encontrado para os filtros selecionados.
                     </td>
                   </tr>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { createMinistry, getMinistries } from "@/lib/actions";
 import { Church, Plus, ShieldAlert, Check, Copy } from "lucide-react";
 import MinistryDetails from "@/components/MinistryDetails";
@@ -19,12 +21,14 @@ interface Ministry {
     name: string;
     servants: {
       id: number;
-      user: { name: string; email: string };
+      user: { name: string; username: string | null; email: string | null };
     }[];
   }[];
 }
 
 export default function MinistriesPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [selectedMinistry, setSelectedMinistry] = useState<Ministry | null>(null);
   const [name, setName] = useState("");
@@ -35,6 +39,12 @@ export default function MinistriesPage() {
 
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user.role !== "admin") {
+      router.replace("/admin");
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     let isMounted = true;
@@ -78,6 +88,10 @@ export default function MinistriesPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (status !== "authenticated" || session?.user.role !== "admin") {
+    return null;
+  }
 
   return (
     <div className="animate-fade-in">

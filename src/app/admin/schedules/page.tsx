@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { createSchedule, getSchedules, getSectors, getMinistries, deleteSchedule } from "@/lib/actions";
-import { CalendarPlus, Link as LinkIcon, Calendar, Trash2, Copy, Edit3 } from "lucide-react";
+import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye } from "lucide-react";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
+import { useToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 interface ScheduleDate {
   id: number;
   date: string;
   startTime: string;
-  endTime: string;
 }
 
 interface Schedule {
@@ -35,6 +36,8 @@ interface Ministry {
 }
 
 export default function SchedulesPage() {
+  const { showToast } = useToast();
+  const askConfirm = useConfirm();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
@@ -42,15 +45,14 @@ export default function SchedulesPage() {
   const [name, setName] = useState("");
   const [ministryId, setMinistryId] = useState("");
   const [sectorId, setSectorId] = useState("");
-  const [dates, setDates] = useState<{ date: string, startTime: string, endTime: string }[]>([]);
-  
+  const [dates, setDates] = useState<{ date: string, startTime: string }[]>([]);
+
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("09:00");
-  const [newEndTime, setNewEndTime] = useState("12:00");
-  
+
   const [lastLink, setLastLink] = useState("");
   const [loading, setLoading] = useState(false);
-  const [managingSchedule, setManagingSchedule] = useState<number | null>(null);
+  const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function SchedulesPage() {
 
   const addDate = () => {
     if (!newDate) return;
-    setDates([...dates, { date: newDate, startTime: newStartTime, endTime: newEndTime }]);
+    setDates([...dates, { date: newDate, startTime: newStartTime }]);
     setNewDate("");
   };
 
@@ -85,8 +87,8 @@ export default function SchedulesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (dates.length === 0) return alert("Adicione ao menos uma data");
-    
+    if (dates.length === 0) { showToast("Adicione ao menos uma data", "error"); return; }
+
     setLoading(true);
     const result = await createSchedule(name, parseInt(ministryId), parseInt(sectorId), dates);
     setLastLink(`${window.location.origin}/escala/${result.shareLink}`);
@@ -106,7 +108,12 @@ export default function SchedulesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Tem certeza que deseja excluir esta escala?")) return;
+    const ok = await askConfirm({
+      title: "Excluir escala",
+      message: "Tem certeza que deseja excluir esta escala? Essa ação não pode ser desfeita.",
+      confirmLabel: "Excluir",
+    });
+    if (!ok) return;
     await deleteSchedule(id);
     const sch = await getSchedules();
     setSchedules(sch as unknown as Schedule[]);
@@ -150,10 +157,9 @@ export default function SchedulesPage() {
 
             <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
               <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
-              <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr 1fr auto' }}>
+              <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
                 <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
                 <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
-                <input type="time" className="input" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} />
                 <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
                   <CalendarPlus size={20} />
                 </button>
@@ -162,7 +168,7 @@ export default function SchedulesPage() {
               <div style={{ marginTop: '1rem' }}>
                 {dates.map((d, i) => (
                   <div key={i} className="flex justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                    <span>{d.date} | {d.startTime} - {d.endTime}</span>
+                    <span>{d.date} | {d.startTime}</span>
                     <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444' }}>Remover</button>
                   </div>
                 ))}
@@ -177,7 +183,9 @@ export default function SchedulesPage() {
 
           {lastLink && (
             <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: 'var(--radius)' }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Link gerado com sucesso!</p>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                Escala gerada com sucesso. Copie o link e envie para o voluntário, ou avise a ele que já está disponível no perfil dele.
+              </p>
               <div className="flex" style={{ wordBreak: 'break-all' }}>
                 <code style={{ fontSize: '0.875rem', color: '#10b981' }}>{lastLink}</code>
               </div>
@@ -186,63 +194,69 @@ export default function SchedulesPage() {
         </div>
 
         {/* List */}
-        <div className="grid" style={{ gap: '1.5rem', alignContent: 'start' }}>
-          <h3 style={{ marginBottom: '-0.5rem' }}>Escalas Recentes</h3>
-          {schedules.map((s) => (
-            <div key={s.id} className="card glass">
-              <div className="flex justify-between" style={{ marginBottom: '1rem' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.125rem' }}>{s.name}</h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.ministry.name} - {s.sector.name}</p>
-                </div>
-                <div className="flex" style={{ gap: '0.5rem' }}>
-                  <button onClick={() => handleEdit(s)} style={{ color: 'var(--primary)' }}>
-                    <Edit3 size={16} />
-                  </button>
-                  <div style={{ padding: '0.25rem 0.75rem', background: s.status === 'published' ? '#10b981' : 'var(--muted)', borderRadius: '1rem', fontSize: '0.75rem' }}>
-                    {s.status === 'published' ? 'Publicada' : 'Rascunho'}
-                  </div>
-                  <button onClick={() => handleDelete(s.id)} style={{ color: '#ef4444' }}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex" style={{ gap: '0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                <Calendar size={14} />
-                {s.dates.length} datas selecionadas
-              </div>
-              <div className="flex" style={{ marginTop: '1.5rem', gap: '0.5rem' }}>
-                <button 
-                  className="btn btn-ghost" 
-                  style={{ flex: 1, fontSize: '0.875rem' }}
-                  onClick={() => setManagingSchedule(s.id)}
-                >
-                  Ver Respostas
-                </button>
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ flex: 1, fontSize: '0.875rem' }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
-                    alert("Link copiado!");
-                  }}
-                >
-                  <Copy size={16} style={{ marginRight: '0.5rem' }} />
-                  Copiar Link
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="card glass" style={{ alignSelf: 'start' }}>
+          <h3 style={{ marginBottom: '1.5rem' }}>Escalas Recentes</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Nome</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Ministério</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Setor</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>{s.name}</td>
+                    <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.ministry.name}</td>
+                    <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.sector.name}</td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <div className="flex" style={{ gap: '0.25rem', justifyContent: 'flex-end' }}>
+                        <button onClick={() => handleEdit(s)} title="Editar" style={{ color: 'var(--primary)', padding: '0.375rem' }}>
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
+                            showToast("Link copiado!", "success");
+                          }}
+                          title="Copiar link"
+                          style={{ color: 'var(--muted-foreground)', padding: '0.375rem' }}
+                        >
+                          <Copy size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(s.id)} title="Excluir" style={{ color: '#ef4444', padding: '0.375rem' }}>
+                          <Trash2 size={16} />
+                        </button>
+                        <button onClick={() => setDetailsSchedule(s)} title="Ver detalhes" style={{ color: 'var(--foreground)', padding: '0.375rem' }}>
+                          <Eye size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {schedules.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                      Nenhuma escala criada ainda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {managingSchedule && (
-        <ScheduleManager 
-          scheduleId={managingSchedule} 
+      {detailsSchedule && (
+        <ScheduleManager
+          schedule={detailsSchedule}
           onClose={() => {
-            setManagingSchedule(null);
+            setDetailsSchedule(null);
             getSchedules().then(sch => setSchedules(sch as unknown as Schedule[]));
-          }} 
+          }}
         />
       )}
 

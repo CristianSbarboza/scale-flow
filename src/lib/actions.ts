@@ -13,18 +13,34 @@ import { hash } from "bcryptjs";
 async function getAuthFilter() {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
-  
+
   if (session.user.role === "admin") return null;
   return session.user.id;
 }
 
+async function requireAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    throw new Error("Apenas administradores podem executar esta ação");
+  }
+}
+
 /**
  * Lógica de Upsert de Usuário
- * Se o e-mail não existe, cria com senha aleatória.
+ * Líderes e admins se identificam por e-mail; servos por usuário (e-mail é opcional para eles).
+ * Se o identificador não existe, cria com senha aleatória.
  * Se existe, apenas garante que o cargo (role) seja compatível.
  */
-async function getOrCreateUser(name: string, email: string, targetRole: "leader" | "servant") {
-  let [user] = await db.select().from(users).where(eq(users.email, email));
+async function getOrCreateUser(
+  name: string,
+  targetRole: "leader" | "servant",
+  identifier: { email?: string | null; username?: string | null }
+) {
+  const email = identifier.email?.trim() || null;
+  const username = identifier.username?.trim() || null;
+
+  const whereCondition = username ? eq(users.username, username) : eq(users.email, email!);
+  let [user] = await db.select().from(users).where(whereCondition);
   let generatedPassword = null;
 
   if (!user) {
@@ -33,6 +49,7 @@ async function getOrCreateUser(name: string, email: string, targetRole: "leader"
     [user] = await db.insert(users).values({
       name,
       email,
+      username,
       password: hashedPassword,
       role: targetRole,
     }).returning();
@@ -48,7 +65,8 @@ async function getOrCreateUser(name: string, email: string, targetRole: "leader"
 
 // Ministries
 export async function createMinistry(name: string, description: string, leaderName: string, leaderEmail: string) {
-  const { user, generatedPassword } = await getOrCreateUser(leaderName, leaderEmail, "leader");
+  await requireAdmin();
+  const { user, generatedPassword } = await getOrCreateUser(leaderName, "leader", { email: leaderEmail });
 
   await db.insert(ministries).values({ 
     name, 
@@ -61,7 +79,8 @@ export async function createMinistry(name: string, description: string, leaderNa
 }
 
 export async function updateMinistry(id: number, name: string, description: string, leaderName: string, leaderEmail: string) {
-  const { user, generatedPassword } = await getOrCreateUser(leaderName, leaderEmail, "leader");
+  await requireAdmin();
+  const { user, generatedPassword } = await getOrCreateUser(leaderName, "leader", { email: leaderEmail });
 
   await db.update(ministries).set({
     name,
@@ -131,8 +150,8 @@ export async function getSectors() {
 }
 
 // Servants
-export async function createServant(name: string, email: string, sectorId: number) {
-  const { user, generatedPassword } = await getOrCreateUser(name, email, "servant");
+export async function createServant(name: string, username: string, email: string | null, sectorId: number) {
+  const { user, generatedPassword } = await getOrCreateUser(name, "servant", { username, email });
 
   // Verifica se o usuário já é um servo neste setor para evitar duplicidade
   const [existingServant] = await db.select().from(servants).where(
@@ -182,15 +201,75 @@ export async function getServants() {
     });
   }
   return await db.query.servants.findMany({
-    with: { 
+    with: {
       user: true,
       sector: { with: { ministry: true } }
     }
   });
 }
 
+export interface ServantOverviewDate {
+  id: number;
+  date: string;
+  startTime: string;
+  confirmed: boolean;
+  available: boolean;
+}
+
+export interface ServantOverviewSchedule {
+  id: number;
+  name: string;
+  ministryName: string;
+  sectorName: string;
+  shareLink: string;
+  servantId: number;
+  dates: ServantOverviewDate[];
+}
+
+// Returns every schedule for the logged-in servant's sector, with each date
+// flagged for whether THIS servant is confirmed/has sent availability on it.
+export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+
+  const servant = await db.query.servants.findFirst({
+    where: eq(servants.userId, session.user.id),
+  });
+  if (!servant) return [];
+
+  const sectorSchedules = await db.query.schedules.findMany({
+    where: eq(schedules.sectorId, servant.sectorId),
+    with: {
+      ministry: true,
+      sector: true,
+      dates: {
+        with: {
+          assignments: { where: eq(scheduleAssignments.servantId, servant.id) },
+          availabilities: { where: eq(scheduleAvailability.servantId, servant.id) },
+        },
+      },
+    },
+  });
+
+  return sectorSchedules.map((s) => ({
+    id: s.id,
+    name: s.name,
+    ministryName: s.ministry.name,
+    sectorName: s.sector.name,
+    shareLink: s.shareLink,
+    servantId: servant.id,
+    dates: s.dates.map((d) => ({
+      id: d.id,
+      date: d.date,
+      startTime: d.startTime,
+      confirmed: d.assignments.length > 0,
+      available: d.availabilities.length > 0,
+    })),
+  }));
+}
+
 // Schedules
-export async function createSchedule(name: string, ministryId: number, sectorId: number, dates: { date: string, startTime: string, endTime: string }[]) {
+export async function createSchedule(name: string, ministryId: number, sectorId: number, dates: { date: string, startTime: string }[]) {
   const shareLink = nanoid(10);
   const [schedule] = await db.insert(schedules).values({
     name,
@@ -204,34 +283,35 @@ export async function createSchedule(name: string, ministryId: number, sectorId:
       scheduleId: schedule.id,
       date: d.date,
       startTime: d.startTime,
-      endTime: d.endTime,
     });
   }
 
   revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
   return { shareLink };
 }
 
 export async function deleteSchedule(id: number) {
   await db.delete(schedules).where(eq(schedules.id, id));
   revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
 }
 
-export async function updateSchedule(id: number, name: string, dates: { date: string, startTime: string, endTime: string }[]) {
+export async function updateSchedule(id: number, name: string, dates: { date: string, startTime: string }[]) {
   await db.update(schedules).set({ name }).where(eq(schedules.id, id));
-  
+
   await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
-  
+
   for (const d of dates) {
     await db.insert(scheduleDates).values({
       scheduleId: id,
       date: d.date,
       startTime: d.startTime,
-      endTime: d.endTime,
     });
   }
-  
+
   revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
 }
 
 export async function getSchedules() {
@@ -303,6 +383,7 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
     });
   }
   revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
 }
 
 export async function registerUser(name: string, email: string, password: string) {

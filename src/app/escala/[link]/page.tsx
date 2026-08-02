@@ -4,9 +4,15 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import AvailabilityForm from "./AvailabilityForm";
 
-export default async function PublicSchedulePage({ params }: { params: Promise<{ link: string }> }) {
+interface PageProps {
+  params: Promise<{ link: string }>;
+  searchParams: Promise<{ from?: string; servantId?: string }>;
+}
+
+export default async function PublicSchedulePage({ params, searchParams }: PageProps) {
   const { link } = await params;
-  
+  const { from, servantId } = await searchParams;
+
   const schedule = await db.query.schedules.findFirst({
     where: eq(schedules.shareLink, link),
     with: {
@@ -29,9 +35,9 @@ export default async function PublicSchedulePage({ params }: { params: Promise<{
   });
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(to bottom right, #0f172a, #1e1b4b)',
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(circle at top right, #1a0f05, #0a0908)',
       padding: '2rem 1rem'
     }}>
       <div className="container" style={{ maxWidth: '600px' }}>
@@ -43,9 +49,11 @@ export default async function PublicSchedulePage({ params }: { params: Promise<{
           </p>
         </div>
 
-        <AvailabilityForm 
-          dates={schedule.dates} 
-          servants={sectorServants} 
+        <AvailabilityForm
+          dates={schedule.dates}
+          servants={sectorServants}
+          initialServantId={servantId}
+          returnToServant={from === "servant"}
         />
       </div>
     </div>

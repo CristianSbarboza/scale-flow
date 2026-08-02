@@ -2,12 +2,27 @@ import { StackedStats } from "@/components/StackedStats";
 import { db } from "@/db";
 import { ministries, sectors, servants, schedules, users } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function AdminDashboard() {
-  const [ministryCount] = await db.select({ value: count() }).from(ministries);
-  const [sectorCount] = await db.select({ value: count() }).from(sectors);
-  const [servantCount] = await db.select({ value: count() }).from(servants);
-  const [scheduleCount] = await db.select({ value: count() }).from(schedules);
+  const session = await getServerSession(authOptions);
+  const isLeader = session?.user.role === "leader";
+
+  const ministry = isLeader
+    ? await db.query.ministries.findFirst({ where: eq(ministries.leaderId, session!.user.id) })
+    : null;
+  const ministryId = ministry?.id ?? -1; // no ministry match found: filter to a non-existent id instead of showing global data
+
+  const [sectorCount] = await db.select({ value: count() }).from(sectors)
+    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined);
+
+  const [servantCount] = await db.select({ value: count() }).from(servants)
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined);
+
+  const [scheduleCount] = await db.select({ value: count() }).from(schedules)
+    .where(isLeader ? eq(schedules.ministryId, ministryId) : undefined);
 
   const latestSchedules = await db
     .select({
@@ -20,6 +35,7 @@ export default async function AdminDashboard() {
     .from(schedules)
     .innerJoin(ministries, eq(schedules.ministryId, ministries.id))
     .innerJoin(sectors, eq(schedules.sectorId, sectors.id))
+    .where(isLeader ? eq(schedules.ministryId, ministryId) : undefined)
     .orderBy(desc(schedules.createdAt))
     .limit(5);
 
@@ -32,11 +48,14 @@ export default async function AdminDashboard() {
     .from(servants)
     .innerJoin(users, eq(servants.userId, users.id))
     .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined)
     .orderBy(desc(servants.createdAt))
     .limit(5);
 
+  const ministryCount = isLeader ? null : (await db.select({ value: count() }).from(ministries))[0];
+
   const statsData = {
-    ministries: ministryCount.value,
+    ...(ministryCount ? { ministries: ministryCount.value } : {}),
     sectors: sectorCount.value,
     servants: servantCount.value,
     schedules: scheduleCount.value,
@@ -45,7 +64,9 @@ export default async function AdminDashboard() {
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Painel Administrativo</h1>
+        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+          Painel Administrativo{ministry ? ` — ${ministry.name}` : ""}
+        </h1>
         <p style={{ color: 'var(--muted-foreground)' }}>Bem-vindo de volta! Aqui está o resumo da sua gestão.</p>
       </header>
 

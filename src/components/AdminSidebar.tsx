@@ -19,17 +19,24 @@ import { useTheme } from "@/components/Providers";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: Layers, label: "Ministérios", href: "/admin/ministries" },
+  { icon: Layers, label: "Ministérios", href: "/admin/ministries", adminOnly: true },
   { icon: Layers, label: "Setores", href: "/admin/sectors" },
   { icon: Users, label: "Servos", href: "/admin/servants" },
   { icon: Calendar, label: "Escalas", href: "/admin/schedules" },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  role: "admin" | "leader" | "servant";
+}
+
+export function AdminSidebar({ role }: AdminSidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const visibleMenuItems = menuItems
+    .filter(item => !item.adminOnly || role === "admin")
+    .map(item => item.href === "/admin" && role === "leader" ? { ...item, label: "Geral" } : item);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -75,7 +82,7 @@ export function AdminSidebar() {
         onClick={() => setIsCollapsed(!isCollapsed)}
         style={{
           position: 'absolute',
-          left: '-16px',
+          right: '-16px',
           top: '4.5rem',
           background: 'var(--primary)',
           border: 'none',
@@ -88,7 +95,7 @@ export function AdminSidebar() {
           cursor: 'pointer',
           zIndex: 10,
           color: 'white',
-          boxShadow: '-4px 4px 12px rgba(0,0,0,0.3)',
+          boxShadow: '4px 4px 12px rgba(0,0,0,0.3)',
           transition: 'all 0.2s ease'
         }}
       >
@@ -96,7 +103,7 @@ export function AdminSidebar() {
       </button>
 
       <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link 

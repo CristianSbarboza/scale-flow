@@ -16,7 +16,7 @@ interface Props {
       name: string;
       servants: {
         id: number;
-        user: { name: string, email: string };
+        user: { name: string, username: string | null, email: string | null };
       }[];
     }[];
   };
@@ -242,7 +242,7 @@ export default function MinistryDetails({ ministry, onClose }: Props) {
                       <tr key={i} className="hover:bg-white/5 transition-colors text-sm">
                         <td className="px-8 py-5">
                           <p className="font-bold text-white">{srv.user.name}</p>
-                          <p className="text-(--muted-foreground) text-xs">{srv.user.email}</p>
+                          <p className="text-(--muted-foreground) text-xs">{srv.user.username || srv.user.email || "-"}</p>
                         </td>
                         <td className="px-8 py-5 text-right">
                           <span className="inline-block px-3 py-1 rounded-full bg-(--muted) text-[10px] font-bold">

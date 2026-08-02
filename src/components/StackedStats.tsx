@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Church, Users, Calendar, Layers } from "lucide-react";
 
 interface StatsData {
-  ministries: number;
+  ministries?: number;
   sectors: number;
   servants: number;
   schedules: number;
@@ -15,7 +15,9 @@ export function StackedStats({ data }: { data: StatsData }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const stats = [
-    { label: "Ministérios", value: data.ministries.toString(), icon: Church, color: "var(--primary)" },
+    ...(data.ministries !== undefined
+      ? [{ label: "Ministérios", value: data.ministries.toString(), icon: Church, color: "var(--primary)" }]
+      : []),
     { label: "Setores", value: data.sectors.toString(), icon: Layers, color: "var(--secondary)" },
     { label: "Servos", value: data.servants.toString(), icon: Users, color: "var(--accent)" },
     { label: "Escalas Ativas", value: data.schedules.toString(), icon: Calendar, color: "#10b981" },

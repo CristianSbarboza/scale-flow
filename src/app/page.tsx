@@ -11,7 +11,7 @@ export default async function Home() {
 
   const role = session.user.role;
 
-  if (role === "admin") {
+  if (role === "admin" || role === "leader") {
     redirect("/admin");
   } else {
     redirect("/servant");

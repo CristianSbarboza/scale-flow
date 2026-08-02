@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { SessionProvider } from "next-auth/react";
+import { ToastProvider } from "@/components/Toast";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 
 type Theme = "dark" | "light";
 
@@ -47,7 +49,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider>
+        <ToastProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </ToastProvider>
+      </SessionProvider>
     </ThemeContext.Provider>
   );
 }

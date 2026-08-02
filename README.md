@@ -72,9 +72,7 @@ ScaleFlow é um sistema premium desenvolvido para facilitar a gestão de escalas
 
 ### 🔑 Credenciais de Acesso Inicial
 
-Para o primeiro acesso, utilize:
-- **E-mail:** `admin@scaleflow.com`
-- **Senha:** `admin123`
+O `seed` cria um ministério (Multimídia, com os setores Transmissão e Fotografia) e duas contas — uma Admin (login por e-mail) e uma Servo (login por usuário, e-mail é opcional). As credenciais reais estão definidas diretamente em `src/db/seed.ts` e não são documentadas aqui por não serem dados de teste genéricos.
 
 ## 🎨 Design System
 

@@ -16,10 +16,10 @@ export default async function AdminLayout({
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <AdminSidebar role={session.user.role} />
       <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
         {children}
       </main>
-      <AdminSidebar />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { createSector, getSectors, getMinistries } from "@/lib/actions";
 import { Plus, Search, Filter, LayoutGrid } from "lucide-react";
 import SectorDetails from "@/components/SectorDetails";
@@ -12,7 +13,7 @@ interface Sector {
   ministry: { id: number; name: string };
   servants: {
     id: number;
-    user: { name: string, email: string };
+    user: { name: string, username: string | null, email: string | null };
   }[];
 }
 
@@ -22,6 +23,8 @@ interface Ministry {
 }
 
 export default function SectorsPage() {
+  const { data: session } = useSession();
+  const isLeader = session?.user.role === "leader";
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
@@ -105,19 +108,21 @@ export default function SectorsPage() {
           <div className="flex justify-between items-center mb-6">
             <h3 style={{ margin: 0 }}>Lista de Setores</h3>
             <div className="flex items-center gap-3">
-              <div className="flex" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
-                <select 
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none' }}
-                  value={filterMinistryId}
-                  onChange={e => setFilterMinistryId(e.target.value)}
-                >
-                  <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
-                  {ministries.map(m => (
-                    <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!isLeader && (
+                <div className="flex" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
+                  <select
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none' }}
+                    value={filterMinistryId}
+                    onChange={e => setFilterMinistryId(e.target.value)}
+                  >
+                    <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
+                    {ministries.map(m => (
+                      <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />

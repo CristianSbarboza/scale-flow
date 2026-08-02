@@ -11,7 +11,7 @@
   --accent: #fdba74; /* Orange 300 */
   --accent-foreground: #000000;
 
-  --background: #000000; /* Pure Black */
+  --background: #0a0908; /* Warm Near-Black */
   --foreground: #ffffff; /* Pure White */
 
   --card: #111111; /* Very Dark Gray */
@@ -41,7 +41,7 @@
 }
 
 body {
-  background-color: var(--background);
+  background: radial-gradient(circle at top right, #1a0f05, #0a0908);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

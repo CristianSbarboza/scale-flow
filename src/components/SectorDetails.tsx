@@ -10,7 +10,7 @@ interface Props {
     ministry: { name: string };
     servants: {
       id: number;
-      user: { name: string, email: string };
+      user: { name: string, username: string | null, email: string | null };
     }[];
   };
   onClose: () => void;
@@ -90,7 +90,7 @@ export default function SectorDetails({ sector, onClose }: Props) {
                       <tr key={i} className="hover:bg-white/5 transition-colors group">
                         <td className="px-10 py-6">
                           <p className="text-lg font-bold text-white group-hover:text-(--primary) transition-colors">{srv.user.name}</p>
-                          <p className="text-sm text-(--muted-foreground)">{srv.user.email}</p>
+                          <p className="text-sm text-(--muted-foreground)">{srv.user.username || srv.user.email || "-"}</p>
                         </td>
                         <td className="px-10 py-6 text-right">
                           <span className="text-[10px] font-bold text-(--primary)/60 group-hover:text-(--primary) uppercase tracking-widest">Ativo</span>

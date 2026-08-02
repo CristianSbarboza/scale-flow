@@ -1,13 +1,22 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User, Users, ShieldAlert } from "lucide-react";
+
+type LoginRole = "servant" | "leader" | "admin";
+
+const loginRoles: { value: LoginRole; label: string; icon: typeof User }[] = [
+  { value: "servant", label: "Servo", icon: User },
+  { value: "leader", label: "Líder", icon: Users },
+  { value: "admin", label: "Admin", icon: ShieldAlert },
+];
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<LoginRole>("servant");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -15,6 +24,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
+  const isServant = role === "servant";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +32,8 @@ function LoginForm() {
     setError("");
 
     const result = await signIn("credentials", {
-      email,
+      username: isServant ? identifier : "",
+      email: isServant ? "" : identifier,
       password,
       redirect: false,
     });
@@ -30,10 +41,22 @@ function LoginForm() {
     if (result?.error) {
       setError("Credenciais inválidas. Tente novamente.");
       setLoading(false);
-    } else {
-      router.push("/");
-      router.refresh();
+      return;
     }
+
+    const session = await getSession();
+    const sessionRole = session?.user.role;
+
+    if (sessionRole !== role) {
+      await signOut({ redirect: false });
+      const selected = loginRoles.find(r => r.value === role)?.label;
+      setError(`Essas credenciais não pertencem a uma conta de ${selected}.`);
+      setLoading(false);
+      return;
+    }
+
+    router.push(sessionRole === "servant" ? "/servant" : "/admin");
+    router.refresh();
   };
 
   return (
@@ -72,16 +95,55 @@ function LoginForm() {
           </div>
         )}
 
+        <div className="flex" style={{
+          gap: '0.5rem',
+          padding: '0.375rem',
+          borderRadius: 'var(--radius)',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          marginBottom: '1.5rem',
+        }}>
+          {loginRoles.map((r) => {
+            const isActive = role === r.value;
+            return (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => { setRole(r.value); setError(""); setIdentifier(""); }}
+                className="flex"
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  padding: '0.5rem',
+                  borderRadius: 'calc(var(--radius) - 0.25rem)',
+                  border: 'none',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  background: isActive ? 'var(--primary)' : 'transparent',
+                  color: isActive ? 'white' : 'var(--muted-foreground)',
+                }}
+              >
+                <r.icon size={16} />
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+
         <form onSubmit={handleSubmit} className="grid">
           <div className="grid" style={{ gap: '0.5rem' }}>
-            <label htmlFor="email">E-mail</label>
-            <input 
-              id="email"
-              type="email" 
-              className="input" 
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <label htmlFor="identifier">{isServant ? "Usuário" : "E-mail"}</label>
+            <input
+              id="identifier"
+              type={isServant ? "text" : "email"}
+              className="input"
+              placeholder={isServant ? "seu.usuario" : "seu@email.com"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </div>
