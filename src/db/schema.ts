@@ -62,6 +62,16 @@ export const scheduleAssignments = pgTable("schedule_assignments", {
   servantId: integer("servant_id").references(() => servants.id, { onDelete: "cascade" }).notNull(),
 });
 
+export const swapRequests = pgTable("swap_requests", {
+  id: serial("id").primaryKey(),
+  dateId: integer("date_id").references(() => scheduleDates.id, { onDelete: "cascade" }).notNull(),
+  requesterServantId: integer("requester_servant_id").references(() => servants.id, { onDelete: "cascade" }).notNull(),
+  targetServantId: integer("target_servant_id").references(() => servants.id, { onDelete: "cascade" }).notNull(),
+  status: text("status", { enum: ["pending", "accepted", "rejected"] }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+});
+
 // Relations
 export const ministriesRelations = relations(ministries, ({ one, many }) => ({
   sectors: many(sectors),
@@ -84,6 +94,8 @@ export const servantsRelations = relations(servants, ({ one, many }) => ({
   sector: one(sectors, { fields: [servants.sectorId], references: [sectors.id] }),
   availabilities: many(scheduleAvailability),
   assignments: many(scheduleAssignments),
+  requestedSwaps: many(swapRequests, { relationName: "swapRequester" }),
+  targetedSwaps: many(swapRequests, { relationName: "swapTarget" }),
 }));
 
 export const schedulesRelations = relations(schedules, ({ one, many }) => ({
@@ -100,6 +112,12 @@ export const scheduleAvailabilityRelations = relations(scheduleAvailability, ({ 
 export const scheduleAssignmentsRelations = relations(scheduleAssignments, ({ one }) => ({
   date: one(scheduleDates, { fields: [scheduleAssignments.dateId], references: [scheduleDates.id] }),
   servant: one(servants, { fields: [scheduleAssignments.servantId], references: [servants.id] }),
+}));
+
+export const swapRequestsRelations = relations(swapRequests, ({ one }) => ({
+  date: one(scheduleDates, { fields: [swapRequests.dateId], references: [scheduleDates.id] }),
+  requester: one(servants, { fields: [swapRequests.requesterServantId], references: [servants.id], relationName: "swapRequester" }),
+  target: one(servants, { fields: [swapRequests.targetServantId], references: [servants.id], relationName: "swapTarget" }),
 }));
 
 export const scheduleDatesRelations = relations(scheduleDates, ({ one, many }) => ({

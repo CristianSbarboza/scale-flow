@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
+import SettingsModal from "@/components/SettingsModal";
 
 interface ServantProfileMenuProps {
   name: string;
@@ -11,9 +12,10 @@ interface ServantProfileMenuProps {
 
 export default function ServantProfileMenu({ name, sectorName }: ServantProfileMenuProps) {
   const [open, setOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <div className="servant-profile-menu-wrapper" style={{ position: "relative" }}>
+    <div style={{ position: "relative" }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -50,6 +52,18 @@ export default function ServantProfileMenu({ name, sectorName }: ServantProfileM
           >
             <p style={{ fontWeight: 600 }}>{name}</p>
             <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "1rem" }}>{sectorName}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setShowSettings(true);
+              }}
+              className="btn btn-ghost"
+              style={{ width: "100%", justifyContent: "flex-start", padding: "0.5rem" }}
+            >
+              <Settings size={16} />
+              Configurações
+            </button>
             <Link
               href="/api/auth/signout"
               className="btn btn-ghost"
@@ -61,6 +75,8 @@ export default function ServantProfileMenu({ name, sectorName }: ServantProfileM
           </div>
         </>
       )}
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

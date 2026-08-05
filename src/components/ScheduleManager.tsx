@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getScheduleResponses, assignServant, removeAssignment } from "@/lib/actions";
 import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
@@ -67,21 +68,23 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
     load();
   };
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+      className="fixed inset-0 z-50 p-4 bg-black/80 backdrop-blur-md"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="glass w-full max-w-5xl max-h-[90vh]"
+        className="glass w-full max-w-5xl"
         style={{
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
+          maxHeight: '90vh',
           borderRadius: 'var(--radius)',
           border: '1px solid var(--card-border)',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
@@ -89,7 +92,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
         }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
             <h3 style={{ marginBottom: '0.25rem' }}>{schedule.name}</h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
@@ -121,7 +124,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin', flex: '1 1 auto', minHeight: 0 }}>
           <label style={{ display: 'block', marginBottom: '1rem' }}>Respostas e Escalação</label>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -241,6 +244,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
           </div>
         )}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

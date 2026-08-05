@@ -2,13 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { createServant, getServants, getSectors, getMinistries } from "@/lib/actions";
 import { UserPlus, Copy, Check, ShieldAlert, Search, Filter } from "lucide-react";
 
-interface Servant {
-  id: number;
-  user: { name: string; username: string | null; email: string | null };
-  sector: { id: number; name: string; ministry: { id: number; name: string } };
+interface Membership {
+  servantId: number;
+  sectorId: number;
+  sectorName: string;
+  ministryId: number;
+  ministryName: string;
+}
+
+interface ServantSummary {
+  userId: string;
+  name: string;
+  username: string | null;
+  email: string | null;
+  memberships: Membership[];
 }
 
 interface Sector {
@@ -25,8 +36,9 @@ interface Ministry {
 
 export default function ServantsPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const isLeader = session?.user.role === "leader";
-  const [servants, setServants] = useState<Servant[]>([]);
+  const [servants, setServants] = useState<ServantSummary[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   
@@ -51,7 +63,7 @@ export default function ServantsPage() {
         const sec = await getSectors();
         const min = await getMinistries();
         if (isMounted) {
-          setServants(srv as unknown as Servant[]);
+          setServants(srv as unknown as ServantSummary[]);
           setSectors(sec as unknown as Sector[]);
           setMinistries(min as unknown as Ministry[]);
         }
@@ -75,7 +87,7 @@ export default function ServantsPage() {
 
     // Refresh list
     const srv = await getServants();
-    setServants(srv as unknown as Servant[]);
+    setServants(srv as unknown as ServantSummary[]);
     
     setLoading(false);
   };
@@ -87,11 +99,11 @@ export default function ServantsPage() {
   };
 
   const filteredServants = servants.filter(s => {
-    const matchesSearch = s.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-                          (s.user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesMinistry = filterMinistryId === "all" || s.sector.ministry.id === parseInt(filterMinistryId);
-    const matchesSector = filterSectorId === "all" || s.sector.id === parseInt(filterSectorId);
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+                          (s.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+    const matchesMinistry = filterMinistryId === "all" || s.memberships.some(m => m.ministryId === parseInt(filterMinistryId));
+    const matchesSector = filterSectorId === "all" || s.memberships.some(m => m.sectorId === parseInt(filterSectorId));
     return matchesSearch && matchesMinistry && matchesSector;
   });
 
@@ -188,9 +200,9 @@ export default function ServantsPage() {
 
         {/* List */}
         <div className="card glass">
-          <div className="flex flex-col gap-4 mb-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Servos Cadastrados</h3>
-            
+
             <div className="flex flex-wrap gap-3">
               {/* Ministry Filter */}
               {!isLeader && (
@@ -247,36 +259,42 @@ export default function ServantsPage() {
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '1rem 0.5rem' }}>Nome</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Usuário</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Setor</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Ministério</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>E-mail</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Usuário/E-mail</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Setores</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredServants.map((s) => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '1rem 0.5rem' }}>{s.user.name}</td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.user.username || "-"}</td>
+                  <tr
+                    key={s.userId}
+                    onClick={() => router.push(`/admin/servants/${s.userId}`)}
+                    className="cursor-pointer hover:bg-white/5 transition-colors"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                  >
+                    <td style={{ padding: '1rem 0.5rem' }}>{s.name}</td>
+                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.username || s.email || "-"}</td>
                     <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.5rem',
-                        background: 'var(--muted)',
-                        borderRadius: '1rem'
-                      }}>
-                        {s.sector.name}
-                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                        {s.memberships.map((m) => (
+                          <span
+                            key={m.servantId}
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.25rem 0.5rem',
+                              background: 'var(--muted)',
+                              borderRadius: '1rem'
+                            }}
+                          >
+                            {m.sectorName}
+                          </span>
+                        ))}
+                      </div>
                     </td>
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.sector.ministry.name}</span>
-                    </td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.user.email || "-"}</td>
                   </tr>
                 ))}
                 {filteredServants.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>
                       Nenhum servo encontrado para os filtros selecionados.
                     </td>
                   </tr>

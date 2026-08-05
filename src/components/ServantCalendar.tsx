@@ -1,22 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock, MapPin, X } from "lucide-react";
-import type { ServantOverviewSchedule } from "@/lib/actions";
+import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "lucide-react";
+import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/lib/actions";
+import { createSwapRequest } from "@/lib/actions";
+import { useToast } from "@/components/Toast";
 
 interface ServantCalendarProps {
   schedules: ServantOverviewSchedule[];
 }
 
 interface DayEntry {
+  dateId: number;
   date: string;
   scheduleName: string;
   ministryName: string;
   sectorName: string;
   startTime: string;
+  requesterServantId: number;
+  assignees: ServantOverviewAssignee[];
 }
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
+const RED = "#ef4444";
 
 function toDateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -27,19 +33,24 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [negotiating, setNegotiating] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const confirmedByDay = useMemo(() => {
     const map = new Map<string, DayEntry[]>();
     for (const schedule of schedules) {
       for (const date of schedule.dates) {
-        if (!date.confirmed) continue;
+        if (date.assignees.length === 0) continue;
         const key = date.date.slice(0, 10);
         const entry: DayEntry = {
+          dateId: date.id,
           date: key,
           scheduleName: schedule.name,
           ministryName: schedule.ministryName,
           sectorName: schedule.sectorName,
           startTime: date.startTime,
+          requesterServantId: schedule.servantId,
+          assignees: date.assignees,
         };
         map.set(key, [...(map.get(key) ?? []), entry]);
       }
@@ -81,6 +92,20 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
 
   const selectedEntries = selectedDay ? confirmedByDay.get(selectedDay) ?? [] : [];
 
+  const handleNegotiate = async (entry: DayEntry, target: ServantOverviewAssignee) => {
+    const key = `${entry.dateId}-${target.servantId}`;
+    setNegotiating(key);
+    try {
+      await createSwapRequest(entry.dateId, target.servantId, entry.requesterServantId);
+      showToast(`Pedido enviado para ${target.name}.`, "success");
+    } catch (error) {
+      console.error(error);
+      showToast(error instanceof Error ? error.message : "Erro ao enviar pedido.", "error");
+    } finally {
+      setNegotiating(null);
+    }
+  };
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
@@ -112,9 +137,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               onClick={() => setSelectedDay(key)}
               className="servant-calendar-cell"
               style={{
-                background: isConfirmed ? "var(--primary)" : "transparent",
-                borderColor: isConfirmed ? "var(--primary)" : "var(--foreground)",
-                color: isConfirmed ? "var(--primary-foreground)" : "var(--foreground)",
+                background: isConfirmed ? RED : "transparent",
+                borderColor: isConfirmed ? RED : "var(--foreground)",
+                color: isConfirmed ? "white" : "var(--foreground)",
                 fontWeight: isConfirmed ? 700 : 400,
                 cursor: isConfirmed ? "pointer" : "default",
               }}
@@ -145,7 +170,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontWeight: 700, color: "var(--primary)" }}>
+                <span style={{ fontWeight: 700, color: RED }}>
                   {new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                 </span>
                 <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.startTime}</span>
@@ -190,6 +215,52 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                       <p>{entry.ministryName}</p>
                       <p>{entry.sectorName}</p>
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: "0.75rem", display: "grid", gap: "0.375rem" }}>
+                    <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                      Confirmados
+                    </p>
+                    {entry.assignees.map((assignee) => {
+                      const key = `${entry.dateId}-${assignee.servantId}`;
+                      const isLoading = negotiating === key;
+                      return (
+                        <div
+                          key={assignee.servantId}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "0.5rem",
+                            padding: "0.5rem 0.625rem",
+                            background: "var(--card)",
+                            border: "1px solid var(--card-border)",
+                            borderRadius: "var(--radius)",
+                          }}
+                        >
+                          <span style={{ fontSize: "0.8125rem", fontWeight: assignee.isSelf ? 700 : 500 }}>
+                            {assignee.name}
+                            {assignee.isSelf && " (você)"}
+                          </span>
+                          {assignee.isSelf ? (
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "#10b981" }}>
+                              <Check size={12} /> Você
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleNegotiate(entry, assignee)}
+                              disabled={isLoading}
+                              className="btn btn-secondary"
+                              style={{ padding: "0.375rem 0.625rem", fontSize: "0.75rem", flexShrink: 0 }}
+                            >
+                              <Repeat size={13} />
+                              {isLoading ? "Enviando..." : "Negociar"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

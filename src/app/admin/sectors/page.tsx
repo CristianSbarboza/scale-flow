@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { createSector, getSectors, getMinistries } from "@/lib/actions";
 import { Plus, Search, Filter, LayoutGrid } from "lucide-react";
-import SectorDetails from "@/components/SectorDetails";
-import { AnimatePresence } from "framer-motion";
 
 interface Sector {
   id: number;
@@ -24,11 +23,11 @@ interface Ministry {
 
 export default function SectorsPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const isLeader = session?.user.role === "leader";
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
-  const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
-  
+
   const [name, setName] = useState("");
   const [ministryId, setMinistryId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,14 +104,14 @@ export default function SectorsPage() {
         </div>
 
         <div className="card glass">
-          <div className="flex justify-between items-center mb-6">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Lista de Setores</h3>
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               {!isLeader && (
-                <div className="flex" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
                   <select
-                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none' }}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0' }}
                     value={filterMinistryId}
                     onChange={e => setFilterMinistryId(e.target.value)}
                   >
@@ -124,11 +123,11 @@ export default function SectorsPage() {
                 </div>
               )}
 
-              <div className="flex" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
-                <input 
-                  placeholder="Pesquisar..." 
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '120px' }}
+                <input
+                  placeholder="Pesquisar..."
+                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '120px', padding: '0.5rem 0' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -146,10 +145,10 @@ export default function SectorsPage() {
               </thead>
               <tbody>
                 {filteredSectors.map((s) => (
-                  <tr 
-                    key={s.id} 
+                  <tr
+                    key={s.id}
                     className="cursor-pointer hover:bg-white/5 transition-colors"
-                    onClick={() => setSelectedSector(s)}
+                    onClick={() => router.push(`/admin/sectors/${s.id}`)}
                     style={{ borderBottom: '1px solid var(--border)' }}
                   >
                     <td style={{ padding: '1rem 0.5rem' }}>
@@ -186,15 +185,6 @@ export default function SectorsPage() {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {selectedSector && (
-          <SectorDetails 
-            sector={selectedSector} 
-            onClose={() => setSelectedSector(null)} 
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

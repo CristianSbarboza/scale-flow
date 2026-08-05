@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateSchedule } from "@/lib/actions";
 import { X, CalendarPlus, Save, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
@@ -51,27 +52,29 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
     }
   };
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+      className="fixed inset-0 z-50 p-4 bg-black/80 backdrop-blur-md"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="glass w-full max-w-2xl max-h-[90vh]"
+        className="glass w-full max-w-2xl"
         style={{
           display: 'flex',
           flexDirection: 'column',
+          maxHeight: '90vh',
           borderRadius: 'var(--radius)',
           border: '1px solid var(--card-border)',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
           overflow: 'hidden',
         }}
       >
-        <div className="flex justify-between items-center" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
             <h3 style={{ marginBottom: '0.25rem' }}>Editar Escala</h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Ajuste o nome e os horários disponíveis.</p>
@@ -81,7 +84,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleUpdate} className="grid" style={{ padding: '1.5rem', gap: '1.5rem', overflowY: 'auto' }}>
+        <form onSubmit={handleUpdate} className="grid" style={{ padding: '1.5rem', gap: '1.5rem', overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
           <div className="grid" style={{ gap: '0.5rem' }}>
             <label>Nome da Escala</label>
             <input
@@ -150,6 +153,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
           </div>
         </form>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createMinistry, getMinistries } from "@/lib/actions";
-import { Church, Plus, ShieldAlert, Check, Copy } from "lucide-react";
-import MinistryDetails from "@/components/MinistryDetails";
-import { AnimatePresence } from "framer-motion";
+import { Church, Plus, ShieldAlert, Check, Copy, Search } from "lucide-react";
 
 interface Ministry {
   id: number;
@@ -30,7 +28,6 @@ export default function MinistriesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [ministries, setMinistries] = useState<Ministry[]>([]);
-  const [selectedMinistry, setSelectedMinistry] = useState<Ministry | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [leaderName, setLeaderName] = useState("");
@@ -39,6 +36,7 @@ export default function MinistriesPage() {
 
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [copied, setCopied] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (status === "authenticated" && session?.user.role !== "admin") {
@@ -88,6 +86,11 @@ export default function MinistriesPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const filteredMinistries = ministries.filter(m =>
+    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.leader?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+  );
 
   if (status !== "authenticated" || session?.user.role !== "admin") {
     return null;
@@ -162,36 +165,66 @@ export default function MinistriesPage() {
           )}
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', alignContent: 'start', gap: '1.5rem' }}>
-          {ministries.map((m) => (
-            <div 
-              key={m.id} 
-              className="card glass cursor-pointer hover:border-primary/50 transition-colors" 
-              onClick={() => setSelectedMinistry(m)}
-            >
-              <Church size={24} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-              <h4 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{m.name}</h4>
-              <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', minHeight: '2.5rem' }}>{m.description || "Sem descrição"}</p>
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Líder Responsável:</p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{m.leader?.name || "N/A"}</p>
-              </div>
-              <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>
-                {m.sectors?.length || 0} setores • {m.sectors?.reduce((acc, s) => acc + (s.servants?.length || 0), 0)} servos
-              </div>
+        <div className="card glass">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0 }}>Ministérios Cadastrados</h3>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
+              <input
+                placeholder="Pesquisar..."
+                style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '160px', padding: '0.5rem 0' }}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
             </div>
-          ))}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '1rem 0.5rem' }}>Ministério</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Líder</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Setores</th>
+                  <th style={{ padding: '1rem 0.5rem' }}>Servos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMinistries.map((m) => (
+                  <tr
+                    key={m.id}
+                    onClick={() => router.push(`/admin/ministries/${m.id}`)}
+                    className="cursor-pointer hover:bg-white/5 transition-colors"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                  >
+                    <td style={{ padding: '1rem 0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Church size={14} color="var(--primary)" />
+                        <span>{m.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{m.leader?.name || "N/A"}</td>
+                    <td style={{ padding: '1rem 0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '1rem' }}>
+                        {m.sectors?.length || 0}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>
+                      {m.sectors?.reduce((acc, s) => acc + (s.servants?.length || 0), 0) || 0}
+                    </td>
+                  </tr>
+                ))}
+                {filteredMinistries.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                      Nenhum ministério encontrado para a pesquisa.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {selectedMinistry && (
-          <MinistryDetails 
-            ministry={selectedMinistry} 
-            onClose={() => setSelectedMinistry(null)} 
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

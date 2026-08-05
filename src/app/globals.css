@@ -99,10 +99,6 @@ main {
   display: none;
 }
 
-.servant-profile-menu-wrapper {
-  display: none;
-}
-
 @media (max-width: 640px) {
   .servant-tabbar {
     position: fixed;
@@ -132,14 +128,6 @@ main {
   }
 
   .servant-header-mobile-row {
-    display: flex;
-  }
-
-  .servant-page-title {
-    display: none;
-  }
-
-  .servant-profile-menu-wrapper {
     display: flex;
   }
 }
