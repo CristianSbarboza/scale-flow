@@ -8,21 +8,17 @@ import {
   Users,
   Calendar,
   CalendarDays,
-  LogOut,
   Layers,
-  Sun,
-  Moon,
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Settings
 } from "lucide-react";
-import { signOut } from "next-auth/react";
-import { useTheme } from "@/components/Providers";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: LayoutDashboard, label: "Visão Geral", href: "/admin" },
   { icon: Layers, label: "Ministérios", href: "/admin/ministries", adminOnly: true },
   { icon: Layers, label: "Setores", href: "/admin/sectors" },
   { icon: Users, label: "Servos", href: "/admin/servants" },
@@ -36,7 +32,6 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ role }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
   const { action } = useAdminTopbar();
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -174,33 +169,25 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           marginTop: 'auto',
           paddingTop: '1rem',
           borderTop: '1px solid var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-          alignItems: isCollapsed ? 'center' : 'stretch'
         }}>
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="btn btn-ghost"
-            style={{ justifyContent: isCollapsed ? 'center' : 'flex-start', width: '100%', padding: isCollapsed ? '0.75rem 0' : '0.625rem 0.5rem' }}
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
-          </button>
-
-          <button
-            onClick={() => signOut()}
-            className="btn btn-ghost"
+          <Link
+            href="/admin/settings"
+            className={`btn ${pathname === '/admin/settings' ? 'active' : ''}`}
             style={{
               justifyContent: isCollapsed ? 'center' : 'flex-start',
               width: '100%',
-              color: '#ef4444',
-              padding: isCollapsed ? '0.75rem 0' : '0.625rem 0.5rem'
+              background: 'transparent',
+              color: pathname === '/admin/settings' ? 'var(--primary)' : 'var(--muted-foreground)',
+              borderBottom: pathname === '/admin/settings' ? '2px solid var(--primary)' : '2px solid transparent',
+              borderRadius: '0',
+              padding: isCollapsed ? '0.75rem 0' : '0.625rem 1rem',
+              transition: 'all 0.2s',
+              overflow: 'hidden'
             }}
           >
-            <LogOut size={20} />
-            {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>Sair</span>}
-          </button>
+            <Settings size={20} style={{ minWidth: '20px' }} />
+            {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>Configurações</span>}
+          </Link>
         </div>
       </aside>
     </>

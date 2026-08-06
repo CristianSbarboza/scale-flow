@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { servants } from "@/db/schema";
+import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getServantOverview } from "@/lib/actions";
 import ServantHome from "@/components/ServantHome";
@@ -30,6 +30,8 @@ export default async function ServantDashboard() {
   const sectorNames = memberships.map((m) => m.sector.name).join(", ");
 
   const schedules = await getServantOverview();
+  const currentUser = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
+  const ownColor = currentUser?.color ?? null;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
@@ -44,7 +46,7 @@ export default async function ServantDashboard() {
               <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{sectorNames}</p>
             </div>
             <NotificationBell />
-            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} />
+            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} color={ownColor} />
           </div>
         </div>
 
@@ -54,7 +56,7 @@ export default async function ServantDashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <NotificationBell />
-            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} />
+            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} color={ownColor} />
           </div>
         </div>
       </header>

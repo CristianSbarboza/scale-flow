@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   password: text("password").notNull(),
   role: text("role", { enum: ["admin", "leader", "servant"] }).default("servant").notNull(),
+  color: text("color"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

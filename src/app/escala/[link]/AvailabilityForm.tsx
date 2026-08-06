@@ -129,7 +129,7 @@ export default function AvailabilityForm({ dates, servants, initialServantId, re
               </div>
               <div>
                 <p style={{ fontWeight: 600 }}>{new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{d.startTime}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{d.startTime.slice(0, 5)}</p>
               </div>
             </div>
           );

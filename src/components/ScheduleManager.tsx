@@ -152,7 +152,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                           {new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}
                         </h4>
                         <div className="flex items-center" style={{ gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                          <Clock size={12} /> {d.startTime}
+                          <Clock size={12} /> {d.startTime.slice(0, 5)}
                         </div>
                       </div>
                     </div>

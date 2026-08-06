@@ -26,6 +26,12 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
     notFound();
   }
 
+  const sortedDates = [...schedule.dates].sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.startTime.localeCompare(b.startTime);
+  });
+
   // Get servants for this sector to let them identify themselves
   const sectorServants = await db.query.servants.findMany({
     where: eq(servants.sectorId, schedule.sectorId),
@@ -50,7 +56,7 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
         </div>
 
         <AvailabilityForm
-          dates={schedule.dates}
+          dates={sortedDates}
           servants={sectorServants}
           initialServantId={servantId}
           returnToServant={from === "servant"}

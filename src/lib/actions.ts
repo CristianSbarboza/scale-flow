@@ -327,6 +327,7 @@ export interface ServantOverviewAssignee {
   userId: string;
   name: string;
   isSelf: boolean;
+  color: string | null;
 }
 
 export interface ServantOverviewDate {
@@ -395,6 +396,7 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
             userId: a.servant.userId,
             name: a.servant.user.name,
             isSelf: a.servantId === servant.id,
+            color: a.servant.user.color,
           })),
         })),
       });
@@ -546,6 +548,7 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
 export async function getScheduleResponses(scheduleId: number) {
   return await db.query.scheduleDates.findMany({
     where: eq(scheduleDates.scheduleId, scheduleId),
+    orderBy: (dates, { asc }) => [asc(dates.date), asc(dates.startTime)],
     with: {
       availabilities: {
         with: {
@@ -682,6 +685,14 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
 
   const hashedPassword = await hash(newPassword, 10);
   await db.update(users).set({ password: hashedPassword }).where(eq(users.id, session.user.id));
+}
+
+export async function updateOwnColor(color: string | null) {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+
+  await db.update(users).set({ color }).where(eq(users.id, session.user.id));
+  revalidatePath("/servant");
 }
 
 export async function deleteServantAccount(userId: string) {

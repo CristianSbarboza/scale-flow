@@ -141,7 +141,11 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
           const key = toDateKey(viewYear, viewMonth, day);
           const entries = confirmedByDay.get(key);
           const isConfirmed = !!entries?.length;
-          const isSelfConfirmed = !!entries?.some((e) => e.assignees.some((a) => a.isSelf));
+          const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
+          const selfAssignee = allAssignees.find((a) => a.isSelf);
+          const otherAssignee = allAssignees.find((a) => !a.isSelf);
+          const isSelfConfirmed = !!selfAssignee;
+          const accentColor = (isSelfConfirmed ? selfAssignee?.color : otherAssignee?.color) || "var(--primary)";
           return (
             <button
               key={i}
@@ -150,9 +154,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               onClick={() => setSelectedDay(key)}
               className="servant-calendar-cell"
               style={{
-                background: isSelfConfirmed ? "var(--primary)" : "transparent",
-                borderColor: isConfirmed ? "var(--primary)" : "var(--foreground)",
-                color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? "var(--primary)" : "var(--foreground)",
+                background: isSelfConfirmed ? accentColor : "transparent",
+                borderColor: isConfirmed ? accentColor : "var(--foreground)",
+                color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? accentColor : "var(--foreground)",
                 fontWeight: isConfirmed ? 700 : 400,
                 cursor: isConfirmed ? "pointer" : "default",
               }}
@@ -251,7 +255,8 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                             borderRadius: "var(--radius)",
                           }}
                         >
-                          <span style={{ fontSize: "0.8125rem", fontWeight: assignee.isSelf ? 700 : 500 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", fontWeight: assignee.isSelf ? 700 : 500 }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: assignee.color || "var(--primary)", flexShrink: 0 }} />
                             {assignee.name}
                             {assignee.isSelf && " (você)"}
                           </span>
