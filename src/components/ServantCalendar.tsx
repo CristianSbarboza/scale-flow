@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "lucide-react";
 import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/lib/actions";
 import { createSwapRequest } from "@/lib/actions";
@@ -206,17 +207,17 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
         </div>
       </div>
 
-      {selectedDay && (
+      {selectedDay && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
           onClick={() => setSelectedDay(null)}
         >
           <div
             className="card glass"
-            style={{ width: "100%", maxWidth: "360px" }}
+            style={{ width: "100%", maxWidth: "360px", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexShrink: 0 }}>
               <h3>
                 {new Date(`${selectedDay}T00:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}
               </h3>
@@ -224,7 +225,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 <X size={18} />
               </button>
             </div>
-            <div style={{ display: "grid", gap: "0.75rem" }}>
+            <div style={{ display: "grid", gap: "0.75rem", overflowY: "auto", flex: "1 1 auto", minHeight: 0 }}>
               {selectedEntries.map((entry, i) => (
                 <div key={i} style={{ padding: "0.75rem 1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
                   <p style={{ fontWeight: 600, marginBottom: "0.375rem" }}>{entry.scheduleName}</p>
@@ -289,7 +290,8 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
