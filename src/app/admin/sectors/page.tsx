@@ -130,26 +130,26 @@ export default function SectorsPage() {
             <h3 style={{ margin: 0 }}>Lista de Setores</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               {!isLeader && (
-                <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                   <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
                   <select
-                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                     value={filterMinistryId}
                     onChange={e => setFilterMinistryId(e.target.value)}
                   >
-                    <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
+                    <option value="all">Todos Ministérios</option>
                     {ministries.map(m => (
-                      <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
+                      <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
                 <input
                   placeholder="Pesquisar..."
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -191,7 +191,7 @@ export default function SectorsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '1rem 0.5rem' }}>
-                      <span className="text-xs font-bold text-white/40">{s.servants?.length || 0}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>{s.servants?.length || 0}</span>
                     </td>
                   </tr>
                 ))}

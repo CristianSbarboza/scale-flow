@@ -99,16 +99,6 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
               {schedule.ministry.name} · {schedule.sector.name}
             </p>
             <div className="flex items-center" style={{ gap: '0.75rem', marginTop: '0.75rem' }}>
-              <span style={{
-                padding: '0.25rem 0.75rem',
-                background: schedule.status === 'published' ? 'rgba(16, 185, 129, 0.15)' : 'var(--muted)',
-                color: schedule.status === 'published' ? '#10b981' : 'var(--muted-foreground)',
-                borderRadius: '1rem',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-              }}>
-                {schedule.status === 'published' ? 'Publicada' : 'Rascunho'}
-              </span>
               <span className="flex items-center" style={{ gap: '0.375rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
                 <Calendar size={14} /> {schedule.dates.length} {schedule.dates.length === 1 ? 'data' : 'datas'}
               </span>

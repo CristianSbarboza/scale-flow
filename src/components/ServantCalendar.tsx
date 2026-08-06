@@ -99,7 +99,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
     const dayLabel = new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
     const ok = await askConfirm({
       title: "Negociar troca de dia",
-      message: `Enviar pedido para ${target.name} liberar o dia ${dayLabel} (${entry.startTime}) para você assumir?`,
+      message: `Enviar pedido para ${target.name} liberar o dia ${dayLabel} (${entry.startTime.slice(0, 5)}) para você assumir?`,
       confirmLabel: "Enviar pedido",
       cancelLabel: "Cancelar",
     });
@@ -120,54 +120,58 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-        <button onClick={() => goToMonth(-1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Mês anterior">
-          <ChevronLeft size={20} />
-        </button>
-        <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
-        <button onClick={() => goToMonth(1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Próximo mês">
-          <ChevronRight size={20} />
-        </button>
-      </div>
-
-      <div className="servant-calendar-grid">
-        {WEEKDAY_LABELS.map((label, i) => (
-          <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--muted-foreground)", fontWeight: 600 }}>
-            {label}
-          </div>
-        ))}
-        {cells.map((day, i) => {
-          if (day === null) return <div key={i} />;
-          const key = toDateKey(viewYear, viewMonth, day);
-          const entries = confirmedByDay.get(key);
-          const isConfirmed = !!entries?.length;
-          const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
-          const selfAssignee = allAssignees.find((a) => a.isSelf);
-          const otherAssignee = allAssignees.find((a) => !a.isSelf);
-          const isSelfConfirmed = !!selfAssignee;
-          const accentColor = (isSelfConfirmed ? selfAssignee?.color : otherAssignee?.color) || "var(--primary)";
-          return (
-            <button
-              key={i}
-              type="button"
-              disabled={!isConfirmed}
-              onClick={() => setSelectedDay(key)}
-              className="servant-calendar-cell"
-              style={{
-                background: isSelfConfirmed ? accentColor : "transparent",
-                borderColor: isConfirmed ? accentColor : "var(--foreground)",
-                color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? accentColor : "var(--foreground)",
-                fontWeight: isConfirmed ? 700 : 400,
-                cursor: isConfirmed ? "pointer" : "default",
-              }}
-            >
-              {day}
+      <div className="servant-calendar-layout">
+        <div style={{ maxWidth: "810px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+            <button onClick={() => goToMonth(-1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Mês anterior">
+              <ChevronLeft size={20} />
             </button>
-          );
-        })}
-      </div>
+            <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
+            <button onClick={() => goToMonth(1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Próximo mês">
+              <ChevronRight size={20} />
+            </button>
+          </div>
 
-      <div style={{ marginTop: "1.5rem", display: "grid", gap: "0.5rem" }}>
+          <div className="servant-calendar-grid">
+            {WEEKDAY_LABELS.map((label, i) => (
+              <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--muted-foreground)", fontWeight: 600 }}>
+                {label}
+              </div>
+            ))}
+            {cells.map((day, i) => {
+              if (day === null) return <div key={i} />;
+              const key = toDateKey(viewYear, viewMonth, day);
+              const entries = confirmedByDay.get(key);
+              const isConfirmed = !!entries?.length;
+              const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
+              const selfAssignee = allAssignees.find((a) => a.isSelf);
+              const otherAssignee = allAssignees.find((a) => !a.isSelf);
+              const isSelfConfirmed = !!selfAssignee;
+              const accentColor = (isSelfConfirmed ? selfAssignee?.color : otherAssignee?.color) || "var(--primary)";
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={!isConfirmed}
+                  onClick={() => setSelectedDay(key)}
+                  className="servant-calendar-cell"
+                  style={{
+                    background: isSelfConfirmed ? accentColor : "transparent",
+                    borderColor: isConfirmed ? accentColor : "var(--foreground)",
+                    color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? accentColor : "var(--foreground)",
+                    fontWeight: isConfirmed ? 700 : 400,
+                    cursor: isConfirmed ? "pointer" : "default",
+                  }}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: "0.5rem", alignContent: "start" }}>
+        <h3 style={{ marginBottom: "0.5rem" }}>Seus dias</h3>
         {monthEntries.length === 0 ? (
           <p style={{ textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.875rem", padding: "1.5rem 0" }}>
             Nenhum dia confirmado neste mês.
@@ -190,7 +194,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 <span style={{ fontWeight: 700, color: "var(--primary)" }}>
                   {new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                 </span>
-                <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.startTime}</span>
+                <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.startTime.slice(0, 5)}</span>
               </div>
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.ministryName}</p>
@@ -199,6 +203,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
             </div>
           ))
         )}
+        </div>
       </div>
 
       {selectedDay && (
@@ -224,7 +229,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 <div key={i} style={{ padding: "0.75rem 1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
                   <p style={{ fontWeight: 600, marginBottom: "0.375rem" }}>{entry.scheduleName}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>
-                    <Clock size={14} /> {entry.startTime}
+                    <Clock size={14} /> {entry.startTime.slice(0, 5)}
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "0.375rem", fontSize: "0.8125rem", color: "var(--muted-foreground)", marginTop: "0.25rem" }}>
                     <MapPin size={14} style={{ marginTop: "0.125rem", flexShrink: 0 }} />

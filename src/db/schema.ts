@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, uuid, date, time } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, uuid, date, time, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -31,6 +31,7 @@ export const servants = pgTable("servants", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   sectorId: integer("sector_id").references(() => sectors.id, { onDelete: "cascade" }).notNull(),
+  isCoordinator: boolean("is_coordinator").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

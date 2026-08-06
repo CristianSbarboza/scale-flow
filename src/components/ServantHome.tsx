@@ -1,37 +1,53 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, CalendarRange, ListChecks } from "lucide-react";
-import type { ServantOverviewSchedule } from "@/lib/actions";
+import { CalendarDays, CalendarRange, ListChecks, ClipboardList } from "lucide-react";
+import type { ServantOverviewSchedule, CoordinatorSector } from "@/lib/actions";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
+import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
 
-type Tab = "calendar" | "month" | "all";
+export type ServantTab = "calendar" | "month" | "all" | "coordinator";
 
-const TABS: { value: Tab; label: string; icon: typeof CalendarDays }[] = [
+export interface ServantTabItem {
+  value: ServantTab;
+  label: string;
+  icon: typeof CalendarDays;
+}
+
+const BASE_TABS: ServantTabItem[] = [
   { value: "calendar", label: "Calendário", icon: CalendarDays },
   { value: "month", label: "Escalas do Mês", icon: CalendarRange },
   { value: "all", label: "Todas as Escalas", icon: ListChecks },
 ];
 
-interface ServantHomeProps {
-  schedules: ServantOverviewSchedule[];
+export function getServantTabs(isCoordinator: boolean): ServantTabItem[] {
+  return isCoordinator
+    ? [...BASE_TABS, { value: "coordinator", label: "Gestão de Escala", icon: ClipboardList }]
+    : BASE_TABS;
 }
 
-export default function ServantHome({ schedules }: ServantHomeProps) {
-  const [tab, setTab] = useState<Tab>("calendar");
+interface ServantHomeProps {
+  schedules: ServantOverviewSchedule[];
+  coordinatorSectors: CoordinatorSector[];
+  tab: ServantTab;
+  onTabChange: (tab: ServantTab) => void;
+}
+
+export default function ServantHome({ schedules, coordinatorSectors, tab, onTabChange }: ServantHomeProps) {
   const today = new Date();
+  const isCoordinator = coordinatorSectors.length > 0;
+  const tabs = getServantTabs(isCoordinator);
 
   return (
     <div className="servant-tab-content">
       <nav className="servant-tabbar">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const isActive = tab === t.value;
           return (
             <button
               key={t.value}
               type="button"
-              onClick={() => setTab(t.value)}
+              onClick={() => onTabChange(t.value)}
               style={{
                 flex: 1,
                 display: "flex",
@@ -63,6 +79,9 @@ export default function ServantHome({ schedules }: ServantHomeProps) {
         )}
         {tab === "all" && (
           <ServantScheduleList schedules={schedules} emptyMessage="Nenhuma escala encontrada para o seu setor." />
+        )}
+        {tab === "coordinator" && isCoordinator && (
+          <CoordinatorSchedulePanel sectors={coordinatorSectors} />
         )}
       </div>
     </div>

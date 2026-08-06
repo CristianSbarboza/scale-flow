@@ -5,9 +5,7 @@ import { db } from "@/db";
 import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getServantOverview } from "@/lib/actions";
-import ServantHome from "@/components/ServantHome";
-import ServantProfileMenu from "@/components/ServantProfileMenu";
-import NotificationBell from "@/components/NotificationBell";
+import ServantShell from "@/components/ServantShell";
 
 export default async function ServantDashboard() {
   const session = await getServerSession(authOptions);
@@ -33,37 +31,22 @@ export default async function ServantDashboard() {
   const currentUser = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
   const ownColor = currentUser?.color ?? null;
 
+  const coordinatorSectors = memberships
+    .filter((m) => m.isCoordinator)
+    .map((m) => ({
+      id: m.sector.id,
+      name: m.sector.name,
+      ministryId: m.sector.ministry.id,
+      ministryName: m.sector.ministry.name,
+    }));
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
-      <header className="glass servant-header" style={{ padding: '1rem 2rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <div className="servant-header-full" style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-logo)', fontWeight: 400, fontSize: '1.75rem', color: 'var(--primary)', letterSpacing: '1px' }}>ScaleFlow</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontWeight: 600 }}>{session.user?.name}</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{sectorNames}</p>
-            </div>
-            <NotificationBell />
-            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} color={ownColor} />
-          </div>
-        </div>
-
-        <div className="servant-header-mobile-row" style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-logo)', fontWeight: 400, fontSize: '1.5rem', color: 'var(--primary)', letterSpacing: '1px' }}>ScaleFlow</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <NotificationBell />
-            <ServantProfileMenu name={session.user?.name ?? ''} sectorName={sectorNames} color={ownColor} />
-          </div>
-        </div>
-      </header>
-
-      <main className="container" style={{ padding: '2rem 1.5rem' }}>
-        <ServantHome schedules={schedules} />
-      </main>
-    </div>
+    <ServantShell
+      name={session.user?.name ?? ""}
+      sectorName={sectorNames}
+      color={ownColor}
+      schedules={schedules}
+      coordinatorSectors={coordinatorSectors}
+    />
   );
 }

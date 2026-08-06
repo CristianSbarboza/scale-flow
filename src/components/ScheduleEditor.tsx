@@ -132,7 +132,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
                       </div>
                       <div className="flex items-center" style={{ gap: '0.375rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
                         <Clock size={14} />
-                        {d.startTime}
+                        {d.startTime.slice(0, 5)}
                       </div>
                     </div>
                     <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444', padding: '0.25rem' }}>

@@ -125,7 +125,7 @@ export default function MinistriesPage() {
           <label>Descrição</label>
           <textarea className="input" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Opcional..." />
         </div>
-        <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
+        <div style={{ margin: '1rem 0', padding: '1rem', background: 'var(--muted)', borderRadius: '0.5rem' }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem' }}>DADOS DO LÍDER</p>
           <div className="grid" style={{ gap: '1rem' }}>
             <div className="grid" style={{ gap: '0.5rem' }}>
@@ -193,11 +193,11 @@ export default function MinistriesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>Ministérios Cadastrados</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
                 <input
                   placeholder="Pesquisar..."
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />

@@ -25,6 +25,54 @@ async function requireAdmin() {
   }
 }
 
+// Admin, o líder do ministério dono do setor, ou um servo marcado como
+// coordenador daquele setor podem gerenciar as escalas do setor.
+async function requireScheduleSectorAccess(sectorId: number) {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+
+  if (session.user.role === "admin") return;
+
+  if (session.user.role === "leader") {
+    const [sector] = await db.select().from(sectors)
+      .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+      .where(and(eq(sectors.id, sectorId), eq(ministries.leaderId, session.user.id)));
+    if (sector) return;
+  }
+
+  const [coordination] = await db.select().from(servants).where(
+    and(eq(servants.userId, session.user.id), eq(servants.sectorId, sectorId), eq(servants.isCoordinator, true))
+  );
+  if (coordination) return;
+
+  throw new Error("Não autorizado a gerenciar a escala deste setor");
+}
+
+async function getSectorIdForScheduleId(scheduleId: number) {
+  const [schedule] = await db.select({ sectorId: schedules.sectorId }).from(schedules).where(eq(schedules.id, scheduleId));
+  if (!schedule) throw new Error("Escala não encontrada");
+  return schedule.sectorId;
+}
+
+async function getSectorIdForDateId(dateId: number) {
+  const [row] = await db.select({ sectorId: schedules.sectorId })
+    .from(scheduleDates)
+    .innerJoin(schedules, eq(scheduleDates.scheduleId, schedules.id))
+    .where(eq(scheduleDates.id, dateId));
+  if (!row) throw new Error("Data não encontrada");
+  return row.sectorId;
+}
+
+async function getSectorIdForAssignmentId(assignmentId: number) {
+  const [row] = await db.select({ sectorId: schedules.sectorId })
+    .from(scheduleAssignments)
+    .innerJoin(scheduleDates, eq(scheduleAssignments.dateId, scheduleDates.id))
+    .innerJoin(schedules, eq(scheduleDates.scheduleId, schedules.id))
+    .where(eq(scheduleAssignments.id, assignmentId));
+  if (!row) throw new Error("Escalação não encontrada");
+  return row.sectorId;
+}
+
 /**
  * Lógica de Upsert de Usuário
  * Líderes e admins se identificam por e-mail; servos por usuário (e-mail é opcional para eles).
@@ -229,6 +277,7 @@ export interface ServantMembership {
   sectorName: string;
   ministryId: number;
   ministryName: string;
+  isCoordinator: boolean;
 }
 
 export interface ServantSummary {
@@ -278,6 +327,7 @@ export async function getServants(): Promise<ServantSummary[]> {
       sectorName: row.sector.name,
       ministryId: row.sector.ministry.id,
       ministryName: row.sector.ministry.name,
+      isCoordinator: row.isCoordinator,
     };
     const existing = byUser.get(row.userId);
     if (existing) {
@@ -318,6 +368,7 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
       sectorName: row.sector.name,
       ministryId: row.sector.ministry.id,
       ministryName: row.sector.ministry.name,
+      isCoordinator: row.isCoordinator,
     })),
   };
 }
@@ -407,6 +458,8 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
 
 // Schedules
 export async function createSchedule(name: string, ministryId: number, sectorId: number, dates: { date: string, startTime: string }[]) {
+  await requireScheduleSectorAccess(sectorId);
+
   const shareLink = nanoid(10);
   const [schedule] = await db.insert(schedules).values({
     name,
@@ -429,12 +482,16 @@ export async function createSchedule(name: string, ministryId: number, sectorId:
 }
 
 export async function deleteSchedule(id: number) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+
   await db.delete(schedules).where(eq(schedules.id, id));
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
 }
 
 export async function updateSchedule(id: number, name: string, dates: { date: string, startTime: string }[]) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+
   await db.update(schedules).set({ name }).where(eq(schedules.id, id));
 
   await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
@@ -477,6 +534,62 @@ export async function getSchedules() {
       dates: true
     }
   });
+}
+
+export interface CoordinatorSector {
+  id: number;
+  name: string;
+  ministryId: number;
+  ministryName: string;
+}
+
+export interface CoordinatorSchedule {
+  id: number;
+  name: string;
+  status: "draft" | "published";
+  shareLink: string;
+  ministry: { name: string };
+  sector: { name: string };
+  dates: { id: number; date: string; startTime: string }[];
+}
+
+// Setores onde o servo logado foi marcado como coordenador.
+export async function getCoordinatorSectors(): Promise<CoordinatorSector[]> {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+
+  const rows = await db.query.servants.findMany({
+    where: and(eq(servants.userId, session.user.id), eq(servants.isCoordinator, true)),
+    with: { sector: { with: { ministry: true } } },
+  });
+
+  return rows.map((r) => ({
+    id: r.sector.id,
+    name: r.sector.name,
+    ministryId: r.sector.ministry.id,
+    ministryName: r.sector.ministry.name,
+  }));
+}
+
+// Escalas dos setores que o servo logado coordena.
+export async function getCoordinatorSchedules(): Promise<CoordinatorSchedule[]> {
+  const sectorIds = (await getCoordinatorSectors()).map((s) => s.id);
+  if (sectorIds.length === 0) return [];
+
+  const rows = await db.query.schedules.findMany({
+    where: inArray(schedules.sectorId, sectorIds),
+    with: { ministry: true, sector: true, dates: true },
+  });
+
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    status: s.status,
+    shareLink: s.shareLink,
+    ministry: { name: s.ministry.name },
+    sector: { name: s.sector.name },
+    dates: s.dates.map((d) => ({ id: d.id, date: d.date, startTime: d.startTime })),
+  }));
 }
 
 export interface CalendarAssignee {
@@ -546,6 +659,8 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
 }
 
 export async function getScheduleResponses(scheduleId: number) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(scheduleId));
+
   return await db.query.scheduleDates.findMany({
     where: eq(scheduleDates.scheduleId, scheduleId),
     orderBy: (dates, { asc }) => [asc(dates.date), asc(dates.startTime)],
@@ -565,6 +680,8 @@ export async function getScheduleResponses(scheduleId: number) {
 }
 
 export async function assignServant(dateId: number, servantId: number) {
+  await requireScheduleSectorAccess(await getSectorIdForDateId(dateId));
+
   await db.insert(scheduleAssignments).values({
     dateId,
     servantId,
@@ -574,6 +691,8 @@ export async function assignServant(dateId: number, servantId: number) {
 }
 
 export async function removeAssignment(assignmentId: number) {
+  await requireScheduleSectorAccess(await getSectorIdForAssignmentId(assignmentId));
+
   await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, assignmentId));
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
@@ -652,6 +771,17 @@ export async function removeServantFromSector(servantId: number) {
   await requireServantAccess(membership.userId);
 
   await db.delete(servants).where(eq(servants.id, servantId));
+
+  revalidatePath("/admin/servants");
+  revalidatePath("/servant");
+}
+
+export async function setServantCoordinator(servantId: number, isCoordinator: boolean) {
+  const [membership] = await db.select().from(servants).where(eq(servants.id, servantId));
+  if (!membership) throw new Error("Vínculo não encontrado");
+  await requireServantAccess(membership.userId);
+
+  await db.update(servants).set({ isCoordinator }).where(eq(servants.id, servantId));
 
   revalidatePath("/admin/servants");
   revalidatePath("/servant");

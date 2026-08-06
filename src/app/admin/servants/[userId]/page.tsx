@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User } from "lucide-react";
-import { getServantMember, getSectors, addServantToSector, removeServantFromSector, resetServantPassword, deleteServantAccount } from "@/lib/actions";
+import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star } from "lucide-react";
+import { getServantMember, getSectors, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions";
 import type { ServantSummary } from "@/lib/actions";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -102,6 +102,17 @@ export default function ServantMemberPage() {
     }
   };
 
+  const handleToggleCoordinator = async (servantId: number, next: boolean) => {
+    try {
+      await setServantCoordinator(servantId, next);
+      showToast(next ? "Definido como coordenador do setor." : "Removido como coordenador do setor.", "success");
+      await load();
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao atualizar coordenador.", "error");
+    }
+  };
+
   const handleChangePassword = async () => {
     if (!newPassword || !confirmingPassword) return;
     setPasswordLoading(true);
@@ -176,15 +187,31 @@ export default function ServantMemberPage() {
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
               >
                 <div>
-                  <p style={{ fontWeight: 600 }}>{m.sectorName}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <p style={{ fontWeight: 600 }}>{m.sectorName}</p>
+                    {m.isCoordinator && (
+                      <span style={{ fontSize: "0.625rem", fontWeight: 700, padding: "0.125rem 0.5rem", borderRadius: "1rem", background: "rgba(249, 115, 22, 0.15)", color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                        Coordenador
+                      </span>
+                    )}
+                  </div>
                   <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{m.ministryName}</p>
                 </div>
-                <button
-                  onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
-                  style={{ color: "#ef4444", padding: "0.5rem" }}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.125rem" }}>
+                  <button
+                    onClick={() => handleToggleCoordinator(m.servantId, !m.isCoordinator)}
+                    title={m.isCoordinator ? "Remover como coordenador do setor" : "Tornar coordenador do setor"}
+                    style={{ color: m.isCoordinator ? "var(--primary)" : "var(--muted-foreground)", padding: "0.5rem" }}
+                  >
+                    <Star size={16} fill={m.isCoordinator ? "var(--primary)" : "none"} />
+                  </button>
+                  <button
+                    onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
+                    style={{ color: "#ef4444", padding: "0.5rem" }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
             {member.memberships.length === 0 && (

@@ -111,7 +111,7 @@ export default function NotificationBell() {
                   <strong>
                     {new Date(`${r.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                   </strong>{" "}
-                  ({r.startTime}) — {r.scheduleName}
+                  ({r.startTime.slice(0, 5)}) — {r.scheduleName}
                 </p>
                 <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
                   {r.ministryName} · {r.sectorName}

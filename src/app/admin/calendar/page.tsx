@@ -252,7 +252,7 @@ export default function AdminCalendarPage() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                           <p style={{ fontWeight: 600, fontSize: "0.875rem" }}>{entry.scheduleName}</p>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
-                            <Clock size={12} /> {entry.startTime}
+                            <Clock size={12} /> {entry.startTime.slice(0, 5)}
                           </div>
                         </div>
                         <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>{entry.sectorName}</p>

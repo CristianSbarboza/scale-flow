@@ -230,47 +230,47 @@ export default function ServantsPage() {
             <div className="flex flex-wrap gap-3">
               {/* Ministry Filter */}
               {!isLeader && (
-                <div className="flex flex-1" style={{ minWidth: '180px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="flex flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                   <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
                   <select
-                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                     value={filterMinistryId}
                     onChange={e => {
                       setFilterMinistryId(e.target.value);
                       setFilterSectorId("all"); // Reset sector when ministry changes
                     }}
                   >
-                    <option value="all" style={{ background: '#1e1b4b' }}>Todos Ministérios</option>
+                    <option value="all">Todos Ministérios</option>
                     {ministries.map(m => (
-                      <option key={m.id} value={m.id} style={{ background: '#1e1b4b' }}>{m.name}</option>
+                      <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
                 </div>
               )}
 
               {/* Sector Filter */}
-              <div className="flex flex-1" style={{ minWidth: '180px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                <select 
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
+                <select
+                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                   value={filterSectorId}
                   onChange={e => setFilterSectorId(e.target.value)}
                 >
-                  <option value="all" style={{ background: '#1e1b4b' }}>Todos Setores</option>
+                  <option value="all">Todos Setores</option>
                   {sectors
                     .filter(s => filterMinistryId === "all" || s.ministryId === parseInt(filterMinistryId))
                     .map(s => (
-                      <option key={s.id} value={s.id} style={{ background: '#1e1b4b' }}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                 </select>
               </div>
 
               {/* Search */}
-              <div className="flex flex-1" style={{ minWidth: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex flex-1" style={{ minWidth: '200px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                <input 
+                <input
                   placeholder="Pesquisar nome, usuário ou e-mail..."
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
