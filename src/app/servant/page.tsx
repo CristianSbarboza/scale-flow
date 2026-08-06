@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { servants } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { Calendar } from "lucide-react";
 import { getServantOverview } from "@/lib/actions";
 import ServantHome from "@/components/ServantHome";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
@@ -36,9 +35,8 @@ export default async function ServantDashboard() {
     <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
       <header className="glass servant-header" style={{ padding: '1rem 2rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <div className="servant-header-full" style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Calendar size={24} color="var(--primary)" />
-            <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary)' }}>ScaleFlow</span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-logo)', fontWeight: 400, fontSize: '1.75rem', color: 'var(--primary)', letterSpacing: '1px' }}>ScaleFlow</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ textAlign: 'right' }}>
@@ -51,9 +49,8 @@ export default async function ServantDashboard() {
         </div>
 
         <div className="servant-header-mobile-row" style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Calendar size={22} color="var(--primary)" />
-            <span style={{ fontWeight: 700, fontSize: '1.125rem', color: 'var(--primary)' }}>ScaleFlow</span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-logo)', fontWeight: 400, fontSize: '1.5rem', color: 'var(--primary)', letterSpacing: '1px' }}>ScaleFlow</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <NotificationBell />

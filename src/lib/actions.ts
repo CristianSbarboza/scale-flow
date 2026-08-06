@@ -477,6 +477,72 @@ export async function getSchedules() {
   });
 }
 
+export interface CalendarAssignee {
+  servantId: number;
+  name: string;
+}
+
+export interface CalendarDate {
+  id: number;
+  date: string;
+  startTime: string;
+  assignees: CalendarAssignee[];
+}
+
+export interface CalendarSchedule {
+  id: number;
+  name: string;
+  ministryId: number;
+  ministryName: string;
+  sectorId: number;
+  sectorName: string;
+  dates: CalendarDate[];
+}
+
+// Visão de calendário para admin/líder: todas as escalas (com quem está escalado
+// em cada dia), escopadas por ministério do líder quando aplicável.
+export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
+  const leaderId = await getAuthFilter();
+  const withClause = {
+    ministry: true,
+    sector: true,
+    dates: {
+      with: {
+        assignments: { with: { servant: { with: { user: true } } } },
+      },
+    },
+  } as const;
+
+  const rows = leaderId
+    ? await db.query.schedules.findMany({
+        where: (schedules, { exists }) => exists(
+          db.select().from(ministries).where(
+            and(
+              eq(ministries.id, schedules.ministryId),
+              eq(ministries.leaderId, leaderId)
+            )
+          )
+        ),
+        with: withClause,
+      })
+    : await db.query.schedules.findMany({ with: withClause });
+
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    ministryId: s.ministry.id,
+    ministryName: s.ministry.name,
+    sectorId: s.sector.id,
+    sectorName: s.sector.name,
+    dates: s.dates.map((d) => ({
+      id: d.id,
+      date: d.date,
+      startTime: d.startTime,
+      assignees: d.assignments.map((a) => ({ servantId: a.servantId, name: a.servant.user.name })),
+    })),
+  }));
+}
+
 export async function getScheduleResponses(scheduleId: number) {
   return await db.query.scheduleDates.findMany({
     where: eq(scheduleDates.scheduleId, scheduleId),

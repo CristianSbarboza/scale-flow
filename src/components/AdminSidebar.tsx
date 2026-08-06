@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  CalendarDays,
   LogOut,
   Layers,
   Sun,
@@ -23,6 +24,7 @@ const menuItems = [
   { icon: Layers, label: "Setores", href: "/admin/sectors" },
   { icon: Users, label: "Servos", href: "/admin/servants" },
   { icon: Calendar, label: "Escalas", href: "/admin/schedules" },
+  { icon: CalendarDays, label: "Calendário", href: "/admin/calendar" },
 ];
 
 interface AdminSidebarProps {

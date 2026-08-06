@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "luci
 import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/lib/actions";
 import { createSwapRequest } from "@/lib/actions";
 import { useToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 interface ServantCalendarProps {
   schedules: ServantOverviewSchedule[];
@@ -22,7 +23,6 @@ interface DayEntry {
 }
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
-const RED = "#ef4444";
 
 function toDateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -35,6 +35,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [negotiating, setNegotiating] = useState<string | null>(null);
   const { showToast } = useToast();
+  const askConfirm = useConfirm();
 
   const confirmedByDay = useMemo(() => {
     const map = new Map<string, DayEntry[]>();
@@ -58,10 +59,12 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
     return map;
   }, [schedules]);
 
+  // Só os dias em que o próprio servo está confirmado (agenda pessoal).
   const monthEntries = useMemo(() => {
     const entries: DayEntry[] = [];
     for (const dayEntries of confirmedByDay.values()) {
       for (const entry of dayEntries) {
+        if (!entry.assignees.some((a) => a.isSelf)) continue;
         const parsed = new Date(`${entry.date}T00:00:00`);
         if (parsed.getFullYear() === viewYear && parsed.getMonth() === viewMonth) {
           entries.push(entry);
@@ -93,6 +96,15 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   const selectedEntries = selectedDay ? confirmedByDay.get(selectedDay) ?? [] : [];
 
   const handleNegotiate = async (entry: DayEntry, target: ServantOverviewAssignee) => {
+    const dayLabel = new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const ok = await askConfirm({
+      title: "Negociar troca de dia",
+      message: `Enviar pedido para ${target.name} liberar o dia ${dayLabel} (${entry.startTime}) para você assumir?`,
+      confirmLabel: "Enviar pedido",
+      cancelLabel: "Cancelar",
+    });
+    if (!ok) return;
+
     const key = `${entry.dateId}-${target.servantId}`;
     setNegotiating(key);
     try {
@@ -129,6 +141,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
           const key = toDateKey(viewYear, viewMonth, day);
           const entries = confirmedByDay.get(key);
           const isConfirmed = !!entries?.length;
+          const isSelfConfirmed = !!entries?.some((e) => e.assignees.some((a) => a.isSelf));
           return (
             <button
               key={i}
@@ -137,9 +150,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               onClick={() => setSelectedDay(key)}
               className="servant-calendar-cell"
               style={{
-                background: isConfirmed ? RED : "transparent",
-                borderColor: isConfirmed ? RED : "var(--foreground)",
-                color: isConfirmed ? "white" : "var(--foreground)",
+                background: isSelfConfirmed ? "var(--primary)" : "transparent",
+                borderColor: isConfirmed ? "var(--primary)" : "var(--foreground)",
+                color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? "var(--primary)" : "var(--foreground)",
                 fontWeight: isConfirmed ? 700 : 400,
                 cursor: isConfirmed ? "pointer" : "default",
               }}
@@ -170,7 +183,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontWeight: 700, color: RED }}>
+                <span style={{ fontWeight: 700, color: "var(--primary)" }}>
                   {new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                 </span>
                 <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.startTime}</span>

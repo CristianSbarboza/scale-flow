@@ -1,0 +1,283 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { ChevronLeft, ChevronRight, Filter, X, Clock, Users, Church } from "lucide-react";
+import { getCalendarSchedules, getMinistries, getSectors } from "@/lib/actions";
+import type { CalendarSchedule } from "@/lib/actions";
+
+interface Ministry {
+  id: number;
+  name: string;
+}
+
+interface Sector {
+  id: number;
+  name: string;
+  ministryId: number;
+}
+
+interface DayEntry {
+  scheduleId: number;
+  dateId: number;
+  ministryName: string;
+  sectorName: string;
+  scheduleName: string;
+  startTime: string;
+  assignees: { servantId: number; name: string }[];
+}
+
+const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+function toDateKey(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export default function AdminCalendarPage() {
+  const { data: session } = useSession();
+  const isLeader = session?.user.role === "leader";
+
+  const [schedules, setSchedules] = useState<CalendarSchedule[]>([]);
+  const [ministries, setMinistries] = useState<Ministry[]>([]);
+  const [sectors, setSectors] = useState<Sector[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [filterMinistryId, setFilterMinistryId] = useState("all");
+  const [filterSectorId, setFilterSectorId] = useState("all");
+
+  const today = useMemo(() => new Date(), []);
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([getCalendarSchedules(), getMinistries(), getSectors()]).then(([cal, min, sec]) => {
+      if (!isMounted) return;
+      setSchedules(cal);
+      setMinistries(min as unknown as Ministry[]);
+      setSectors(sec as unknown as Sector[]);
+      setLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  const filteredSchedules = useMemo(() => {
+    return schedules.filter((s) => {
+      const matchesMinistry = filterMinistryId === "all" || s.ministryId === parseInt(filterMinistryId);
+      const matchesSector = filterSectorId === "all" || s.sectorId === parseInt(filterSectorId);
+      return matchesMinistry && matchesSector;
+    });
+  }, [schedules, filterMinistryId, filterSectorId]);
+
+  const entriesByDay = useMemo(() => {
+    const map = new Map<string, DayEntry[]>();
+    for (const schedule of filteredSchedules) {
+      for (const date of schedule.dates) {
+        if (date.assignees.length === 0) continue;
+        const key = date.date.slice(0, 10);
+        const entry: DayEntry = {
+          scheduleId: schedule.id,
+          dateId: date.id,
+          ministryName: schedule.ministryName,
+          sectorName: schedule.sectorName,
+          scheduleName: schedule.name,
+          startTime: date.startTime,
+          assignees: date.assignees,
+        };
+        map.set(key, [...(map.get(key) ?? []), entry]);
+      }
+    }
+    return map;
+  }, [filteredSchedules]);
+
+  const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const goToMonth = (offset: number) => {
+    const next = new Date(viewYear, viewMonth + offset, 1);
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth());
+  };
+
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const groupedBySelectedMinistry = useMemo(() => {
+    const groups = new Map<string, DayEntry[]>();
+    const entries = selectedDay ? entriesByDay.get(selectedDay) ?? [] : [];
+    for (const entry of entries) {
+      groups.set(entry.ministryName, [...(groups.get(entry.ministryName) ?? []), entry]);
+    }
+    return groups;
+  }, [selectedDay, entriesByDay]);
+
+  const availableSectors = sectors.filter((s) => filterMinistryId === "all" || s.ministryId === parseInt(filterMinistryId));
+
+  return (
+    <div className="animate-fade-in">
+      <header style={{ marginBottom: "2.5rem" }}>
+        <h1 style={{ fontSize: "2rem" }}>Calendário</h1>
+        <p style={{ color: "var(--muted-foreground)" }}>Veja quem está escalado em cada dia, por ministério.</p>
+      </header>
+
+      <div className="card glass" style={{ marginBottom: "1.5rem", display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--muted-foreground)", fontSize: "0.8125rem", fontWeight: 600 }}>
+          <Filter size={16} /> Filtros
+        </div>
+        {!isLeader && (
+          <select
+            className="input"
+            style={{ maxWidth: "220px" }}
+            value={filterMinistryId}
+            onChange={(e) => {
+              setFilterMinistryId(e.target.value);
+              setFilterSectorId("all");
+            }}
+          >
+            <option value="all">Todos os Ministérios</option>
+            {ministries.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        )}
+        <select
+          className="input"
+          style={{ maxWidth: "220px" }}
+          value={filterSectorId}
+          onChange={(e) => setFilterSectorId(e.target.value)}
+        >
+          <option value="all">Todos os Setores</option>
+          {availableSectors.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card glass">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+          <button onClick={() => goToMonth(-1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Mês anterior">
+            <ChevronLeft size={20} />
+          </button>
+          <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
+          <button onClick={() => goToMonth(1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Próximo mês">
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4rem 0", gap: "1rem" }}>
+            <div className="animate-spin" style={{ width: "40px", height: "40px", border: "3px solid var(--primary)", borderTopColor: "transparent", borderRadius: "50%" }} />
+            <p style={{ color: "var(--muted-foreground)" }}>Carregando calendário...</p>
+          </div>
+        ) : (
+          <div className="servant-calendar-grid" style={{ maxWidth: "560px", margin: "0 auto" }}>
+            {WEEKDAY_LABELS.map((label, i) => (
+              <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--muted-foreground)", fontWeight: 600 }}>
+                {label}
+              </div>
+            ))}
+            {cells.map((day, i) => {
+              if (day === null) return <div key={i} />;
+              const key = toDateKey(viewYear, viewMonth, day);
+              const entries = entriesByDay.get(key);
+              const isConfirmed = !!entries?.length;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={!isConfirmed}
+                  onClick={() => setSelectedDay(key)}
+                  className="servant-calendar-cell"
+                  style={{
+                    background: "transparent",
+                    borderColor: isConfirmed ? "var(--primary)" : "var(--foreground)",
+                    color: isConfirmed ? "var(--primary)" : "var(--foreground)",
+                    fontWeight: isConfirmed ? 700 : 400,
+                    cursor: isConfirmed ? "pointer" : "default",
+                  }}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {selectedDay && (
+        <div
+          className="fixed inset-0 z-50 p-4 bg-black/80 backdrop-blur-md"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setSelectedDay(null)}
+        >
+          <div
+            className="card glass"
+            style={{ width: "100%", maxWidth: "440px", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexShrink: 0 }}>
+              <h3>
+                {new Date(`${selectedDay}T00:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}
+              </h3>
+              <button onClick={() => setSelectedDay(null)} className="btn btn-ghost" style={{ borderRadius: "50%", padding: "0.5rem" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: "1.25rem", overflowY: "auto" }}>
+              {groupedBySelectedMinistry.size === 0 && (
+                <p style={{ textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.875rem", padding: "1.5rem 0" }}>
+                  Ninguém escalado neste dia.
+                </p>
+              )}
+              {Array.from(groupedBySelectedMinistry.entries()).map(([ministryName, entries]) => (
+                <div key={ministryName}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    <Church size={14} color="var(--primary)" />
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                      {ministryName}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gap: "0.5rem" }}>
+                    {entries.map((entry, i) => (
+                      <div key={i} style={{ padding: "0.75rem 1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <p style={{ fontWeight: 600, fontSize: "0.875rem" }}>{entry.scheduleName}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
+                            <Clock size={12} /> {entry.startTime}
+                          </div>
+                        </div>
+                        <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>{entry.sectorName}</p>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.375rem" }}>
+                          <Users size={14} color="var(--primary)" style={{ marginTop: "0.125rem", flexShrink: 0 }} />
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+                            {entry.assignees.map((a) => (
+                              <span
+                                key={a.servantId}
+                                style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem", background: "var(--card)", border: "1px solid var(--card-border)", borderRadius: "1rem" }}
+                              >
+                                {a.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
