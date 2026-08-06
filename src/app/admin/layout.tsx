@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { AdminTopbarProvider } from "@/components/AdminTopbarContext";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -15,11 +16,13 @@ export default async function AdminLayout({
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <AdminSidebar role={session.user.role} />
-      <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
-        {children}
-      </main>
-    </div>
+    <AdminTopbarProvider>
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <AdminSidebar role={session.user.role} />
+        <main className="admin-main" style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+          {children}
+        </main>
+      </div>
+    </AdminTopbarProvider>
   );
 }

@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
 
       <StackedStats data={statsData} />
 
-      <div className="grid" style={{ gridTemplateColumns: '2fr 1fr', marginTop: '2.5rem' }}>
+      <div className="admin-panel-layout" style={{ '--panel-ratio': '2fr 1fr', marginTop: '2.5rem' } as React.CSSProperties}>
         <div className="card glass">
           <h3 style={{ marginBottom: '1.5rem' }}>Últimas Escalas Criadas</h3>
           {latestSchedules.length > 0 ? (

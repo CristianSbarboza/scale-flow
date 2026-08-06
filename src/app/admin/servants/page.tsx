@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createServant, getServants, getSectors, getMinistries } from "@/lib/actions";
-import { UserPlus, Copy, Check, ShieldAlert, Search, Filter } from "lucide-react";
+import { UserPlus, Copy, Check, ShieldAlert, Search, Filter, Plus } from "lucide-react";
+import AdminCreateModal from "@/components/AdminCreateModal";
+import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
+import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 interface Membership {
   servantId: number;
@@ -54,6 +57,21 @@ export default function ServantsPage() {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { setAction } = useAdminTopbar();
+
+  useEffect(() => {
+    setAction(
+      <button
+        type="button"
+        onClick={() => setShowCreateModal(true)}
+        className="btn btn-primary"
+      >
+        <Plus size={16} /> Cadastrar
+      </button>
+    );
+    return () => setAction(null);
+  }, [setAction]);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,6 +125,89 @@ export default function ServantsPage() {
     return matchesSearch && matchesMinistry && matchesSector;
   });
 
+  const formContent = (
+    <>
+      <form onSubmit={handleCreate} className="grid">
+        <div className="grid" style={{ gap: '0.5rem' }}>
+          <label>Nome Completo</label>
+          <input
+            className="input"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid" style={{ gap: '0.5rem' }}>
+          <label>Usuário</label>
+          <input
+            className="input"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="Ex: joao.silva"
+            required
+          />
+        </div>
+        <div className="grid" style={{ gap: '0.5rem' }}>
+          <label>E-mail (opcional)</label>
+          <input
+            className="input"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+        </div>
+        <div className="grid" style={{ gap: '0.5rem' }}>
+          <label>Setor Principal</label>
+          <select
+            className="input"
+            value={sectorId}
+            onChange={e => setSectorId(e.target.value)}
+            required
+          >
+            <option value="">Selecione um setor</option>
+            {sectors.map(s => (
+              <option key={s.id} value={s.id}>{s.ministry.name} - {s.name}</option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          <UserPlus size={18} />
+          {loading ? "Cadastrando..." : "Cadastrar Servo"}
+        </button>
+      </form>
+
+      {generatedPassword && (
+        <div style={{
+          marginTop: '1.5rem',
+          padding: '1rem',
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid var(--accent)',
+          borderRadius: 'var(--radius)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem'
+        }}>
+          <div className="flex" style={{ color: 'var(--accent)' }}>
+            <ShieldAlert size={18} />
+            <span style={{ fontWeight: 600 }}>Senha de Primeiro Acesso</span>
+          </div>
+          <p style={{ fontSize: '0.875rem' }}>Passe esta senha ao servo. Ele poderá alterá-la após o login.</p>
+          <div className="flex justify-between" style={{
+            background: 'var(--input)',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.5rem',
+            border: '1px solid var(--border)'
+          }}>
+            <code style={{ fontSize: '1.125rem', color: 'var(--accent)' }}>{generatedPassword}</code>
+            <button onClick={copyToClipboard} style={{ color: copied ? '#10b981' : 'inherit' }}>
+              {copied ? <Check size={18} /> : <Copy size={18} />}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '2.5rem' }}>
@@ -114,88 +215,11 @@ export default function ServantsPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Cadastre e gerencie os voluntários da sua igreja.</p>
       </header>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 2.5fr' }}>
+      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 2.5fr' } as React.CSSProperties}>
         {/* Form */}
-        <div className="card glass">
+        <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Cadastrar Novo Servo</h3>
-          <form onSubmit={handleCreate} className="grid">
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Nome Completo</label>
-              <input 
-                className="input" 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
-                required 
-              />
-            </div>
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Usuário</label>
-              <input
-                className="input"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Ex: joao.silva"
-                required
-              />
-            </div>
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>E-mail (opcional)</label>
-              <input
-                className="input"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Setor Principal</label>
-              <select 
-                className="input" 
-                value={sectorId} 
-                onChange={e => setSectorId(e.target.value)} 
-                required
-              >
-                <option value="">Selecione um setor</option>
-                {sectors.map(s => (
-                  <option key={s.id} value={s.id}>{s.ministry.name} - {s.name}</option>
-                ))}
-              </select>
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              <UserPlus size={18} />
-              {loading ? "Cadastrando..." : "Cadastrar Servo"}
-            </button>
-          </form>
-
-          {generatedPassword && (
-            <div style={{ 
-              marginTop: '1.5rem', 
-              padding: '1rem', 
-              background: 'rgba(245, 158, 11, 0.1)', 
-              border: '1px solid var(--accent)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              <div className="flex" style={{ color: 'var(--accent)' }}>
-                <ShieldAlert size={18} />
-                <span style={{ fontWeight: 600 }}>Senha de Primeiro Acesso</span>
-              </div>
-              <p style={{ fontSize: '0.875rem' }}>Passe esta senha ao servo. Ele poderá alterá-la após o login.</p>
-              <div className="flex justify-between" style={{ 
-                background: 'var(--input)', 
-                padding: '0.5rem 1rem', 
-                borderRadius: '0.5rem',
-                border: '1px solid var(--border)'
-              }}>
-                <code style={{ fontSize: '1.125rem', color: 'var(--accent)' }}>{generatedPassword}</code>
-                <button onClick={copyToClipboard} style={{ color: copied ? '#10b981' : 'inherit' }}>
-                  {copied ? <Check size={18} /> : <Copy size={18} />}
-                </button>
-              </div>
-            </div>
-          )}
+          {formContent}
         </div>
 
         {/* List */}
@@ -254,7 +278,7 @@ export default function ServantsPage() {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
@@ -302,8 +326,40 @@ export default function ServantsPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="admin-mobile-list">
+            {filteredServants.map((s) => (
+              <AdminMobileListItem key={s.userId} onClick={() => router.push(`/admin/servants/${s.userId}`)}>
+                <span style={{ fontWeight: 600 }}>{s.name}</span>
+                <AdminMobileField label="Usuário/E-mail">{s.username || s.email || "-"}</AdminMobileField>
+                <AdminMobileField label="Setores">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                    {s.memberships.map((m) => (
+                      <span
+                        key={m.servantId}
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '1rem' }}
+                      >
+                        {m.sectorName}
+                      </span>
+                    ))}
+                  </div>
+                </AdminMobileField>
+              </AdminMobileListItem>
+            ))}
+            {filteredServants.length === 0 && (
+              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                Nenhum servo encontrado para os filtros selecionados.
+              </p>
+            )}
+          </div>
         </div>
       </div>
+
+      {showCreateModal && (
+        <AdminCreateModal title="Cadastrar Novo Servo" onClose={() => setShowCreateModal(false)}>
+          {formContent}
+        </AdminCreateModal>
+      )}
     </div>
   );
 }

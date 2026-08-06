@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createSector, getSectors, getMinistries } from "@/lib/actions";
 import { Plus, Search, Filter, LayoutGrid } from "lucide-react";
+import AdminCreateModal from "@/components/AdminCreateModal";
+import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
+import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 interface Sector {
   id: number;
@@ -33,6 +36,21 @@ export default function SectorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMinistryId, setFilterMinistryId] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { setAction } = useAdminTopbar();
+
+  useEffect(() => {
+    setAction(
+      <button
+        type="button"
+        onClick={() => setShowCreateModal(true)}
+        className="btn btn-primary"
+      >
+        <Plus size={16} /> Cadastrar
+      </button>
+    );
+    return () => setAction(null);
+  }, [setAction]);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,6 +90,28 @@ export default function SectorsPage() {
     return matchesSearch && matchesMinistry;
   });
 
+  const formContent = (
+    <form onSubmit={handleCreate} className="grid">
+      <div className="grid" style={{ gap: '0.5rem' }}>
+        <label>Nome do Setor</label>
+        <input className="input" value={name} onChange={e => setName(e.target.value)} required />
+      </div>
+      <div className="grid" style={{ gap: '0.5rem' }}>
+        <label>Ministério</label>
+        <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
+          <option value="">Selecione um ministério</option>
+          {ministries.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </div>
+      <button type="submit" className="btn btn-primary" disabled={loading}>
+        <Plus size={18} />
+        {loading ? "Salvando..." : "Adicionar"}
+      </button>
+    </form>
+  );
+
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '2.5rem' }}>
@@ -79,39 +119,21 @@ export default function SectorsPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Defina os setores dentro de cada ministério.</p>
       </header>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
-        <div className="card glass">
+      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 2fr' } as React.CSSProperties}>
+        <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Novo Setor</h3>
-          <form onSubmit={handleCreate} className="grid">
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Nome do Setor</label>
-              <input className="input" value={name} onChange={e => setName(e.target.value)} required />
-            </div>
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Ministério</label>
-              <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
-                <option value="">Selecione um ministério</option>
-                {ministries.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={18} />
-              {loading ? "Salvando..." : "Adicionar"}
-            </button>
-          </form>
+          {formContent}
         </div>
 
         <div className="card glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>Lista de Setores</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               {!isLeader && (
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
                   <select
-                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0' }}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
                     value={filterMinistryId}
                     onChange={e => setFilterMinistryId(e.target.value)}
                   >
@@ -123,18 +145,18 @@ export default function SectorsPage() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
                 <input
                   placeholder="Pesquisar..."
-                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '120px', padding: '0.5rem 0' }}
+                  style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
@@ -183,8 +205,32 @@ export default function SectorsPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="admin-mobile-list">
+            {filteredSectors.map((s) => (
+              <AdminMobileListItem key={s.id} onClick={() => router.push(`/admin/sectors/${s.id}`)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <LayoutGrid size={16} color="var(--primary)" />
+                  <span style={{ fontWeight: 600 }}>{s.name}</span>
+                </div>
+                <AdminMobileField label="Ministério">{s.ministry.name}</AdminMobileField>
+                <AdminMobileField label="Servos">{s.servants?.length || 0}</AdminMobileField>
+              </AdminMobileListItem>
+            ))}
+            {filteredSectors.length === 0 && (
+              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                Nenhum setor encontrado para os filtros selecionados.
+              </p>
+            )}
+          </div>
         </div>
       </div>
+
+      {showCreateModal && (
+        <AdminCreateModal title="Novo Setor" onClose={() => setShowCreateModal(false)}>
+          {formContent}
+        </AdminCreateModal>
+      )}
     </div>
   );
 }

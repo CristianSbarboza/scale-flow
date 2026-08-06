@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { createSchedule, getSchedules, getSectors, getMinistries, deleteSchedule } from "@/lib/actions";
-import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye } from "lucide-react";
+import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus } from "lucide-react";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
+import AdminCreateModal from "@/components/AdminCreateModal";
+import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
+import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -54,6 +57,21 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(false);
   const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { setAction } = useAdminTopbar();
+
+  useEffect(() => {
+    setAction(
+      <button
+        type="button"
+        onClick={() => setShowCreateModal(true)}
+        className="btn btn-primary"
+      >
+        <Plus size={16} /> Cadastrar
+      </button>
+    );
+    return () => setAction(null);
+  }, [setAction]);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +137,72 @@ export default function SchedulesPage() {
     setSchedules(sch as unknown as Schedule[]);
   };
 
+  const formContent = (
+    <>
+      <form onSubmit={handleCreate} className="grid">
+        <div className="grid" style={{ gap: '0.5rem' }}>
+          <label>Nome da Escala (ex: Escala de Maio)</label>
+          <input className="input" value={name} onChange={e => setName(e.target.value)} required />
+        </div>
+
+        <div className="grid" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+          <div className="grid" style={{ gap: '0.5rem' }}>
+            <label>Ministério</label>
+            <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
+              <option value="">Selecionar</option>
+              {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+          <div className="grid" style={{ gap: '0.5rem' }}>
+            <label>Setor</label>
+            <select className="input" value={sectorId} onChange={e => setSectorId(e.target.value)} required>
+              <option value="">Selecionar</option>
+              {sectors.filter(s => s.ministryId === parseInt(ministryId)).map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
+          <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
+          <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
+            <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
+            <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
+            <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
+              <CalendarPlus size={20} />
+            </button>
+          </div>
+
+          <div style={{ marginTop: '1rem' }}>
+            {dates.map((d, i) => (
+              <div key={i} className="flex justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                <span>{d.date} | {d.startTime}</span>
+                <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444' }}>Remover</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          <LinkIcon size={18} />
+          {loading ? "Gerando..." : "Gerar Link de Escala"}
+        </button>
+      </form>
+
+      {lastLink && (
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: 'var(--radius)' }}>
+          <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            Escala gerada com sucesso. Copie o link e envie para o voluntário, ou avise a ele que já está disponível no perfil dele.
+          </p>
+          <div className="flex" style={{ wordBreak: 'break-all' }}>
+            <code style={{ fontSize: '0.875rem', color: '#10b981' }}>{lastLink}</code>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '2.5rem' }}>
@@ -126,77 +210,17 @@ export default function SchedulesPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Crie escalas e envie o link para os servos selecionarem suas datas.</p>
       </header>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 1fr' } as React.CSSProperties}>
         {/* Create Form */}
-        <div className="card glass">
+        <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Criar Nova Escala</h3>
-          <form onSubmit={handleCreate} className="grid">
-            <div className="grid" style={{ gap: '0.5rem' }}>
-              <label>Nome da Escala (ex: Escala de Maio)</label>
-              <input className="input" value={name} onChange={e => setName(e.target.value)} required />
-            </div>
-            
-            <div className="grid" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
-              <div className="grid" style={{ gap: '0.5rem' }}>
-                <label>Ministério</label>
-                <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
-                  <option value="">Selecionar</option>
-                  {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-              </div>
-              <div className="grid" style={{ gap: '0.5rem' }}>
-                <label>Setor</label>
-                <select className="input" value={sectorId} onChange={e => setSectorId(e.target.value)} required>
-                  <option value="">Selecionar</option>
-                  {sectors.filter(s => s.ministryId === parseInt(ministryId)).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
-              <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
-              <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
-                <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
-                <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
-                <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
-                  <CalendarPlus size={20} />
-                </button>
-              </div>
-
-              <div style={{ marginTop: '1rem' }}>
-                {dates.map((d, i) => (
-                  <div key={i} className="flex justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                    <span>{d.date} | {d.startTime}</span>
-                    <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444' }}>Remover</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              <LinkIcon size={18} />
-              {loading ? "Gerando..." : "Gerar Link de Escala"}
-            </button>
-          </form>
-
-          {lastLink && (
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: 'var(--radius)' }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Escala gerada com sucesso. Copie o link e envie para o voluntário, ou avise a ele que já está disponível no perfil dele.
-              </p>
-              <div className="flex" style={{ wordBreak: 'break-all' }}>
-                <code style={{ fontSize: '0.875rem', color: '#10b981' }}>{lastLink}</code>
-              </div>
-            </div>
-          )}
+          {formContent}
         </div>
 
         {/* List */}
         <div className="card glass" style={{ alignSelf: 'start' }}>
           <h3 style={{ marginBottom: '1.5rem' }}>Escalas Recentes</h3>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
@@ -247,6 +271,44 @@ export default function SchedulesPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="admin-mobile-list">
+            {schedules.map((s) => (
+              <AdminMobileListItem key={s.id}>
+                <span style={{ fontWeight: 600 }}>{s.name}</span>
+                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                  <AdminMobileField label="Ministério">{s.ministry.name}</AdminMobileField>
+                  <AdminMobileField label="Setor">{s.sector.name}</AdminMobileField>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', paddingTop: '0.25rem', borderTop: '1px solid var(--border)' }}>
+                  <button onClick={() => handleEdit(s)} title="Editar" style={{ color: 'var(--primary)', padding: '0.375rem' }}>
+                    <Edit3 size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
+                      showToast("Link copiado!", "success");
+                    }}
+                    title="Copiar link"
+                    style={{ color: 'var(--muted-foreground)', padding: '0.375rem' }}
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button onClick={() => handleDelete(s.id)} title="Excluir" style={{ color: '#ef4444', padding: '0.375rem' }}>
+                    <Trash2 size={16} />
+                  </button>
+                  <button onClick={() => setDetailsSchedule(s)} title="Ver detalhes" style={{ color: 'var(--foreground)', padding: '0.375rem' }}>
+                    <Eye size={16} />
+                  </button>
+                </div>
+              </AdminMobileListItem>
+            ))}
+            {schedules.length === 0 && (
+              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                Nenhuma escala criada ainda.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -266,6 +328,12 @@ export default function SchedulesPage() {
           onClose={() => setEditingSchedule(null)}
           onSave={() => getSchedules().then(sch => setSchedules(sch as unknown as Schedule[]))}
         />
+      )}
+
+      {showCreateModal && (
+        <AdminCreateModal title="Criar Nova Escala" onClose={() => setShowCreateModal(false)}>
+          {formContent}
+        </AdminCreateModal>
       )}
     </div>
   );
