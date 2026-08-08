@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { registerUser } from "@/lib/actions";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
+  const { data: session, status } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +18,14 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Cadastro cria conta de admin: só admin autenticado pode acessar esta tela.
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session || session.user.role !== "admin") {
+      router.replace("/login");
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +48,15 @@ export default function RegisterPage() {
     }
   };
 
+  if (status !== "authenticated" || session?.user.role !== "admin") {
+    return null;
+  }
+
   return (
-    <div className="login-container" style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
+    <div className="login-container" style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       minHeight: '100vh',
     }}>
       <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>

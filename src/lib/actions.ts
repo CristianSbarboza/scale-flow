@@ -9,6 +9,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hash, compare } from "bcryptjs";
 
+/**
+ * Projeção segura de `users` para uso dentro de `with: { ... }`.
+ *
+ * Consultas relacionais do Drizzle trazem a linha inteira por padrão, o que
+ * inclui `users.password` (hash bcrypt) — e esse resultado acaba serializado
+ * para o navegador. SEMPRE use isto ao incluir `user`/`leader` numa query
+ * cujo retorno vá para o cliente.
+ */
+const publicUser = { columns: { password: false } } as const;
+
 // Helper to check role and filter
 async function getAuthFilter() {
   const session = await getServerSession(authOptions);
@@ -46,6 +56,37 @@ async function requireScheduleSectorAccess(sectorId: number) {
   if (coordination) return;
 
   throw new Error("Não autorizado a gerenciar a escala deste setor");
+}
+
+// Admin, ou o líder do ministério. Para gestão de estrutura (setores, membros).
+async function requireMinistryAccess(ministryId: number) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user.role !== "admin" && session.user.role !== "leader")) {
+    throw new Error("Não autorizado");
+  }
+  if (session.user.role === "admin") return;
+
+  const [ministry] = await db.select().from(ministries)
+    .where(and(eq(ministries.id, ministryId), eq(ministries.leaderId, session.user.id)));
+
+  if (!ministry) throw new Error("Não autorizado a gerenciar este ministério");
+}
+
+// Admin, ou o líder do ministério dono do setor. Diferente de
+// requireScheduleSectorAccess: aqui coordenador NÃO tem acesso, pois isto
+// guarda gestão de estrutura/membros, não a escala do setor.
+async function requireSectorAccess(sectorId: number) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user.role !== "admin" && session.user.role !== "leader")) {
+    throw new Error("Não autorizado");
+  }
+  if (session.user.role === "admin") return;
+
+  const [sector] = await db.select().from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(and(eq(sectors.id, sectorId), eq(ministries.leaderId, session.user.id)));
+
+  if (!sector) throw new Error("Não autorizado a gerenciar este setor");
 }
 
 async function getSectorIdForScheduleId(scheduleId: number) {
@@ -148,11 +189,11 @@ export async function getMinistries() {
       sectors: {
         with: {
           servants: {
-            with: { user: true }
+            with: { user: publicUser }
           }
         }
       },
-      leader: true
+      leader: publicUser
     }
   });
 }
@@ -165,11 +206,11 @@ export async function getMinistryById(id: number) {
       sectors: {
         with: {
           servants: {
-            with: { user: true }
+            with: { user: publicUser }
           }
         }
       },
-      leader: true
+      leader: publicUser
     }
   });
   if (!ministry) return null;
@@ -179,6 +220,8 @@ export async function getMinistryById(id: number) {
 
 // Sectors
 export async function createSector(name: string, ministryId: number) {
+  await requireMinistryAccess(ministryId);
+
   await db.insert(sectors).values({
     name,
     ministryId,
@@ -206,7 +249,7 @@ export async function getSectors() {
   const sectorsWithServants = await Promise.all(allSectors.map(async (s) => {
     const srvs = await db.query.servants.findMany({
       where: eq(servants.sectorId, s.id),
-      with: { user: true }
+      with: { user: publicUser }
     });
     return {
       ...s,
@@ -239,7 +282,7 @@ export async function getSectorById(id: number) {
 
   const srvs = await db.query.servants.findMany({
     where: eq(servants.sectorId, id),
-    with: { user: true }
+    with: { user: publicUser }
   });
 
   return { ...sector, servants: srvs };
@@ -247,6 +290,8 @@ export async function getSectorById(id: number) {
 
 // Servants
 export async function createServant(name: string, username: string, email: string | null, sectorId: number) {
+  await requireSectorAccess(sectorId);
+
   const { user, generatedPassword } = await getOrCreateUser(name, "servant", { username, email });
 
   // Verifica se o usuário já é um servo neste setor para evitar duplicidade
@@ -308,13 +353,13 @@ export async function getServants(): Promise<ServantSummary[]> {
           )
         ),
         with: {
-          user: true,
+          user: publicUser,
           sector: { with: { ministry: true } }
         }
       })
     : await db.query.servants.findMany({
         with: {
-          user: true,
+          user: publicUser,
           sector: { with: { ministry: true } }
         }
       });
@@ -351,7 +396,7 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
   const rows = await db.query.servants.findMany({
     where: eq(servants.userId, userId),
     with: {
-      user: true,
+      user: publicUser,
       sector: { with: { ministry: true } }
     }
   });
@@ -421,7 +466,7 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
         sector: true,
         dates: {
           with: {
-            assignments: { with: { servant: { with: { user: true } } } },
+            assignments: { with: { servant: { with: { user: publicUser } } } },
             availabilities: { where: eq(scheduleAvailability.servantId, servant.id) },
           },
         },
@@ -457,7 +502,13 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
 }
 
 // Schedules
-export async function createSchedule(name: string, ministryId: number, sectorId: number, dates: { date: string, startTime: string }[]) {
+export async function createSchedule(
+  name: string,
+  ministryId: number,
+  sectorId: number,
+  dates: { date: string, startTime: string }[],
+  visibility: "public" | "private" = "public",
+) {
   await requireScheduleSectorAccess(sectorId);
 
   const shareLink = nanoid(10);
@@ -465,6 +516,7 @@ export async function createSchedule(name: string, ministryId: number, sectorId:
     name,
     ministryId,
     sectorId,
+    visibility,
     shareLink,
   }).returning();
 
@@ -489,10 +541,17 @@ export async function deleteSchedule(id: number) {
   revalidatePath("/servant");
 }
 
-export async function updateSchedule(id: number, name: string, dates: { date: string, startTime: string }[]) {
+export async function updateSchedule(
+  id: number,
+  name: string,
+  dates: { date: string, startTime: string }[],
+  visibility?: "public" | "private",
+) {
   await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
 
-  await db.update(schedules).set({ name }).where(eq(schedules.id, id));
+  await db.update(schedules)
+    .set(visibility ? { name, visibility } : { name })
+    .where(eq(schedules.id, id));
 
   await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
 
@@ -547,6 +606,7 @@ export interface CoordinatorSchedule {
   id: number;
   name: string;
   status: "draft" | "published";
+  visibility: "public" | "private";
   shareLink: string;
   ministry: { name: string };
   sector: { name: string };
@@ -585,6 +645,7 @@ export async function getCoordinatorSchedules(): Promise<CoordinatorSchedule[]> 
     id: s.id,
     name: s.name,
     status: s.status,
+    visibility: s.visibility,
     shareLink: s.shareLink,
     ministry: { name: s.ministry.name },
     sector: { name: s.sector.name },
@@ -623,7 +684,7 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
     sector: true,
     dates: {
       with: {
-        assignments: { with: { servant: { with: { user: true } } } },
+        assignments: { with: { servant: { with: { user: publicUser } } } },
       },
     },
   } as const;
@@ -667,12 +728,12 @@ export async function getScheduleResponses(scheduleId: number) {
     with: {
       availabilities: {
         with: {
-          servant: { with: { user: true } }
+          servant: { with: { user: publicUser } }
         }
       },
       assignments: {
         with: {
-          servant: { with: { user: true } }
+          servant: { with: { user: publicUser } }
         }
       }
     }
@@ -699,7 +760,50 @@ export async function removeAssignment(assignmentId: number) {
 }
 
 export async function saveAvailability(servantId: number, dateIds: number[]) {
-  for (const dateId of dateIds) {
+  const uniqueDateIds = [...new Set(dateIds)];
+  if (uniqueDateIds.length === 0) return;
+
+  const [servant] = await db.select().from(servants).where(eq(servants.id, servantId));
+  if (!servant) throw new Error("Servo não encontrado");
+
+  // Todas as datas precisam ser da mesma escala, e essa escala precisa ser do
+  // setor do servo — impede gravar cruzando setores/escalas adivinhando IDs.
+  const dateRows = await db.select({
+    scheduleId: schedules.id,
+    sectorId: schedules.sectorId,
+    visibility: schedules.visibility,
+  })
+    .from(scheduleDates)
+    .innerJoin(schedules, eq(scheduleDates.scheduleId, schedules.id))
+    .where(inArray(scheduleDates.id, uniqueDateIds));
+
+  if (dateRows.length !== uniqueDateIds.length) throw new Error("Data inválida");
+
+  const [schedule] = dateRows;
+  if (dateRows.some((r) => r.scheduleId !== schedule.scheduleId)) {
+    throw new Error("As datas precisam ser da mesma escala");
+  }
+  if (schedule.sectorId !== servant.sectorId) {
+    throw new Error("Este servo não pertence ao setor desta escala");
+  }
+
+  // Escala privada: exige login e que o servo informado seja o próprio usuário.
+  // Escala pública: sem login segue aberta (por design), mas se houver sessão
+  // ainda assim impede responder no lugar de outra pessoa.
+  const session = await getServerSession(authOptions);
+  if (schedule.visibility === "private" && !session) {
+    throw new Error("Faça login para responder a esta escala");
+  }
+  if (session && servant.userId !== session.user.id) {
+    throw new Error("Não autorizado a responder por outro servo");
+  }
+
+  for (const dateId of uniqueDateIds) {
+    const [existing] = await db.select().from(scheduleAvailability).where(
+      and(eq(scheduleAvailability.dateId, dateId), eq(scheduleAvailability.servantId, servantId))
+    );
+    if (existing) continue;
+
     await db.insert(scheduleAvailability).values({
       servantId,
       dateId,
@@ -710,6 +814,10 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
 }
 
 export async function registerUser(name: string, email: string, password: string) {
+  // Cria uma conta de ADMIN — só um admin já autenticado pode fazer isso.
+  // O primeiro admin do sistema é criado pelo script src/db/seed.ts.
+  await requireAdmin();
+
   const [existingUser] = await db.select().from(users).where(eq(users.email, email));
   if (existingUser) {
     throw new Error("E-mail já cadastrado");
@@ -745,14 +853,7 @@ async function requireServantAccess(userId: string) {
 
 export async function addServantToSector(userId: string, sectorId: number) {
   await requireServantAccess(userId);
-
-  const session = await getServerSession(authOptions);
-  if (session!.user.role === "leader") {
-    const [sector] = await db.select().from(sectors)
-      .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-      .where(and(eq(sectors.id, sectorId), eq(ministries.leaderId, session!.user.id)));
-    if (!sector) throw new Error("Não autorizado a adicionar este setor");
-  }
+  await requireSectorAccess(sectorId);
 
   const [existing] = await db.select().from(servants).where(
     and(eq(servants.userId, userId), eq(servants.sectorId, sectorId))
@@ -888,7 +989,7 @@ export async function getPendingSwapRequests(): Promise<PendingSwapRequest[]> {
     where: and(inArray(swapRequests.targetServantId, myServantIds), eq(swapRequests.status, "pending")),
     with: {
       date: { with: { schedule: { with: { sector: true, ministry: true } } } },
-      requester: { with: { user: true } },
+      requester: { with: { user: publicUser } },
     },
     orderBy: (sr, { desc }) => desc(sr.createdAt),
   });

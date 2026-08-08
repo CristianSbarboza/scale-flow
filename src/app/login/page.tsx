@@ -3,7 +3,6 @@
 import { useState, Suspense } from "react";
 import { signIn, signOut, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Eye, EyeOff, User, Users, ShieldAlert } from "lucide-react";
 
 type LoginRole = "servant" | "leader" | "admin";
@@ -24,6 +23,11 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
+  // Só caminho interno: um callbackUrl absoluto viraria open redirect.
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = rawCallbackUrl?.startsWith("/") && !rawCallbackUrl.startsWith("//")
+    ? rawCallbackUrl
+    : null;
   const isServant = role === "servant";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +59,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(sessionRole === "servant" ? "/servant" : "/admin");
+    router.push(callbackUrl ?? (sessionRole === "servant" ? "/servant" : "/admin"));
     router.refresh();
   };
 
@@ -192,10 +196,7 @@ function LoginForm() {
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.875rem', marginTop: '1rem', color: 'var(--muted-foreground)' }}>
-            Não tem uma conta?{" "}
-            <Link href="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-              Cadastre-se
-            </Link>
+            Não tem uma conta? Peça o acesso ao líder do seu ministério.
           </p>
         </form>
       </div>

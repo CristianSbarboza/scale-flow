@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { createSchedule, getSchedules, getSectors, getMinistries, deleteSchedule } from "@/lib/actions";
-import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus } from "lucide-react";
+import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
+import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
@@ -21,6 +22,7 @@ interface Schedule {
   id: number;
   name: string;
   status: "draft" | "published";
+  visibility: ScheduleVisibility;
   shareLink: string;
   ministry: { name: string };
   sector: { name: string };
@@ -48,6 +50,7 @@ export default function SchedulesPage() {
   const [name, setName] = useState("");
   const [ministryId, setMinistryId] = useState("");
   const [sectorId, setSectorId] = useState("");
+  const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
   const [dates, setDates] = useState<{ date: string, startTime: string }[]>([]);
 
   const [newDate, setNewDate] = useState("");
@@ -108,14 +111,15 @@ export default function SchedulesPage() {
     if (dates.length === 0) { showToast("Adicione ao menos uma data", "error"); return; }
 
     setLoading(true);
-    const result = await createSchedule(name, parseInt(ministryId), parseInt(sectorId), dates);
+    const result = await createSchedule(name, parseInt(ministryId), parseInt(sectorId), dates, visibility);
     setLastLink(`${window.location.origin}/escala/${result.shareLink}`);
-    
+
     setName("");
     setMinistryId("");
     setSectorId("");
+    setVisibility("public");
     setDates([]);
-    
+
     const sch = await getSchedules();
     setSchedules(sch as unknown as Schedule[]);
     setLoading(false);
@@ -163,6 +167,8 @@ export default function SchedulesPage() {
             </select>
           </div>
         </div>
+
+        <VisibilityToggle value={visibility} onChange={setVisibility} />
 
         <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
           <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
@@ -233,7 +239,14 @@ export default function SchedulesPage() {
               <tbody>
                 {schedules.map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '0.75rem 0.5rem' }}>{s.name}</td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <span className="flex items-center" style={{ gap: '0.375rem' }}>
+                        {s.name}
+                        {s.visibility === "private" && (
+                          <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
+                        )}
+                      </span>
+                    </td>
                     <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.ministry.name}</td>
                     <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.sector.name}</td>
                     <td style={{ padding: '0.75rem 0.5rem' }}>
@@ -275,7 +288,12 @@ export default function SchedulesPage() {
           <div className="admin-mobile-list">
             {schedules.map((s) => (
               <AdminMobileListItem key={s.id}>
-                <span style={{ fontWeight: 600 }}>{s.name}</span>
+                <span className="flex items-center" style={{ fontWeight: 600, gap: '0.375rem' }}>
+                  {s.name}
+                  {s.visibility === "private" && (
+                    <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
+                  )}
+                </span>
                 <div style={{ display: 'flex', gap: '1.5rem' }}>
                   <AdminMobileField label="Ministério">{s.ministry.name}</AdminMobileField>
                   <AdminMobileField label="Setor">{s.sector.name}</AdminMobileField>

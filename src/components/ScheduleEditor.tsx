@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateSchedule } from "@/lib/actions";
 import { X, CalendarPlus, Save, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 
 interface Props {
   schedule: {
     id: number;
     name: string;
+    visibility: ScheduleVisibility;
     dates: { date: string, startTime: string }[];
   };
   onClose: () => void;
@@ -20,6 +22,7 @@ interface Props {
 export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
   const { showToast } = useToast();
   const [name, setName] = useState(schedule.name);
+  const [visibility, setVisibility] = useState<ScheduleVisibility>(schedule.visibility);
   const [dates, setDates] = useState(schedule.dates.map(d => ({ ...d })));
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("09:00");
@@ -41,7 +44,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
 
     setLoading(true);
     try {
-      await updateSchedule(schedule.id, name, dates);
+      await updateSchedule(schedule.id, name, dates, visibility);
       onSave();
       onClose();
     } catch (error) {
@@ -95,6 +98,8 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
               required
             />
           </div>
+
+          <VisibilityToggle value={visibility} onChange={setVisibility} />
 
           <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}>
             <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

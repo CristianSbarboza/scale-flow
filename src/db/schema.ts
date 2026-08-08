@@ -41,6 +41,8 @@ export const schedules = pgTable("schedules", {
   ministryId: integer("ministry_id").references(() => ministries.id, { onDelete: "cascade" }).notNull(),
   sectorId: integer("sector_id").references(() => sectors.id, { onDelete: "cascade" }).notNull(),
   status: text("status", { enum: ["draft", "published"] }).default("draft").notNull(),
+  // public: qualquer um com o link responde. private: exige login e vínculo com o setor.
+  visibility: text("visibility", { enum: ["public", "private"] }).default("public").notNull(),
   shareLink: text("share_link").notNull().unique(), // nanoid
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

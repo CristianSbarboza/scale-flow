@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus } from "lucide-react";
+import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus, Lock } from "lucide-react";
 import { getCoordinatorSchedules, createSchedule, deleteSchedule } from "@/lib/actions";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/lib/actions";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
+import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -26,6 +27,7 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
 
   const [name, setName] = useState("");
   const [sectorId, setSectorId] = useState(sectors.length === 1 ? String(sectors[0].id) : "");
+  const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
   const [dates, setDates] = useState<{ date: string; startTime: string }[]>([]);
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("09:00");
@@ -63,9 +65,10 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
 
     setCreating(true);
     try {
-      const result = await createSchedule(name, sector.ministryId, sector.id, dates);
+      const result = await createSchedule(name, sector.ministryId, sector.id, dates, visibility);
       setLastLink(`${window.location.origin}/escala/${result.shareLink}`);
       setName("");
+      setVisibility("public");
       setDates([]);
       showToast("Escala criada com sucesso.", "success");
       await load();
@@ -112,6 +115,8 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
           </select>
         </div>
       )}
+
+      <VisibilityToggle value={visibility} onChange={setVisibility} />
 
       <div style={{ padding: "1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
         <p style={{ marginBottom: "0.75rem", fontSize: "0.875rem", fontWeight: 600 }}>Adicionar Datas e Horários</p>
@@ -167,7 +172,12 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
       <div style={{ display: "grid", gap: "0.75rem" }}>
         {schedules.map((s) => (
           <div key={s.id} className="card" style={{ display: "grid", gap: "0.5rem" }}>
-            <p style={{ fontWeight: 600 }}>{s.name}</p>
+            <p style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              {s.name}
+              {s.visibility === "private" && (
+                <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
+              )}
+            </p>
             <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
               {s.ministry.name} · {s.sector.name} · {s.dates.length} {s.dates.length === 1 ? "data" : "datas"}
             </p>

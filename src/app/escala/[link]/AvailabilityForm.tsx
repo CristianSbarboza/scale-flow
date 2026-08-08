@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Send } from "lucide-react";
+import { Check, Send, Lock } from "lucide-react";
 import { saveAvailability } from "@/lib/actions";
 
 interface AvailabilityFormProps {
@@ -16,10 +16,12 @@ interface AvailabilityFormProps {
     user: { name: string };
   }>;
   initialServantId?: string;
+  /** Escala privada: o servo já está identificado pela sessão, não há o que escolher. */
+  lockedServantName?: string;
   returnToServant?: boolean;
 }
 
-export default function AvailabilityForm({ dates, servants, initialServantId, returnToServant }: AvailabilityFormProps) {
+export default function AvailabilityForm({ dates, servants, initialServantId, lockedServantName, returnToServant }: AvailabilityFormProps) {
   const validInitialServantId = servants.some((s) => String(s.id) === initialServantId) ? initialServantId! : "";
   const [selectedServant, setSelectedServant] = useState(validInitialServantId);
   const [selectedDates, setSelectedDates] = useState<number[]>([]);
@@ -81,17 +83,24 @@ export default function AvailabilityForm({ dates, servants, initialServantId, re
     <form onSubmit={handleSubmit} className="grid" style={{ gap: '1.5rem' }}>
       <div className="card glass">
         <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Quem é você?</label>
-        <select 
-          className="input" 
-          value={selectedServant} 
-          onChange={e => setSelectedServant(e.target.value)}
-          required
-        >
-          <option value="">Selecione seu nome</option>
-          {servants.map((s) => (
-            <option key={s.id} value={s.id}>{s.user.name}</option>
-          ))}
-        </select>
+        {lockedServantName ? (
+          <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)' }}>
+            <Lock size={15} />
+            {lockedServantName}
+          </p>
+        ) : (
+          <select
+            className="input"
+            value={selectedServant}
+            onChange={e => setSelectedServant(e.target.value)}
+            required
+          >
+            <option value="">Selecione seu nome</option>
+            {servants.map((s) => (
+              <option key={s.id} value={s.id}>{s.user.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="grid" style={{ gap: '0.75rem' }}>
