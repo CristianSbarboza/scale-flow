@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createSchedule, getSchedules, deleteSchedule } from "@/lib/actions";
+import { createSchedule, getSchedules, deleteSchedule } from "@/lib/actions/schedules";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";

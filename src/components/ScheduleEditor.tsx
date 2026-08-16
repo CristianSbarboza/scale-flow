@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateSchedule } from "@/lib/actions";
+import { updateSchedule } from "@/lib/actions/schedules";
 import { X, CalendarPlus, Save, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";

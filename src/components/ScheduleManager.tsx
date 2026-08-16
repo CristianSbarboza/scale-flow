@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { getScheduleResponses, assignServant, removeAssignment } from "@/lib/actions";
+import { getScheduleResponses } from "@/lib/actions/schedules";
+import { assignServant, removeAssignment } from "@/lib/actions";
 import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
 
 interface ScheduleSummary {
