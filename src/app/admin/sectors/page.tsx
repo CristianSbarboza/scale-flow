@@ -5,9 +5,12 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createSector, getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
-import { Plus, Search, Filter, LayoutGrid } from "lucide-react";
+import { Plus, LayoutGrid } from "lucide-react";
+import Badge from "@/components/ui/Badge";
+import DataPanel from "@/components/ui/DataPanel";
+import FilterSelect from "@/components/ui/FilterSelect";
+import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
-import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 interface Sector {
@@ -126,105 +129,53 @@ export default function SectorsPage() {
           {formContent}
         </div>
 
-        <div className="card glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h3 style={{ margin: 0 }}>Lista de Setores</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <DataPanel
+          title="Lista de Setores"
+          toolbar={
+            <>
               {!isLeader && (
-                <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                  <select
-                    style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
-                    value={filterMinistryId}
-                    onChange={e => setFilterMinistryId(e.target.value)}
-                  >
-                    <option value="all">Todos Ministérios</option>
-                    {ministries.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                <input
-                  placeholder="Pesquisar..."
-                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                <FilterSelect
+                  label="Filtrar por ministério"
+                  value={filterMinistryId}
+                  onChange={setFilterMinistryId}
+                  options={[
+                    { value: "all", label: "Todos Ministérios" },
+                    ...ministries.map((m) => ({ value: String(m.id), label: m.name })),
+                  ]}
                 />
-              </div>
-            </div>
-          </div>
-          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '1rem 0.5rem' }}>Setor</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Ministério</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Servos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSectors.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="cursor-pointer hover:bg-white/5 transition-colors"
-                    onClick={() => router.push(`/admin/sectors/${s.id}`)}
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                  >
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <div className="flex items-center gap-4 items-center gap-2">
-                        <LayoutGrid size={14} className="text-primary/60" />
-                        <span>{s.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        padding: '0.25rem 0.5rem', 
-                        background: 'var(--primary)', 
-                        color: 'white',
-                        borderRadius: '1rem' 
-                      }}>
-                        {s.ministry.name}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>{s.servants?.length || 0}</span>
-                    </td>
-                  </tr>
-                ))}
-                {filteredSectors.length === 0 && (
-                  <tr>
-                    <td colSpan={3} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                      Nenhum setor encontrado para os filtros selecionados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="admin-mobile-list">
-            {filteredSectors.map((s) => (
-              <AdminMobileListItem key={s.id} onClick={() => router.push(`/admin/sectors/${s.id}`)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <LayoutGrid size={16} color="var(--primary)" />
-                  <span style={{ fontWeight: 600 }}>{s.name}</span>
+              )}
+              <SearchInput value={searchTerm} onChange={setSearchTerm} />
+            </>
+          }
+          rows={filteredSectors}
+          rowKey={(s) => s.id}
+          onRowClick={(s) => router.push(`/admin/sectors/${s.id}`)}
+          empty="Nenhum setor encontrado para os filtros selecionados."
+          columns={[
+            {
+              header: "Setor",
+              primary: true,
+              cell: (s) => (
+                <div className="flex items-center gap-2">
+                  <LayoutGrid size={14} className="text-primary/60" />
+                  <span>{s.name}</span>
                 </div>
-                <AdminMobileField label="Ministério">{s.ministry.name}</AdminMobileField>
-                <AdminMobileField label="Servos">{s.servants?.length || 0}</AdminMobileField>
-              </AdminMobileListItem>
-            ))}
-            {filteredSectors.length === 0 && (
-              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                Nenhum setor encontrado para os filtros selecionados.
-              </p>
-            )}
-          </div>
-        </div>
+              ),
+            },
+            {
+              header: "Ministério",
+              cell: (s) => <Badge tone="primary" solid>{s.ministry.name}</Badge>,
+            },
+            {
+              header: "Servos",
+              cell: (s) => (
+                <span className="text-xs font-bold text-muted-foreground">
+                  {s.servants?.length || 0}
+                </span>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {showCreateModal && (
