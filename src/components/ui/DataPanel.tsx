@@ -28,6 +28,7 @@ export interface Column<T> {
 export default function DataPanel<T>({
   title,
   toolbar,
+  stackToolbar = false,
   columns,
   rows,
   rowKey,
@@ -38,6 +39,8 @@ export default function DataPanel<T>({
   title: React.ReactNode;
   /** SearchInput, FilterSelect e afins. Ficam à direita do título. */
   toolbar?: React.ReactNode;
+  /** Empilha a barra abaixo do título, para quando ela tem controles demais. */
+  stackToolbar?: boolean;
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string | number;
@@ -52,6 +55,7 @@ export default function DataPanel<T>({
     <Panel
       title={title}
       action={toolbar && <div className="flex flex-wrap items-center gap-3">{toolbar}</div>}
+      stack={stackToolbar}
       className={className}
     >
       {/* Desktop */}

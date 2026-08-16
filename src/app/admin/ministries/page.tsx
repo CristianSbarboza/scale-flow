@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createMinistry, getMinistries } from "@/lib/actions/ministries";
-import { Church, Plus, ShieldAlert, Check, Copy, Search } from "lucide-react";
+import { Church, Plus, ShieldAlert, Check, Copy } from "lucide-react";
+import DataPanel from "@/components/ui/DataPanel";
+import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
-import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 interface Ministry {
@@ -189,90 +190,44 @@ export default function MinistriesPage() {
           {formContent}
         </div>
 
-        <div className="card glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h3 style={{ margin: 0 }}>Ministérios Cadastrados</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 160px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                <input
-                  placeholder="Pesquisar..."
-                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', width: '100%', padding: '0.5rem 0' }}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '1rem 0.5rem' }}>Ministério</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Líder</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Setores</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Servos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMinistries.map((m) => (
-                  <tr
-                    key={m.id}
-                    onClick={() => router.push(`/admin/ministries/${m.id}`)}
-                    className="cursor-pointer hover:bg-white/5 transition-colors"
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                  >
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Church size={14} color="var(--primary)" />
-                        <span>{m.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{m.leader?.name || "N/A"}</td>
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '1rem' }}>
-                        {m.sectors?.length || 0}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>
-                      {m.sectors?.reduce((acc, s) => acc + (s.servants?.length || 0), 0) || 0}
-                    </td>
-                  </tr>
-                ))}
-                {filteredMinistries.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                      Nenhum ministério encontrado para a pesquisa.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="admin-mobile-list">
-            {filteredMinistries.map((m) => (
-              <AdminMobileListItem key={m.id} onClick={() => router.push(`/admin/ministries/${m.id}`)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Church size={16} color="var(--primary)" />
-                  <span style={{ fontWeight: 600 }}>{m.name}</span>
+        <DataPanel
+          title="Ministérios Cadastrados"
+          toolbar={<SearchInput value={searchTerm} onChange={setSearchTerm} />}
+          rows={filteredMinistries}
+          rowKey={(m) => m.id}
+          onRowClick={(m) => router.push(`/admin/ministries/${m.id}`)}
+          empty="Nenhum ministério encontrado para a pesquisa."
+          columns={[
+            {
+              header: "Ministério",
+              primary: true,
+              cell: (m) => (
+                <div className="flex items-center gap-2">
+                  <Church size={14} className="text-primary" />
+                  <span>{m.name}</span>
                 </div>
-                <AdminMobileField label="Líder">{m.leader?.name || "N/A"}</AdminMobileField>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                  <AdminMobileField label="Setores">{m.sectors?.length || 0}</AdminMobileField>
-                  <AdminMobileField label="Servos">
-                    {m.sectors?.reduce((acc, s) => acc + (s.servants?.length || 0), 0) || 0}
-                  </AdminMobileField>
-                </div>
-              </AdminMobileListItem>
-            ))}
-            {filteredMinistries.length === 0 && (
-              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                Nenhum ministério encontrado para a pesquisa.
-              </p>
-            )}
-          </div>
-        </div>
+              ),
+            },
+            {
+              header: "Líder",
+              cell: (m) => <span className="text-muted-foreground">{m.leader?.name || "N/A"}</span>,
+            },
+            {
+              header: "Setores",
+              cell: (m) => (
+                <span className="rounded-full bg-muted px-2 py-1 text-xs">{m.sectors?.length || 0}</span>
+              ),
+            },
+            {
+              header: "Servos",
+              cell: (m) => (
+                <span className="text-muted-foreground">
+                  {m.sectors?.reduce((acc, sec) => acc + (sec.servants?.length || 0), 0) || 0}
+                </span>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {showCreateModal && (

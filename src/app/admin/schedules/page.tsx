@@ -8,8 +8,9 @@ import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } 
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
+import DataPanel from "@/components/ui/DataPanel";
+import IconButton from "@/components/ui/IconButton";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
-import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -226,110 +227,62 @@ export default function SchedulesPage() {
         </div>
 
         {/* List */}
-        <div className="card glass" style={{ alignSelf: 'start' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Escalas Recentes</h3>
-          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '0.75rem 0.5rem' }}>Nome</th>
-                  <th style={{ padding: '0.75rem 0.5rem' }}>Ministério</th>
-                  <th style={{ padding: '0.75rem 0.5rem' }}>Setor</th>
-                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedules.map((s) => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                      <span className="flex items-center gap-4 items-center" style={{ gap: '0.375rem' }}>
-                        {s.name}
-                        {s.visibility === "private" && (
-                          <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
-                        )}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.ministry.name}</td>
-                    <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.sector.name}</td>
-                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                      <div className="flex items-center gap-4" style={{ gap: '0.25rem', justifyContent: 'flex-end' }}>
-                        <button onClick={() => handleEdit(s)} title="Editar" style={{ color: 'var(--primary)', padding: '0.375rem' }}>
-                          <Edit3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
-                            showToast("Link copiado!", "success");
-                          }}
-                          title="Copiar link"
-                          style={{ color: 'var(--muted-foreground)', padding: '0.375rem' }}
-                        >
-                          <Copy size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(s.id)} title="Excluir" style={{ color: '#ef4444', padding: '0.375rem' }}>
-                          <Trash2 size={16} />
-                        </button>
-                        <button onClick={() => setDetailsSchedule(s)} title="Ver detalhes" style={{ color: 'var(--foreground)', padding: '0.375rem' }}>
-                          <Eye size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {schedules.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                      Nenhuma escala criada ainda.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="admin-mobile-list">
-            {schedules.map((s) => (
-              <AdminMobileListItem key={s.id}>
-                <span className="flex items-center gap-4 items-center" style={{ fontWeight: 600, gap: '0.375rem' }}>
+        <DataPanel
+          className="self-start"
+          title="Escalas Recentes"
+          rows={schedules}
+          rowKey={(s) => s.id}
+          empty="Nenhuma escala criada ainda."
+          columns={[
+            {
+              header: "Nome",
+              primary: true,
+              cell: (s) => (
+                <span className="flex items-center gap-1.5">
                   {s.name}
                   {s.visibility === "private" && (
-                    <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
+                    <Lock size={13} className="text-muted-foreground" aria-label="Escala privada" />
                   )}
                 </span>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                  <AdminMobileField label="Ministério">{s.ministry.name}</AdminMobileField>
-                  <AdminMobileField label="Setor">{s.sector.name}</AdminMobileField>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', paddingTop: '0.25rem', borderTop: '1px solid var(--border)' }}>
-                  <button onClick={() => handleEdit(s)} title="Editar" style={{ color: 'var(--primary)', padding: '0.375rem' }}>
+              ),
+            },
+            {
+              header: "Ministério",
+              cell: (s) => <span className="text-sm text-muted-foreground">{s.ministry.name}</span>,
+            },
+            {
+              header: "Setor",
+              cell: (s) => <span className="text-sm text-muted-foreground">{s.sector.name}</span>,
+            },
+            {
+              header: "Ações",
+              align: "right",
+              cell: (s) => (
+                <div className="flex justify-end gap-1">
+                  <IconButton label="Editar" tone="primary" onClick={() => handleEdit(s)}>
                     <Edit3 size={16} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
+                    label="Copiar link"
+                    tone="muted"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
                       showToast("Link copiado!", "success");
                     }}
-                    title="Copiar link"
-                    style={{ color: 'var(--muted-foreground)', padding: '0.375rem' }}
                   >
                     <Copy size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(s.id)} title="Excluir" style={{ color: '#ef4444', padding: '0.375rem' }}>
+                  </IconButton>
+                  <IconButton label="Excluir" tone="destructive" onClick={() => handleDelete(s.id)}>
                     <Trash2 size={16} />
-                  </button>
-                  <button onClick={() => setDetailsSchedule(s)} title="Ver detalhes" style={{ color: 'var(--foreground)', padding: '0.375rem' }}>
+                  </IconButton>
+                  <IconButton label="Ver detalhes" onClick={() => setDetailsSchedule(s)}>
                     <Eye size={16} />
-                  </button>
+                  </IconButton>
                 </div>
-              </AdminMobileListItem>
-            ))}
-            {schedules.length === 0 && (
-              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                Nenhuma escala criada ainda.
-              </p>
-            )}
-          </div>
-        </div>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {detailsSchedule && (

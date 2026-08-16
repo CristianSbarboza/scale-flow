@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { createServant, getServants } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
-import { UserPlus, Copy, Check, ShieldAlert, Search, Filter, Plus } from "lucide-react";
+import { UserPlus, Copy, Check, ShieldAlert, Plus } from "lucide-react";
+import DataPanel from "@/components/ui/DataPanel";
+import FilterSelect from "@/components/ui/FilterSelect";
+import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
-import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 
 interface Membership {
@@ -225,136 +227,67 @@ export default function ServantsPage() {
         </div>
 
         {/* List */}
-        <div className="card glass">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>Servos Cadastrados</h3>
-
-            <div className="flex items-center gap-4 flex-wrap gap-3">
-              {/* Ministry Filter */}
+        <DataPanel
+          title="Servos Cadastrados"
+          stackToolbar
+          toolbar={
+            <>
               {!isLeader && (
-                <div className="flex items-center gap-4 flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                  <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                  <select
-                    style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
-                    value={filterMinistryId}
-                    onChange={e => {
-                      setFilterMinistryId(e.target.value);
-                      setFilterSectorId("all"); // Reset sector when ministry changes
-                    }}
-                  >
-                    <option value="all">Todos Ministérios</option>
-                    {ministries.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Sector Filter */}
-              <div className="flex items-center gap-4 flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                <select
-                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
-                  value={filterSectorId}
-                  onChange={e => setFilterSectorId(e.target.value)}
-                >
-                  <option value="all">Todos Setores</option>
-                  {sectors
-                    .filter(s => filterMinistryId === "all" || s.ministryId === parseInt(filterMinistryId))
-                    .map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Search */}
-              <div className="flex items-center gap-4 flex-1" style={{ minWidth: '200px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
-                <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
-                <input
-                  placeholder="Pesquisar nome, usuário ou e-mail..."
-                  style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                <FilterSelect
+                  label="Filtrar por ministério"
+                  value={filterMinistryId}
+                  onChange={(v) => {
+                    setFilterMinistryId(v);
+                    setFilterSectorId("all"); // troca de ministério zera o setor
+                  }}
+                  options={[
+                    { value: "all", label: "Todos Ministérios" },
+                    ...ministries.map((m) => ({ value: String(m.id), label: m.name })),
+                  ]}
                 />
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '1rem 0.5rem' }}>Nome</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Usuário/E-mail</th>
-                  <th style={{ padding: '1rem 0.5rem' }}>Setores</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredServants.map((s) => (
-                  <tr
-                    key={s.userId}
-                    onClick={() => router.push(`/admin/servants/${s.userId}`)}
-                    className="cursor-pointer hover:bg-white/5 transition-colors"
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                  >
-                    <td style={{ padding: '1rem 0.5rem' }}>{s.name}</td>
-                    <td style={{ padding: '1rem 0.5rem', color: 'var(--muted-foreground)' }}>{s.username || s.email || "-"}</td>
-                    <td style={{ padding: '1rem 0.5rem' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
-                        {s.memberships.map((m) => (
-                          <span
-                            key={m.servantId}
-                            style={{
-                              fontSize: '0.75rem',
-                              padding: '0.25rem 0.5rem',
-                              background: 'var(--muted)',
-                              borderRadius: '1rem'
-                            }}
-                          >
-                            {m.sectorName}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filteredServants.length === 0 && (
-                  <tr>
-                    <td colSpan={3} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>
-                      Nenhum servo encontrado para os filtros selecionados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="admin-mobile-list">
-            {filteredServants.map((s) => (
-              <AdminMobileListItem key={s.userId} onClick={() => router.push(`/admin/servants/${s.userId}`)}>
-                <span style={{ fontWeight: 600 }}>{s.name}</span>
-                <AdminMobileField label="Usuário/E-mail">{s.username || s.email || "-"}</AdminMobileField>
-                <AdminMobileField label="Setores">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
-                    {s.memberships.map((m) => (
-                      <span
-                        key={m.servantId}
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--muted)', borderRadius: '1rem' }}
-                      >
-                        {m.sectorName}
-                      </span>
-                    ))}
-                  </div>
-                </AdminMobileField>
-              </AdminMobileListItem>
-            ))}
-            {filteredServants.length === 0 && (
-              <p style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                Nenhum servo encontrado para os filtros selecionados.
-              </p>
-            )}
-          </div>
-        </div>
+              )}
+              <FilterSelect
+                label="Filtrar por setor"
+                value={filterSectorId}
+                onChange={setFilterSectorId}
+                options={[
+                  { value: "all", label: "Todos Setores" },
+                  ...sectors
+                    .filter((sec) => filterMinistryId === "all" || sec.ministryId === parseInt(filterMinistryId))
+                    .map((sec) => ({ value: String(sec.id), label: sec.name })),
+                ]}
+              />
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Pesquisar nome, usuário ou e-mail..."
+              />
+            </>
+          }
+          rows={filteredServants}
+          rowKey={(s) => s.userId}
+          onRowClick={(s) => router.push(`/admin/servants/${s.userId}`)}
+          empty="Nenhum servo encontrado para os filtros selecionados."
+          columns={[
+            { header: "Nome", primary: true, cell: (s) => s.name },
+            {
+              header: "Usuário/E-mail",
+              cell: (s) => <span className="text-muted-foreground">{s.username || s.email || "-"}</span>,
+            },
+            {
+              header: "Setores",
+              cell: (s) => (
+                <div className="flex flex-wrap gap-1.5">
+                  {s.memberships.map((m) => (
+                    <span key={m.servantId} className="rounded-full bg-muted px-2 py-1 text-xs">
+                      {m.sectorName}
+                    </span>
+                  ))}
+                </div>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {showCreateModal && (
