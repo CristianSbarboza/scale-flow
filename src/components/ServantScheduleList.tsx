@@ -64,8 +64,10 @@ export default function ServantScheduleList({ schedules, monthFilter, emptyMessa
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   whiteSpace: "nowrap",
-                  background: filled ? "rgba(16, 185, 129, 0.15)" : "rgba(249, 115, 22, 0.15)",
-                  color: filled ? "#10b981" : "var(--primary)",
+                  background: filled
+                    ? "color-mix(in oklab, var(--success) 15%, transparent)"
+                    : "color-mix(in oklab, var(--primary) 15%, transparent)",
+                  color: filled ? "var(--success)" : "var(--primary)",
                 }}
               >
                 {filled ? "Preenchido" : "Pendente"}

@@ -248,6 +248,14 @@
 
   --border: #e7e3dd;
   --input: #ffffff;
+
+  /* Sobre fundo claro as cores de estado precisam escurecer: as versoes do
+     tema escuro dao 2.4 a 3.8 de contraste sobre branco, abaixo dos 4.5 que
+     texto normal exige. O tom da marca nao muda, so a luminosidade. */
+  --primary: #c2410c;
+  --primary-hover: #9a3412;
+  --success: #047857;
+  --destructive: #b91c1c;
 }
 
 .light .glass {

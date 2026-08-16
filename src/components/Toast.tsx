@@ -31,8 +31,8 @@ const ICONS: Record<ToastType, typeof CheckCircle2> = {
 };
 
 const COLORS: Record<ToastType, string> = {
-  success: "#10b981",
-  error: "#ef4444",
+  success: "var(--success)",
+  error: "var(--destructive)",
   info: "var(--primary)",
 };
 

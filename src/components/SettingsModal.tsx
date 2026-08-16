@@ -272,14 +272,13 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
           </div>
 
           {/* Sessão */}
-          <div className="card" style={{ border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+          <div className="card border-destructive/30">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
               <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Encerrar sessão neste dispositivo</p>
               <button
                 type="button"
                 onClick={() => signOut()}
-                className="btn"
-                style={{ background: "#ef4444", color: "white" }}
+                className="btn btn-danger"
               >
                 <LogOut size={16} /> Sair
               </button>

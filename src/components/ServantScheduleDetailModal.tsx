@@ -9,7 +9,7 @@ interface ServantScheduleDetailModalProps {
 }
 
 function statusFor(date: ServantOverviewSchedule["dates"][number]) {
-  if (date.confirmed) return { label: "Confirmado", color: "#10b981" };
+  if (date.confirmed) return { label: "Confirmado", color: "var(--success)" };
   if (date.available) return { label: "Disponibilidade enviada (aguardando confirmação)", color: "var(--primary)" };
   return { label: "Não enviado", color: "var(--muted-foreground)" };
 }

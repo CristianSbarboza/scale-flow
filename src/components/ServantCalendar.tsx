@@ -267,7 +267,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                             {assignee.isSelf && " (você)"}
                           </span>
                           {assignee.isSelf ? (
-                            <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "#10b981" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.6875rem", color: "var(--success)" }}>
                               <Check size={12} /> Você
                             </span>
                           ) : (

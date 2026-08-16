@@ -65,7 +65,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius)', color: '#ef4444' }}>
+                <div className="rounded-lg bg-destructive/10 p-2 text-destructive">
                   <AlertTriangle size={20} />
                 </div>
                 <h3>{pending.options.title || "Confirmar ação"}</h3>
@@ -77,7 +77,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 <button type="button" onClick={() => respond(false)} className="btn btn-secondary" style={{ flex: 1 }}>
                   {pending.options.cancelLabel || "Cancelar"}
                 </button>
-                <button type="button" onClick={() => respond(true)} className="btn btn-primary" style={{ flex: 1, background: '#ef4444' }}>
+                <button type="button" onClick={() => respond(true)} className="btn btn-danger flex-1">
                   {pending.options.confirmLabel || "Confirmar"}
                 </button>
               </div>

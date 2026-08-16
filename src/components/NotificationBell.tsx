@@ -69,7 +69,7 @@ export default function NotificationBell() {
               width: "9px",
               height: "9px",
               borderRadius: "50%",
-              background: "#ef4444",
+              background: "var(--destructive)",
               border: "2px solid var(--background)",
             }}
           />
@@ -129,7 +129,7 @@ export default function NotificationBell() {
                     onClick={() => handleRespond(r.id, false)}
                     disabled={respondingId === r.id}
                     className="btn btn-ghost"
-                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem", color: "#ef4444" }}
+                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem", color: "var(--destructive)" }}
                   >
                     <X size={16} /> Recusar
                   </button>
