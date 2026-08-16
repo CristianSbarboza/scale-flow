@@ -10,6 +10,7 @@ import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DataPanel from "@/components/ui/DataPanel";
 import FormPanel from "@/components/ui/FormPanel";
+import SelectField from "@/components/ui/SelectField";
 import IconButton from "@/components/ui/IconButton";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
@@ -174,23 +175,25 @@ export default function SchedulesPage() {
           <input className="input" value={name} onChange={e => setName(e.target.value)} required />
         </div>
 
-        <div className="grid gap-6" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
-          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-            <label>Ministério</label>
-            <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
-              <option value="">Selecionar</option>
-              {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-          </div>
-          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-            <label>Setor</label>
-            <select className="input" value={sectorId} onChange={e => setSectorId(e.target.value)} required>
-              <option value="">Selecionar</option>
-              {sectors.filter(s => s.ministryId === parseInt(ministryId)).map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="grid grid-cols-2 gap-4">
+          <SelectField
+            label="Ministério"
+            value={ministryId}
+            onChange={setMinistryId}
+            placeholder="Selecionar"
+            options={ministries.map(m => ({ value: m.id, label: m.name }))}
+            required
+          />
+          <SelectField
+            label="Setor"
+            value={sectorId}
+            onChange={setSectorId}
+            placeholder="Selecionar"
+            options={sectors
+              .filter(sec => sec.ministryId === parseInt(ministryId))
+              .map(sec => ({ value: sec.id, label: sec.name }))}
+            required
+          />
         </div>
 
         <VisibilityToggle value={visibility} onChange={setVisibility} />

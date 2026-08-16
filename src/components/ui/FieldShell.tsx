@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 export default function FieldShell({
   id,
   label,
+  hideLabel = false,
   error,
   hint,
   children,
@@ -15,6 +16,8 @@ export default function FieldShell({
 }: {
   id: string;
   label: React.ReactNode;
+  /** Esconde o rótulo da vista, mantendo-o para leitores de tela. */
+  hideLabel?: boolean;
   error?: string | null;
   hint?: React.ReactNode;
   children: React.ReactNode;
@@ -22,7 +25,7 @@ export default function FieldShell({
 }) {
   return (
     <div className={cn("grid gap-2", className)}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className={cn(hideLabel && "sr-only")}>{label}</label>
       {children}
       {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (

@@ -153,7 +153,7 @@ export default function ServantsPage() {
         <SelectField
           label="Setor Principal"
           value={sectorId}
-          onChange={e => setSectorId(e.target.value)}
+          onChange={setSectorId}
           placeholder="Selecione um setor"
           options={sectors.map(sec => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
           required

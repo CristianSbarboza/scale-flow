@@ -108,7 +108,7 @@ export default function SectorsPage() {
       <SelectField
         label="Ministério"
         value={ministryId}
-        onChange={e => setMinistryId(e.target.value)}
+        onChange={setMinistryId}
         placeholder="Selecione um ministério"
         options={ministries.map(m => ({ value: m.id, label: m.name }))}
         required

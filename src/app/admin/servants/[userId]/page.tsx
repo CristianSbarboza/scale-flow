@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star } from "lucide-react";
 import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
+import Select from "@/components/ui/Select";
 import type { ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -224,16 +225,18 @@ export default function ServantMemberPage() {
 
           {availableSectors.length > 0 && (
             <div style={{ display: "flex", gap: "0.75rem" }}>
-              <select
-                className="input"
+              <Select
+                label="Setor a adicionar"
                 value={selectedSectorId}
-                onChange={(e) => setSelectedSectorId(e.target.value)}
-              >
-                <option value="">Selecione um setor</option>
-                {availableSectors.map((s) => (
-                  <option key={s.id} value={s.id}>{s.ministry.name} - {s.name}</option>
-                ))}
-              </select>
+                onChange={setSelectedSectorId}
+                options={[
+                  { value: "", label: "Selecione um setor" },
+                  ...availableSectors.map((s) => ({
+                    value: String(s.id),
+                    label: `${s.ministry.name} - ${s.name}`,
+                  })),
+                ]}
+              />
               <button
                 onClick={handleAddSector}
                 className="btn btn-primary"

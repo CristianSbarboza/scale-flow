@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus, Lock } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
+import SelectField from "@/components/ui/SelectField";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";
@@ -106,15 +107,14 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
       </div>
 
       {sectors.length > 1 && (
-        <div style={{ display: "grid", gap: "0.5rem" }}>
-          <label style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Setor</label>
-          <select className="input" value={sectorId} onChange={(e) => setSectorId(e.target.value)} required>
-            <option value="">Selecionar</option>
-            {sectors.map((s) => (
-              <option key={s.id} value={s.id}>{s.ministryName} - {s.name}</option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Setor"
+          value={sectorId}
+          onChange={setSectorId}
+          placeholder="Selecionar"
+          options={sectors.map((s) => ({ value: s.id, label: `${s.ministryName} - ${s.name}` }))}
+          required
+        />
       )}
 
       <VisibilityToggle value={visibility} onChange={setVisibility} />

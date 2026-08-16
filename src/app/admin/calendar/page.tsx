@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { ChevronLeft, ChevronRight, Filter, X, Clock, Users, Church } from "lucide-react";
 import { getCalendarSchedules } from "@/lib/actions/schedules";
+import FilterSelect from "@/components/ui/FilterSelect";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import type { CalendarSchedule } from "@/types/domain";
@@ -130,37 +131,35 @@ export default function AdminCalendarPage() {
         <p style={{ color: "var(--muted-foreground)" }}>Veja quem está escalado em cada dia, por ministério.</p>
       </header>
 
-      <div className="card glass" style={{ marginBottom: "1.5rem", display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--muted-foreground)", fontSize: "0.8125rem", fontWeight: 600 }}>
+      <div className="card glass mb-6 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground">
           <Filter size={16} /> Filtros
         </div>
         {!isLeader && (
-          <select
-            className="input"
-            style={{ maxWidth: "220px" }}
+          <FilterSelect
+            label="Filtrar por ministério"
+            className="max-w-[220px]"
             value={filterMinistryId}
-            onChange={(e) => {
-              setFilterMinistryId(e.target.value);
+            onChange={(v) => {
+              setFilterMinistryId(v);
               setFilterSectorId("all");
             }}
-          >
-            <option value="all">Todos os Ministérios</option>
-            {ministries.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
+            options={[
+              { value: "all", label: "Todos os Ministérios" },
+              ...ministries.map((m) => ({ value: String(m.id), label: m.name })),
+            ]}
+          />
         )}
-        <select
-          className="input"
-          style={{ maxWidth: "220px" }}
+        <FilterSelect
+          label="Filtrar por setor"
+          className="max-w-[220px]"
           value={filterSectorId}
-          onChange={(e) => setFilterSectorId(e.target.value)}
-        >
-          <option value="all">Todos os Setores</option>
-          {availableSectors.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+          onChange={setFilterSectorId}
+          options={[
+            { value: "all", label: "Todos os Setores" },
+            ...availableSectors.map((sec) => ({ value: String(sec.id), label: sec.name })),
+          ]}
+        />
       </div>
 
       <div className="card glass">

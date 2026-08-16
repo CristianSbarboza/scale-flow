@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Send, Lock } from "lucide-react";
 import { saveAvailability } from "@/lib/actions/availability";
+import SelectField from "@/components/ui/SelectField";
 
 interface AvailabilityFormProps {
   dates: Array<{
@@ -89,17 +90,15 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
             {lockedServantName}
           </p>
         ) : (
-          <select
-            className="input"
+          <SelectField
+            label="Quem é você?"
+            hideLabel
             value={selectedServant}
-            onChange={e => setSelectedServant(e.target.value)}
+            onChange={setSelectedServant}
+            placeholder="Selecione seu nome"
+            options={servants.map((s) => ({ value: s.id, label: s.user.name }))}
             required
-          >
-            <option value="">Selecione seu nome</option>
-            {servants.map((s) => (
-              <option key={s.id} value={s.id}>{s.user.name}</option>
-            ))}
-          </select>
+          />
         )}
       </div>
 
