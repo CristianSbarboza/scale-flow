@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus, Lock } from "lucide-react";
-import { getCoordinatorSchedules } from "@/lib/actions";
+import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";

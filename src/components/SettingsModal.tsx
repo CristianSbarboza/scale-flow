@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import { X, Settings, KeyRound, Save, User, Sun, Moon, Palette, LogOut, Check } from "lucide-react";
-import { changeOwnPassword, updateOwnColor } from "@/lib/actions";
+import { changeOwnPassword, updateOwnColor } from "@/lib/actions/account";
 import { useTheme } from "@/components/Providers";
 import { useToast } from "@/components/Toast";
 

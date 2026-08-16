@@ -1,57 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { users, servants, schedules } from "@/db/schema";
+import { users } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hash, compare } from "bcryptjs";
-import type {
-  CoordinatorSector,
-  CoordinatorSchedule,
-} from "@/types/domain";
 import { requireAdmin } from "@/lib/scope";
-
-// Setores onde o servo logado foi marcado como coordenador.
-export async function getCoordinatorSectors(): Promise<CoordinatorSector[]> {
-  const session = await getServerSession(authOptions);
-  if (!session) throw new Error("Não autorizado");
-
-  const rows = await db.query.servants.findMany({
-    where: and(eq(servants.userId, session.user.id), eq(servants.isCoordinator, true)),
-    with: { sector: { with: { ministry: true } } },
-  });
-
-  return rows.map((r) => ({
-    id: r.sector.id,
-    name: r.sector.name,
-    ministryId: r.sector.ministry.id,
-    ministryName: r.sector.ministry.name,
-  }));
-}
-
-// Escalas dos setores que o servo logado coordena.
-export async function getCoordinatorSchedules(): Promise<CoordinatorSchedule[]> {
-  const sectorIds = (await getCoordinatorSectors()).map((s) => s.id);
-  if (sectorIds.length === 0) return [];
-
-  const rows = await db.query.schedules.findMany({
-    where: inArray(schedules.sectorId, sectorIds),
-    with: { ministry: true, sector: true, dates: true },
-  });
-
-  return rows.map((s) => ({
-    id: s.id,
-    name: s.name,
-    status: s.status,
-    visibility: s.visibility,
-    shareLink: s.shareLink,
-    ministry: { name: s.ministry.name },
-    sector: { name: s.sector.name },
-    dates: s.dates.map((d) => ({ id: d.id, date: d.date, startTime: d.startTime })),
-  }));
-}
 
 export async function registerUser(name: string, email: string, password: string) {
   // Cria uma conta de ADMIN — só um admin já autenticado pode fazer isso.

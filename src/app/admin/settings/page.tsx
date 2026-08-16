@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { User, Sun, Moon, KeyRound, LogOut, Save } from "lucide-react";
 import { useTheme } from "@/components/Providers";
-import { changeOwnPassword } from "@/lib/actions";
+import { changeOwnPassword } from "@/lib/actions/account";
 import { useToast } from "@/components/Toast";
 
 const sectionLabelStyle: React.CSSProperties = {

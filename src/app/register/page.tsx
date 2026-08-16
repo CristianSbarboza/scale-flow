@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { registerUser } from "@/lib/actions";
+import { registerUser } from "@/lib/actions/account";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
