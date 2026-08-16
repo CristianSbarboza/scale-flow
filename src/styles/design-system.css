@@ -134,6 +134,17 @@ button {
   box-shadow: 0 4px 12px rgb(251 146 60 / 0.3);
 }
 
+.btn-danger {
+  background-color: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.btn-danger:hover {
+  background-color: color-mix(in oklab, var(--destructive) 85%, black);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(239 68 68 / 0.3);
+}
+
 .btn-ghost {
   background-color: transparent;
   color: var(--foreground);
