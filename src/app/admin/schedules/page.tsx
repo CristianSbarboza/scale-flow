@@ -67,6 +67,7 @@ export default function SchedulesPage() {
 
   const [lastLink, setLastLink] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -116,6 +117,8 @@ export default function SchedulesPage() {
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingList(false);
       }
     };
     load();
@@ -288,6 +291,7 @@ export default function SchedulesPage() {
             </>
           }
           rows={filteredSchedules}
+          loading={loadingList}
           rowKey={(s) => s.id}
           empty={
             schedules.length === 0

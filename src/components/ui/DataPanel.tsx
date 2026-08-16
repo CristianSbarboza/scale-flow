@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingDots from "@/components/ui/LoadingDots";
 import Panel from "@/components/ui/Panel";
 import { cn } from "@/lib/cn";
 
@@ -34,6 +35,7 @@ export default function DataPanel<T>({
   rowKey,
   onRowClick,
   empty,
+  loading = false,
   className,
 }: {
   title: React.ReactNode;
@@ -46,6 +48,8 @@ export default function DataPanel<T>({
   rowKey: (row: T) => string | number;
   onRowClick?: (row: T) => void;
   empty: React.ReactNode;
+  /** Enquanto verdadeiro, mostra os pontinhos no lugar dos dados. */
+  loading?: boolean;
   className?: string;
 }) {
   const clickable = Boolean(onRowClick);
@@ -76,7 +80,7 @@ export default function DataPanel<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {!loading && rows.map((row) => (
               <tr
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
@@ -95,7 +99,14 @@ export default function DataPanel<T>({
                 ))}
               </tr>
             ))}
-            {rows.length === 0 && (
+            {loading && (
+              <tr>
+                <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
+                  <LoadingDots />
+                </td>
+              </tr>
+            )}
+            {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
                   {empty}
@@ -108,7 +119,7 @@ export default function DataPanel<T>({
 
       {/* Celular */}
       <div className="admin-mobile-list">
-        {rows.map((row) => (
+        {!loading && rows.map((row) => (
           <div
             key={rowKey(row)}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
@@ -130,7 +141,12 @@ export default function DataPanel<T>({
             )}
           </div>
         ))}
-        {rows.length === 0 && (
+        {loading && (
+          <p className="py-12 text-center text-muted-foreground">
+            <LoadingDots />
+          </p>
+        )}
+        {!loading && rows.length === 0 && (
           <p className="py-12 text-center text-muted-foreground">{empty}</p>
         )}
       </div>

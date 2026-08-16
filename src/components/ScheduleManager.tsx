@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getScheduleResponses } from "@/lib/actions/schedules";
+import LoadingDots from "@/components/ui/LoadingDots";
 import { assignServant, removeAssignment } from "@/lib/actions/availability";
 import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
 
@@ -118,9 +119,8 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
         <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin', flex: '1 1 auto', minHeight: 0 }}>
           <label style={{ display: 'block', marginBottom: '1rem' }}>Respostas e Escalação</label>
           {loading ? (
-            <div className="flex items-center gap-4 flex-col items-center justify-center py-20 gap-4">
-              <div className="animate-spin" style={{ width: '40px', height: '40px', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
-              <p style={{ color: 'var(--muted-foreground)' }}>Carregando dados da escala...</p>
+            <div className="flex justify-center py-20 text-muted-foreground">
+              <LoadingDots label="Carregando dados da escala" />
             </div>
           ) : (
             <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>

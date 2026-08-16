@@ -43,6 +43,7 @@ export default function MinistriesPage() {
   const [leaderName, setLeaderName] = useState("");
   const [leaderEmail, setLeaderEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
 
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,6 +79,8 @@ export default function MinistriesPage() {
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingList(false);
       }
     };
     load();
@@ -179,6 +182,7 @@ export default function MinistriesPage() {
           title="Ministérios Cadastrados"
           toolbar={<SearchInput value={searchTerm} onChange={setSearchTerm} />}
           rows={filteredMinistries}
+          loading={loadingList}
           rowKey={(m) => m.id}
           onRowClick={(m) => router.push(`/admin/ministries/${m.id}`)}
           empty="Nenhum ministério encontrado para a pesquisa."

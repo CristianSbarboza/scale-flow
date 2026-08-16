@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, X, Clock, Users, Church } from "lucide-react
 import { getCalendarSchedules } from "@/lib/actions/schedules";
 import FilterSelect from "@/components/ui/FilterSelect";
 import DataPanel from "@/components/ui/DataPanel";
+import LoadingDots from "@/components/ui/LoadingDots";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import type { CalendarSchedule } from "@/types/domain";
@@ -184,9 +185,8 @@ export default function AdminCalendarPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4rem 0", gap: "1rem" }}>
-            <div className="animate-spin" style={{ width: "40px", height: "40px", border: "3px solid var(--primary)", borderTopColor: "transparent", borderRadius: "50%" }} />
-            <p style={{ color: "var(--muted-foreground)" }}>Carregando calendário...</p>
+          <div className="flex justify-center py-16 text-muted-foreground">
+            <LoadingDots label="Carregando calendário" />
           </div>
         ) : (
           <div className="servant-calendar-grid mx-auto max-w-[560px]">
@@ -226,6 +226,7 @@ export default function AdminCalendarPage() {
         <DataPanel
           title="Escalas do Mês"
           rows={monthSchedules}
+          loading={loading}
           rowKey={(s) => s.id}
           empty="Nenhuma escala neste mês."
           columns={[

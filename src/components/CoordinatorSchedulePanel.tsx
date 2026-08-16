@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus, Lock } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
 import SelectField from "@/components/ui/SelectField";
+import LoadingDots from "@/components/ui/LoadingDots";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";
@@ -154,7 +155,7 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "3rem 0", gap: "1rem" }}>
-        <div className="animate-spin" style={{ width: "36px", height: "36px", border: "3px solid var(--primary)", borderTopColor: "transparent", borderRadius: "50%" }} />
+        <LoadingDots label="Carregando escalas" />
       </div>
     );
   }

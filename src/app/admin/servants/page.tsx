@@ -65,6 +65,7 @@ export default function ServantsPage() {
   
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setAction } = useAdminTopbar();
 
@@ -95,6 +96,8 @@ export default function ServantsPage() {
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingList(false);
       }
     };
     load();
@@ -224,6 +227,7 @@ export default function ServantsPage() {
             </>
           }
           rows={filteredServants}
+          loading={loadingList}
           rowKey={(s) => s.userId}
           onRowClick={(s) => router.push(`/admin/servants/${s.userId}`)}
           empty="Nenhum servo encontrado para os filtros selecionados."

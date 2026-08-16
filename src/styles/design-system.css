@@ -274,4 +274,7 @@
 
   /* Fonte do logo, definida por next/font em src/app/layout.tsx. */
   --font-logo: var(--font-logo);
+
+  /* Pontinho do LoadingDots. O atraso de cada um vem do proprio componente. */
+  --animate-dot-pulse: dotPulse 1.4s ease-in-out infinite;
 }

@@ -43,6 +43,7 @@ export default function SectorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMinistryId, setFilterMinistryId] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setAction } = useAdminTopbar();
 
@@ -71,6 +72,8 @@ export default function SectorsPage() {
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingList(false);
       }
     };
     load();
@@ -149,6 +152,7 @@ export default function SectorsPage() {
             </>
           }
           rows={filteredSectors}
+          loading={loadingList}
           rowKey={(s) => s.id}
           onRowClick={(s) => router.push(`/admin/sectors/${s.id}`)}
           empty="Nenhum setor encontrado para os filtros selecionados."
