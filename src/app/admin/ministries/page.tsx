@@ -195,7 +195,7 @@ export default function MinistriesPage() {
             },
             {
               header: "Líder",
-              cell: (m) => <span className="text-muted-foreground">{m.leader?.name || "N/A"}</span>,
+              cell: (m) => m.leader?.name || "N/A",
             },
             {
               header: "Setores",
@@ -203,11 +203,7 @@ export default function MinistriesPage() {
             },
             {
               header: "Servos",
-              cell: (m) => (
-                <span className="text-muted-foreground">
-                  {m.sectors?.reduce((acc, sec) => acc + (sec.servants?.length || 0), 0) || 0}
-                </span>
-              ),
+              cell: (m) => m.sectors?.reduce((acc, sec) => acc + (sec.servants?.length || 0), 0) || 0,
             },
           ]}
         />

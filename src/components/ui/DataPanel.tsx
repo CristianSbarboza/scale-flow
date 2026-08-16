@@ -86,7 +86,10 @@ export default function DataPanel<T>({
                 )}
               >
                 {columns.map((c) => (
-                  <td key={c.header} className={cn("p-3", c.align === "right" && "text-right")}>
+                  <td
+                    key={c.header}
+                    className={cn("p-3 text-sm", c.align === "right" && "text-right")}
+                  >
                     {c.cell(row)}
                   </td>
                 ))}

@@ -231,7 +231,7 @@ export default function ServantsPage() {
             { header: "Nome", primary: true, cell: (s) => s.name },
             {
               header: "Usuário/E-mail",
-              cell: (s) => <span className="text-muted-foreground">{s.username || s.email || "-"}</span>,
+              cell: (s) => s.username || s.email || "-",
             },
             {
               header: "Setores",

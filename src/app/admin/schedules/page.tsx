@@ -306,11 +306,11 @@ export default function SchedulesPage() {
             },
             {
               header: "Ministério",
-              cell: (s) => <span className="text-sm text-muted-foreground">{s.ministry.name}</span>,
+              cell: (s) => s.ministry.name,
             },
             {
               header: "Setor",
-              cell: (s) => <span className="text-sm text-muted-foreground">{s.sector.name}</span>,
+              cell: (s) => s.sector.name,
             },
             {
               header: "Ações",

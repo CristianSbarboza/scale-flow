@@ -158,7 +158,7 @@ export default function SectorsPage() {
               primary: true,
               cell: (s) => (
                 <div className="flex items-center gap-2">
-                  <LayoutGrid size={14} className="text-primary/60" />
+                  <LayoutGrid size={14} className="text-primary" />
                   <span>{s.name}</span>
                 </div>
               ),
@@ -169,11 +169,7 @@ export default function SectorsPage() {
             },
             {
               header: "Servos",
-              cell: (s) => (
-                <span className="text-xs font-bold text-muted-foreground">
-                  {s.servants?.length || 0}
-                </span>
-              ),
+              cell: (s) => s.servants?.length || 0,
             },
           ]}
         />
