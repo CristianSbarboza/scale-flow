@@ -4,13 +4,15 @@ import { useState, useEffect } from "react";
 import { createSchedule, getSchedules, deleteSchedule } from "@/lib/actions/schedules";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
-import { CalendarPlus, Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
+import { Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DataPanel from "@/components/ui/DataPanel";
 import FormPanel from "@/components/ui/FormPanel";
 import SelectField from "@/components/ui/SelectField";
+import Field from "@/components/ui/Field";
+import ScheduleDatesField from "@/components/ui/ScheduleDatesField";
 import IconButton from "@/components/ui/IconButton";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
@@ -62,8 +64,6 @@ export default function SchedulesPage() {
   const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
   const [dates, setDates] = useState<{ date: string, startTime: string }[]>([]);
 
-  const [newDate, setNewDate] = useState("");
-  const [newStartTime, setNewStartTime] = useState("09:00");
 
   const [lastLink, setLastLink] = useState("");
   const [loading, setLoading] = useState(false);
@@ -125,15 +125,7 @@ export default function SchedulesPage() {
     return () => { isMounted = false; };
   }, []);
 
-  const addDate = () => {
-    if (!newDate) return;
-    setDates([...dates, { date: newDate, startTime: newStartTime }]);
-    setNewDate("");
-  };
 
-  const removeDate = (index: number) => {
-    setDates(dates.filter((_, i) => i !== index));
-  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,10 +165,13 @@ export default function SchedulesPage() {
   const formContent = (
     <>
       <form onSubmit={handleCreate} className="grid gap-6">
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Nome da Escala (ex: Escala de Maio)</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} required />
-        </div>
+        <Field
+          label="Nome da Escala"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Ex: Escala de Maio"
+          required
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <SelectField
@@ -201,25 +196,7 @@ export default function SchedulesPage() {
 
         <VisibilityToggle value={visibility} onChange={setVisibility} />
 
-        <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
-          <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
-          <div className="grid gap-6" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
-            <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
-            <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
-            <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
-              <CalendarPlus size={20} />
-            </button>
-          </div>
-
-          <div style={{ marginTop: '1rem' }}>
-            {dates.map((d, i) => (
-              <div key={i} className="flex items-center gap-4 justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                <span>{d.date} | {d.startTime}</span>
-                <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444' }}>Remover</button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ScheduleDatesField value={dates} onChange={setDates} />
 
         <button type="submit" className="btn btn-primary" disabled={loading}>
           <LinkIcon size={18} />

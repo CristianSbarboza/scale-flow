@@ -1,16 +1,24 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CalendarPlus, Copy, Edit3, Eye, Trash2, Plus, Lock } from "lucide-react";
+import { Copy, Edit3, Eye, Trash2, Plus, Lock, Link as LinkIcon } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
-import SelectField from "@/components/ui/SelectField";
-import LoadingDots from "@/components/ui/LoadingDots";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import DataPanel from "@/components/ui/DataPanel";
+import Field from "@/components/ui/Field";
+import FilterSelect from "@/components/ui/FilterSelect";
+import FormPanel from "@/components/ui/FormPanel";
+import IconButton from "@/components/ui/IconButton";
+import ScheduleDatesField from "@/components/ui/ScheduleDatesField";
+import SearchInput from "@/components/ui/SearchInput";
+import SelectField from "@/components/ui/SelectField";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -32,10 +40,11 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   const [sectorId, setSectorId] = useState(sectors.length === 1 ? String(sectors[0].id) : "");
   const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
   const [dates, setDates] = useState<{ date: string; startTime: string }[]>([]);
-  const [newDate, setNewDate] = useState("");
-  const [newStartTime, setNewStartTime] = useState("09:00");
   const [creating, setCreating] = useState(false);
   const [lastLink, setLastLink] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterSectorId, setFilterSectorId] = useState("all");
 
   const load = useCallback(async () => {
     const data = await getCoordinatorSchedules();
@@ -48,15 +57,18 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
     load();
   }, [load]);
 
-  const addDate = () => {
-    if (!newDate) return;
-    setDates([...dates, { date: newDate, startTime: newStartTime }]);
-    setNewDate("");
-  };
-
-  const removeDate = (index: number) => {
-    setDates(dates.filter((_, i) => i !== index));
-  };
+  // O escopo ja vem restrito do servidor: getCoordinatorSchedules so devolve
+  // escalas dos setores que esta pessoa coordena. Aqui e so busca e filtro.
+  const filteredSchedules = schedules.filter((s) => {
+    if (filterSectorId !== "all" && s.sector.name !== filterSectorId) return false;
+    const termo = searchTerm.trim().toLowerCase();
+    if (!termo) return true;
+    return (
+      s.name.toLowerCase().includes(termo) ||
+      s.sector.name.toLowerCase().includes(termo) ||
+      s.ministry.name.toLowerCase().includes(termo)
+    );
+  });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +85,7 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
       setName("");
       setVisibility("public");
       setDates([]);
+      setShowCreateModal(false);
       showToast("Escala criada com sucesso.", "success");
       await load();
     } catch (error) {
@@ -101,116 +114,127 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   };
 
   const formContent = (
-    <form onSubmit={handleCreate} style={{ display: "grid", gap: "1rem" }}>
-      <div style={{ display: "grid", gap: "0.5rem" }}>
-        <label style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Nome da Escala</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Escala de Maio" required />
-      </div>
-
-      {sectors.length > 1 && (
-        <SelectField
-          label="Setor"
-          value={sectorId}
-          onChange={setSectorId}
-          placeholder="Selecionar"
-          options={sectors.map((s) => ({ value: s.id, label: `${s.ministryName} - ${s.name}` }))}
+    <>
+      <form onSubmit={handleCreate} className="grid gap-6">
+        <Field
+          label="Nome da Escala"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ex: Escala de Maio"
           required
         />
-      )}
 
-      <VisibilityToggle value={visibility} onChange={setVisibility} />
+        {sectors.length > 1 && (
+          <SelectField
+            label="Setor"
+            value={sectorId}
+            onChange={setSectorId}
+            placeholder="Selecionar"
+            options={sectors.map((s) => ({ value: s.id, label: `${s.ministryName} - ${s.name}` }))}
+            required
+          />
+        )}
 
-      <div style={{ padding: "1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
-        <p style={{ marginBottom: "0.75rem", fontSize: "0.875rem", fontWeight: 600 }}>Adicionar Datas e Horários</p>
-        <div style={{ display: "grid", gap: "0.5rem", gridTemplateColumns: "2fr 1fr auto" }}>
-          <input type="date" className="input" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-          <input type="time" className="input" value={newStartTime} onChange={(e) => setNewStartTime(e.target.value)} />
-          <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: "0.5rem" }}>
-            <CalendarPlus size={20} />
-          </button>
-        </div>
-        <div style={{ marginTop: "1rem", display: "grid", gap: "0.5rem" }}>
-          {dates.map((d, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", background: "var(--card)", borderRadius: "0.25rem", fontSize: "0.875rem" }}>
-              <span>{d.date} | {d.startTime.slice(0, 5)}</span>
-              <button type="button" onClick={() => removeDate(i)} style={{ color: "#ef4444" }}>Remover</button>
-            </div>
-          ))}
-        </div>
-      </div>
+        <VisibilityToggle value={visibility} onChange={setVisibility} />
 
-      <button type="submit" className="btn btn-primary" disabled={creating}>
-        {creating ? "Gerando..." : "Gerar Link de Escala"}
-      </button>
+        <ScheduleDatesField value={dates} onChange={setDates} />
+
+        <Button type="submit" disabled={creating}>
+          <LinkIcon size={18} />
+          {creating ? "Gerando..." : "Gerar Link de Escala"}
+        </Button>
+      </form>
 
       {lastLink && (
-        <div style={{ padding: "1rem", background: "rgba(16, 185, 129, 0.1)", border: "1px solid #10b981", borderRadius: "var(--radius)" }}>
-          <p style={{ fontSize: "0.8125rem", marginBottom: "0.5rem" }}>Escala gerada. Copie o link e envie para o setor.</p>
-          <code style={{ fontSize: "0.8125rem", color: "#10b981", wordBreak: "break-all" }}>{lastLink}</code>
-        </div>
+        <Alert tone="success" className="mt-6">
+          <p className="mb-2">Escala gerada. Copie o link e envie para o setor.</p>
+          <code className="break-all">{lastLink}</code>
+        </Alert>
       )}
-    </form>
+    </>
   );
-
-  if (loading) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "3rem 0", gap: "1rem" }}>
-        <LoadingDots label="Carregando escalas" />
-      </div>
-    );
-  }
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", gap: "0.75rem", flexWrap: "wrap" }}>
-        <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>
-          Escalas dos setores que você coordena.
-        </p>
-        <button type="button" onClick={() => setShowCreateModal(true)} className="btn btn-primary" style={{ flexShrink: 0 }}>
-          <Plus size={16} /> Nova Escala
-        </button>
-      </div>
+      <div className="admin-panel-layout">
+        <FormPanel title="Criar Nova Escala">{formContent}</FormPanel>
 
-      <div style={{ display: "grid", gap: "0.75rem" }}>
-        {schedules.map((s) => (
-          <div key={s.id} className="card" style={{ display: "grid", gap: "0.5rem" }}>
-            <p style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              {s.name}
-              {s.visibility === "private" && (
-                <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
+        <DataPanel
+          title="Suas Escalas"
+          stackToolbar
+          loading={loading}
+          toolbar={
+            <>
+              {sectors.length > 1 && (
+                <FilterSelect
+                  label="Filtrar por setor"
+                  value={filterSectorId}
+                  onChange={setFilterSectorId}
+                  options={[
+                    { value: "all", label: "Todos os Setores" },
+                    ...sectors.map((s) => ({ value: s.name, label: s.name })),
+                  ]}
+                />
               )}
-            </p>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
-              {s.ministry.name} · {s.sector.name} · {s.dates.length} {s.dates.length === 1 ? "data" : "datas"}
-            </p>
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", paddingTop: "0.25rem", borderTop: "1px solid var(--border)" }}>
-              <button onClick={() => setEditingSchedule(s)} title="Editar" style={{ color: "var(--primary)", padding: "0.375rem" }}>
-                <Edit3 size={16} />
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
-                  showToast("Link copiado!", "success");
-                }}
-                title="Copiar link"
-                style={{ color: "var(--muted-foreground)", padding: "0.375rem" }}
-              >
-                <Copy size={16} />
-              </button>
-              <button onClick={() => handleDelete(s.id)} title="Excluir" style={{ color: "#ef4444", padding: "0.375rem" }}>
-                <Trash2 size={16} />
-              </button>
-              <button onClick={() => setDetailsSchedule(s)} title="Ver detalhes" style={{ color: "var(--foreground)", padding: "0.375rem" }}>
-                <Eye size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-        {schedules.length === 0 && (
-          <p style={{ padding: "2rem 0", textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
-            Nenhuma escala criada ainda.
-          </p>
-        )}
+              <SearchInput value={searchTerm} onChange={setSearchTerm} />
+              <Button className="lg:hidden" onClick={() => setShowCreateModal(true)}>
+                <Plus size={16} /> Nova Escala
+              </Button>
+            </>
+          }
+          rows={filteredSchedules}
+          rowKey={(s) => s.id}
+          empty={
+            schedules.length === 0
+              ? "Nenhuma escala criada ainda."
+              : "Nenhuma escala encontrada para os filtros selecionados."
+          }
+          columns={[
+            {
+              header: "Nome",
+              primary: true,
+              cell: (s) => (
+                <span className="flex items-center gap-1.5">
+                  {s.name}
+                  {s.visibility === "private" && (
+                    <Lock size={13} className="text-muted-foreground" aria-label="Escala privada" />
+                  )}
+                </span>
+              ),
+            },
+            { header: "Setor", cell: (s) => s.sector.name },
+            {
+              header: "Datas",
+              cell: (s) => s.dates.length,
+            },
+            {
+              header: "Ações",
+              cell: (s) => (
+                <div className="flex gap-1">
+                  <IconButton label="Editar" tone="primary" onClick={() => setEditingSchedule(s)}>
+                    <Edit3 size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Copiar link"
+                    tone="muted"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
+                      showToast("Link copiado!", "success");
+                    }}
+                  >
+                    <Copy size={16} />
+                  </IconButton>
+                  <IconButton label="Excluir" tone="destructive" onClick={() => handleDelete(s.id)}>
+                    <Trash2 size={16} />
+                  </IconButton>
+                  <IconButton label="Ver detalhes" onClick={() => setDetailsSchedule(s)}>
+                    <Eye size={16} />
+                  </IconButton>
+                </div>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {showCreateModal && (
