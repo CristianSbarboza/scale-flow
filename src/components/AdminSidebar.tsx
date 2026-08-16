@@ -11,12 +11,11 @@ import {
   LayoutGrid,
   ChevronLeft,
   ChevronRight,
-  Menu,
-  X,
   Settings
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import NavLink from "@/components/ui/NavLink";
+import MenuToggle from "@/components/ui/MenuToggle";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Visão Geral", href: "/admin" },
@@ -61,14 +60,7 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
   return (
     <>
       <div className="admin-mobile-topbar">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="btn btn-ghost"
-          style={{ padding: '0.5rem' }}
-          aria-label="Abrir menu"
-        >
-          <Menu size={22} />
-        </button>
+        <MenuToggle open={mobileOpen} onClick={() => setMobileOpen((v) => !v)} />
         {action}
       </div>
 
@@ -104,14 +96,7 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           }}>
             {isCollapsed ? 'S' : 'ScaleFlow'}
           </span>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="btn btn-ghost admin-sidebar-mobile-close"
-            style={{ padding: '0.375rem', borderRadius: '50%' }}
-            aria-label="Fechar menu"
-          >
-            <X size={18} />
-          </button>
+
         </div>
 
         <button

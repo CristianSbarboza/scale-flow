@@ -97,8 +97,25 @@ main {
   display: none;
 }
 
-.admin-sidebar-mobile-close {
-  display: none;
+/* `display` nao transita, entao o backdrop existe sempre no celular e some
+   por opacidade — e com pointer-events desligado para nao capturar cliques
+   enquanto invisivel. */
+@media (max-width: 640px) {
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgb(0 0 0 / 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .admin-sidebar-backdrop.mobile-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .admin-mobile-list {
@@ -124,7 +141,9 @@ main {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 20;
+    /* Acima da gaveta (50): o botao vira X e continua clicavel com o menu
+       aberto, por isso nao pode ficar coberto. */
+    z-index: 60;
     background: var(--card);
     border-bottom: 1px solid var(--border);
   }
@@ -145,7 +164,7 @@ main {
     border-radius: 0 !important;
     z-index: 50;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 
     /* Aqui a sidebar e uma gaveta por cima do conteudo, e nao um painel ao
        lado dele: o vidro de 70% do desktop deixaria a pagina aparecer atras
@@ -161,20 +180,13 @@ main {
     transform: translateX(0);
   }
 
-  .admin-sidebar-backdrop.mobile-open {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 40;
+  /* Empurra o conteudo da gaveta para baixo da topbar fixa. */
+  aside.admin-sidebar {
+    padding-top: calc(72px + 1.5rem) !important;
   }
 
   .admin-collapse-toggle {
     display: none !important;
-  }
-
-  .admin-sidebar-mobile-close {
-    display: flex;
   }
 
   .servant-tabbar {
