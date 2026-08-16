@@ -7,7 +7,8 @@ import {
   Users,
   Calendar,
   CalendarDays,
-  Layers,
+  Church,
+  LayoutGrid,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -19,8 +20,8 @@ import NavLink from "@/components/ui/NavLink";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Visão Geral", href: "/admin" },
-  { icon: Layers, label: "Ministérios", href: "/admin/ministries", adminOnly: true },
-  { icon: Layers, label: "Setores", href: "/admin/sectors" },
+  { icon: Church, label: "Ministérios", href: "/admin/ministries", adminOnly: true },
+  { icon: LayoutGrid, label: "Setores", href: "/admin/sectors" },
   { icon: Users, label: "Servos", href: "/admin/servants" },
   { icon: Calendar, label: "Escalas", href: "/admin/schedules" },
   { icon: CalendarDays, label: "Calendário", href: "/admin/calendar" },

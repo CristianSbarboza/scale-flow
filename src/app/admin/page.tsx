@@ -1,4 +1,4 @@
-import { Church, Layers, Users, Calendar } from "lucide-react";
+import { Church, LayoutGrid, Users, Calendar } from "lucide-react";
 import StatsRule, { type StatItem } from "@/components/ui/StatsRule";
 import Avatar from "@/components/ui/Avatar";
 import EmptyState from "@/components/ui/EmptyState";
@@ -89,7 +89,7 @@ export default async function AdminDashboard() {
     ...(ministryCount
       ? [{ icon: Church, label: "Ministérios", value: ministryCount.value, href: "/admin/ministries" }]
       : []),
-    { icon: Layers, label: "Setores", value: sectorCount.value, href: "/admin/sectors" },
+    { icon: LayoutGrid, label: "Setores", value: sectorCount.value, href: "/admin/sectors" },
     { icon: Users, label: "Servos", value: servantCount.value, href: "/admin/servants" },
     { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value, href: "/admin/schedules" },
   ];
@@ -160,7 +160,7 @@ export default async function AdminDashboard() {
             latestSectors.map((s) => (
               <ListRow
                 key={s.id}
-                leading={<Layers size={16} className="text-primary" />}
+                leading={<LayoutGrid size={16} className="text-primary" />}
                 title={s.name}
                 subtitle={s.ministryName}
                 href={`/admin/sectors/${s.id}`}
