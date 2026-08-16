@@ -162,13 +162,13 @@ export default function AdminCalendarPage() {
         />
       </div>
 
-      <div className="card glass">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-          <button onClick={() => goToMonth(-1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Mês anterior">
+      <div className="card glass mr-auto w-full lg:w-1/2">
+        <div className="mb-6 flex items-center justify-between">
+          <button onClick={() => goToMonth(-1)} className="btn btn-ghost p-2" aria-label="Mês anterior">
             <ChevronLeft size={20} />
           </button>
-          <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
-          <button onClick={() => goToMonth(1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Próximo mês">
+          <h3 className="capitalize">{monthLabel}</h3>
+          <button onClick={() => goToMonth(1)} className="btn btn-ghost p-2" aria-label="Próximo mês">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -179,9 +179,9 @@ export default function AdminCalendarPage() {
             <p style={{ color: "var(--muted-foreground)" }}>Carregando calendário...</p>
           </div>
         ) : (
-          <div className="servant-calendar-grid" style={{ maxWidth: "560px", margin: "0 auto" }}>
+          <div className="servant-calendar-grid">
             {WEEKDAY_LABELS.map((label, i) => (
-              <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--muted-foreground)", fontWeight: 600 }}>
+              <div key={i} className="text-center text-xs font-semibold text-muted-foreground">
                 {label}
               </div>
             ))}
