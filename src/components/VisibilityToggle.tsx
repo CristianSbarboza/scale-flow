@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe, Lock } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 export type ScheduleVisibility = "public" | "private";
 
@@ -28,18 +29,24 @@ export default function VisibilityToggle({ value, onChange }: Props) {
   const active = OPTIONS.find((o) => o.value === value) ?? OPTIONS[0];
 
   return (
-    <div style={{ display: "grid", gap: "0.5rem" }}>
-      <label style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Acesso à escala</label>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+    <div className="grid gap-2">
+      <label className="text-[0.8125rem] font-semibold">Acesso à escala</label>
+      <div role="radiogroup" aria-label="Acesso à escala" className="flex gap-2">
         {OPTIONS.map((o) => {
           const isActive = o.value === value;
           return (
             <button
               key={o.value}
               type="button"
+              role="radio"
+              aria-checked={isActive}
               onClick={() => onChange(o.value)}
-              className={`btn ${isActive ? "btn-primary" : "btn-secondary"}`}
-              style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem" }}
+              className={cn(
+                "btn flex-1 border bg-transparent p-2 text-[0.8125rem] transition-colors",
+                isActive
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground",
+              )}
             >
               <o.icon size={15} />
               {o.label}
@@ -47,7 +54,7 @@ export default function VisibilityToggle({ value, onChange }: Props) {
           );
         })}
       </div>
-      <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{active.hint}</p>
+      <p className="text-xs text-muted-foreground">{active.hint}</p>
     </div>
   );
 }
