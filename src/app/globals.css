@@ -146,6 +146,15 @@ main {
     z-index: 50;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+
+    /* Aqui a sidebar e uma gaveta por cima do conteudo, e nao um painel ao
+       lado dele: o vidro de 70% do desktop deixaria a pagina aparecer atras
+       do menu. Fundo solido e sombra para ela ler como camada de cima. */
+    background: var(--card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-right: 1px solid var(--border);
+    box-shadow: 8px 0 24px rgb(0 0 0 / 0.35);
   }
 
   aside.admin-sidebar.mobile-open {
