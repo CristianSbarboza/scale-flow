@@ -252,5 +252,10 @@ button {
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-token: var(--radius);
+  /* Sobrescreve o `lg` do Tailwind com o raio do projeto, para que
+     `rounded-lg` signifique o raio do design system e não 0.5rem. */
+  --radius-lg: var(--radius);
+
+  /* Fonte do logo, definida por next/font em src/app/layout.tsx. */
+  --font-logo: var(--font-logo);
 }

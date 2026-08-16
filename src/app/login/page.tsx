@@ -64,49 +64,22 @@ function LoginForm() {
   };
 
   return (
-    <div className="login-container" style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '100vh',
-    }}>
-      <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ 
-            fontSize: '2.5rem', 
-            fontFamily: 'var(--font-logo)', 
-            color: 'var(--primary)',
-            letterSpacing: '2px',
-            marginBottom: '0.5rem'
-          }}>
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,#ea580c,#000000)] light:bg-[radial-gradient(circle_at_top_left,#fff7ed,#f3f4f6)]">
+      <div className="card glass animate-fade-in w-full max-w-[400px]">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 font-logo text-[2.5rem] tracking-[2px] text-primary">
             ScaleFlow
           </h1>
-          <p style={{ color: 'var(--muted-foreground)' }}>Gestão de Escalas Ministeriais</p>
+          <p className="text-muted-foreground">Gestão de Escalas Ministeriais</p>
         </div>
 
         {registered && (
-          <div style={{ 
-            padding: '0.75rem', 
-            background: 'rgba(16, 185, 129, 0.1)', 
-            border: '1px solid #10b981', 
-            borderRadius: 'var(--radius)', 
-            color: '#10b981', 
-            fontSize: '0.875rem', 
-            textAlign: 'center',
-            marginBottom: '1.5rem'
-          }}>
+          <div className="mb-6 rounded-lg border border-success bg-success/10 p-3 text-center text-sm text-success">
             Cadastro realizado com sucesso! Faça login abaixo.
           </div>
         )}
 
-        <div className="flex items-center gap-4" style={{
-          gap: '0.5rem',
-          padding: '0.375rem',
-          borderRadius: 'var(--radius)',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          marginBottom: '1.5rem',
-        }}>
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1.5">
           {loginRoles.map((r) => {
             const isActive = role === r.value;
             return (
@@ -114,22 +87,9 @@ function LoginForm() {
                 key={r.value}
                 type="button"
                 onClick={() => { setRole(r.value); setError(""); setIdentifier(""); }}
-                className="flex items-center gap-4"
-                style={{
-                  flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: '0.375rem',
-                  padding: '0.5rem',
-                  borderRadius: 'calc(var(--radius) - 0.25rem)',
-                  border: 'none',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  background: isActive ? 'var(--primary)' : 'transparent',
-                  color: isActive ? 'white' : 'var(--muted-foreground)',
-                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--radius)-0.25rem)] p-2 text-[0.8125rem] font-semibold transition-all ${
+                  isActive ? "bg-primary text-white" : "bg-transparent text-muted-foreground"
+                }`}
               >
                 <r.icon size={16} />
                 {r.label}
@@ -139,7 +99,7 @@ function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="grid gap-6">
-          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-2">
             <label htmlFor="identifier">{isServant ? "Usuário" : "E-mail"}</label>
             <input
               id="identifier"
@@ -152,30 +112,22 @@ function LoginForm() {
             />
           </div>
 
-          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-2">
             <label htmlFor="password">Senha</label>
-            <div style={{ position: 'relative' }}>
-              <input 
+            <div className="relative">
+              <input
                 id="password"
-                type={showPassword ? "text" : "password"} 
-                className="input" 
+                type={showPassword ? "text" : "password"}
+                className="input pr-10"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ paddingRight: '2.5rem' }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '0.75rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--muted-foreground)',
-                  padding: '0.25rem'
-                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -183,19 +135,18 @@ function LoginForm() {
           </div>
 
           {error && (
-            <p style={{ color: '#ef4444', fontSize: '0.875rem', textAlign: 'center' }}>{error}</p>
+            <p className="text-center text-sm text-destructive">{error}</p>
           )}
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary mt-4"
             disabled={loading}
-            style={{ marginTop: '1rem' }}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '0.875rem', marginTop: '1rem', color: 'var(--muted-foreground)' }}>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Não tem uma conta? Peça o acesso ao líder do seu ministério.
           </p>
         </form>
