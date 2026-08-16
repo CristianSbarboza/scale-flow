@@ -1,4 +1,5 @@
-import { StackedStats } from "@/components/StackedStats";
+import { Church, Layers, Users, Calendar } from "lucide-react";
+import StatsRule, { type StatItem } from "@/components/ui/StatsRule";
 import { db } from "@/db";
 import { ministries, sectors, servants, schedules, users } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
@@ -54,25 +55,25 @@ export default async function AdminDashboard() {
 
   const ministryCount = isLeader ? null : (await db.select({ value: count() }).from(ministries))[0];
 
-  const statsData = {
-    ...(ministryCount ? { ministries: ministryCount.value } : {}),
-    sectors: sectorCount.value,
-    servants: servantCount.value,
-    schedules: scheduleCount.value,
-  };
+  const stats: StatItem[] = [
+    ...(ministryCount ? [{ icon: Church, label: "Ministérios", value: ministryCount.value }] : []),
+    { icon: Layers, label: "Setores", value: sectorCount.value },
+    { icon: Users, label: "Servos", value: servantCount.value },
+    { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value },
+  ];
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+      <header className="mb-6">
+        <h1 className="mb-2 text-3xl">
           Painel Administrativo{ministry ? ` — ${ministry.name}` : ""}
         </h1>
-        <p style={{ color: 'var(--muted-foreground)' }}>Bem-vindo de volta! Aqui está o resumo da sua gestão.</p>
+        <p className="text-muted-foreground">Bem-vindo de volta! Aqui está o resumo da sua gestão.</p>
       </header>
 
-      <StackedStats data={statsData} />
+      <StatsRule items={stats} />
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '2fr 1fr', marginTop: '2.5rem' } as React.CSSProperties}>
+      <div className="admin-panel-layout" style={{ '--panel-ratio': '2fr 1fr' } as React.CSSProperties}>
         <div className="card glass">
           <h3 style={{ marginBottom: '1.5rem' }}>Últimas Escalas Criadas</h3>
           {latestSchedules.length > 0 ? (
