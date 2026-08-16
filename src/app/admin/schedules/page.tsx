@@ -317,9 +317,8 @@ export default function SchedulesPage() {
             },
             {
               header: "Ações",
-              align: "right",
               cell: (s) => (
-                <div className="flex justify-end gap-1">
+                <div className="flex gap-1">
                   <IconButton label="Editar" tone="primary" onClick={() => handleEdit(s)}>
                     <Edit3 size={16} />
                   </IconButton>
