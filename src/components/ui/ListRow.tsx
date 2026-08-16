@@ -21,7 +21,7 @@ export default function ListRow({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3 border-b border-border p-3 last:border-b-0", className)}>
+    <div className={cn("flex items-center gap-3 border-b border-border p-3", className)}>
       {leading}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{title}</p>
