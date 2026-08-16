@@ -1,7 +1,7 @@
 "use client";
 
 import { Filter } from "lucide-react";
-import { cn } from "@/lib/cn";
+import Select from "@/components/ui/Select";
 
 export interface FilterOption {
   value: string;
@@ -9,8 +9,8 @@ export interface FilterOption {
 }
 
 /**
- * Seletor de filtro no formato de pílula, com o funil dentro. Irmão do
- * SearchInput — os dois moram lado a lado na barra dos painéis de lista.
+ * Filtro da barra dos painéis de lista. É o Select do design system com o
+ * funil na frente — irmão do SearchInput, que mora ao lado dele.
  */
 export default function FilterSelect({
   value,
@@ -27,26 +27,13 @@ export default function FilterSelect({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-[1_1_160px] items-center rounded-lg border border-border bg-muted px-3 py-1",
-        "focus-within:border-primary",
-        className,
-      )}
-    >
-      <Filter size={14} className="mr-2 shrink-0 text-muted-foreground" />
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full border-none bg-transparent py-2 text-sm text-foreground outline-none"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Select
+      value={value}
+      onChange={onChange}
+      options={options}
+      label={label}
+      leading={<Filter size={14} className="shrink-0 text-muted-foreground" />}
+      className={className}
+    />
   );
 }
