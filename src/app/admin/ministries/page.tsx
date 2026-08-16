@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createMinistry, getMinistries } from "@/lib/actions/ministries";
-import { Church, Plus, ShieldAlert, Check, Copy } from "lucide-react";
+import { Church, Plus } from "lucide-react";
 import DataPanel from "@/components/ui/DataPanel";
+import FormPanel from "@/components/ui/FormPanel";
+import Button from "@/components/ui/Button";
+import GeneratedPassword from "@/components/ui/GeneratedPassword";
+import Field from "@/components/ui/Field";
+import TextareaField from "@/components/ui/TextareaField";
+import SectionLabel from "@/components/ui/SectionLabel";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
@@ -39,7 +45,6 @@ export default function MinistriesPage() {
   const [loading, setLoading] = useState(false);
 
   const [generatedPassword, setGeneratedPassword] = useState("");
-  const [copied, setCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setAction } = useAdminTopbar();
@@ -100,11 +105,6 @@ export default function MinistriesPage() {
     setLoading(false);
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPassword);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const filteredMinistries = ministries.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,61 +118,49 @@ export default function MinistriesPage() {
   const formContent = (
     <>
       <form onSubmit={handleCreate} className="grid gap-6">
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Nome do Ministério</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Adoração" required />
-        </div>
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Descrição</label>
-          <textarea className="input" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Opcional..." />
-        </div>
-        <div style={{ margin: '1rem 0', padding: '1rem', background: 'var(--muted)', borderRadius: '0.5rem' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem' }}>DADOS DO LÍDER</p>
-          <div className="grid gap-6" style={{ gap: '1rem' }}>
-            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-              <label>Nome do Líder</label>
-              <input className="input" value={leaderName} onChange={e => setLeaderName(e.target.value)} required />
-            </div>
-            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-              <label>Email do Líder</label>
-              <input className="input" type="email" value={leaderEmail} onChange={e => setLeaderEmail(e.target.value)} required />
-            </div>
+        <Field
+          label="Nome do Ministério"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Ex: Adoração"
+          required
+        />
+        <TextareaField
+          label="Descrição"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Opcional..."
+        />
+        <div className="my-4 rounded-lg bg-muted p-4">
+          <SectionLabel className="mb-4 text-primary">Dados do Líder</SectionLabel>
+          <div className="grid gap-4">
+            <Field
+              label="Nome do Líder"
+              value={leaderName}
+              onChange={e => setLeaderName(e.target.value)}
+              required
+            />
+            <Field
+              label="Email do Líder"
+              type="email"
+              value={leaderEmail}
+              onChange={e => setLeaderEmail(e.target.value)}
+              required
+            />
           </div>
         </div>
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+        <Button type="submit" disabled={loading} className="w-full">
           <Plus size={18} />
           {loading ? "Salvando..." : "Adicionar Ministério"}
-        </button>
+        </Button>
       </form>
 
       {generatedPassword && (
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1rem',
-          background: 'rgba(245, 158, 11, 0.1)',
-          border: '1px solid var(--accent)',
-          borderRadius: 'var(--radius)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem'
-        }}>
-          <div className="flex items-center gap-4" style={{ color: 'var(--accent)' }}>
-            <ShieldAlert size={18} />
-            <span style={{ fontWeight: 600 }}>Senha Gerada para o Líder</span>
-          </div>
-          <p style={{ fontSize: '0.875rem' }}>Esta pessoa é nova no sistema. Passe esta senha para ela logar.</p>
-          <div className="flex items-center gap-4 justify-between" style={{
-            background: 'var(--input)',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.5rem',
-            border: '1px solid var(--border)'
-          }}>
-            <code style={{ fontSize: '1.125rem', color: 'var(--accent)' }}>{generatedPassword}</code>
-            <button onClick={copyToClipboard} style={{ color: copied ? '#10b981' : 'inherit' }}>
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-            </button>
-          </div>
-        </div>
+        <GeneratedPassword
+          password={generatedPassword}
+          title="Senha Gerada para o Líder"
+          description="Esta pessoa é nova no sistema. Passe esta senha para ela logar."
+        />
       )}
     </>
   );
@@ -185,10 +173,7 @@ export default function MinistriesPage() {
       </header>
 
       <div className="admin-panel-layout">
-        <div className="card glass admin-form-panel">
-          <h3 style={{ marginBottom: '1.5rem' }}>Novo Ministério</h3>
-          {formContent}
-        </div>
+        <FormPanel title="Novo Ministério">{formContent}</FormPanel>
 
         <DataPanel
           title="Ministérios Cadastrados"

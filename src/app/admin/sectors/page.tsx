@@ -8,6 +8,10 @@ import { getMinistries } from "@/lib/actions/ministries";
 import { Plus, LayoutGrid } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import DataPanel from "@/components/ui/DataPanel";
+import FormPanel from "@/components/ui/FormPanel";
+import Button from "@/components/ui/Button";
+import Field from "@/components/ui/Field";
+import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
@@ -96,23 +100,24 @@ export default function SectorsPage() {
 
   const formContent = (
     <form onSubmit={handleCreate} className="grid gap-6">
-      <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-        <label>Nome do Setor</label>
-        <input className="input" value={name} onChange={e => setName(e.target.value)} required />
-      </div>
-      <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-        <label>Ministério</label>
-        <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
-          <option value="">Selecione um ministério</option>
-          {ministries.map(m => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-      </div>
-      <button type="submit" className="btn btn-primary" disabled={loading}>
+      <Field
+        label="Nome do Setor"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        required
+      />
+      <SelectField
+        label="Ministério"
+        value={ministryId}
+        onChange={e => setMinistryId(e.target.value)}
+        placeholder="Selecione um ministério"
+        options={ministries.map(m => ({ value: m.id, label: m.name }))}
+        required
+      />
+      <Button type="submit" disabled={loading}>
         <Plus size={18} />
         {loading ? "Salvando..." : "Adicionar"}
-      </button>
+      </Button>
     </form>
   );
 
@@ -124,10 +129,7 @@ export default function SectorsPage() {
       </header>
 
       <div className="admin-panel-layout">
-        <div className="card glass admin-form-panel">
-          <h3 style={{ marginBottom: '1.5rem' }}>Novo Setor</h3>
-          {formContent}
-        </div>
+        <FormPanel title="Novo Setor">{formContent}</FormPanel>
 
         <DataPanel
           title="Lista de Setores"

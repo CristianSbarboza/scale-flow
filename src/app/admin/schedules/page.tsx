@@ -9,6 +9,7 @@ import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DataPanel from "@/components/ui/DataPanel";
+import FormPanel from "@/components/ui/FormPanel";
 import IconButton from "@/components/ui/IconButton";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
@@ -242,10 +243,7 @@ export default function SchedulesPage() {
 
       <div className="admin-panel-layout">
         {/* Create Form */}
-        <div className="card glass admin-form-panel">
-          <h3 style={{ marginBottom: '1.5rem' }}>Criar Nova Escala</h3>
-          {formContent}
-        </div>
+        <FormPanel title="Criar Nova Escala">{formContent}</FormPanel>
 
         {/* List */}
         <DataPanel

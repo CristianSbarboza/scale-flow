@@ -1,10 +1,11 @@
 "use client";
 
 import { useId } from "react";
+import FieldShell from "@/components/ui/FieldShell";
 import { cn } from "@/lib/cn";
 
 /**
- * Campo de formulário: rótulo + input + erro, com o `htmlFor`/`id` já ligados.
+ * Campo de texto: rótulo + input + erro, com o `htmlFor`/`id` já ligados.
  *
  * O id sai de `useId` porque as telas vinham escrevendo à mão e algumas
  * simplesmente não ligavam label e input.
@@ -28,8 +29,7 @@ export default function Field({
   const inputId = id ?? generated;
 
   return (
-    <div className="grid gap-2">
-      <label htmlFor={inputId}>{label}</label>
+    <FieldShell id={inputId} label={label} error={error} hint={hint}>
       <div className={cn(trailing && "relative")}>
         <input
           id={inputId}
@@ -44,12 +44,6 @@ export default function Field({
           </div>
         )}
       </div>
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && (
-        <p id={`${inputId}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
+    </FieldShell>
   );
 }

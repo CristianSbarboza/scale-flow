@@ -6,8 +6,13 @@ import { useRouter } from "next/navigation";
 import { createServant, getServants } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
-import { UserPlus, Copy, Check, ShieldAlert, Plus } from "lucide-react";
+import { UserPlus, Plus } from "lucide-react";
 import DataPanel from "@/components/ui/DataPanel";
+import FormPanel from "@/components/ui/FormPanel";
+import Button from "@/components/ui/Button";
+import GeneratedPassword from "@/components/ui/GeneratedPassword";
+import Field from "@/components/ui/Field";
+import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
@@ -59,7 +64,6 @@ export default function ServantsPage() {
   const [filterSectorId, setFilterSectorId] = useState("all");
   
   const [generatedPassword, setGeneratedPassword] = useState("");
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setAction } = useAdminTopbar();
@@ -114,11 +118,6 @@ export default function ServantsPage() {
     setLoading(false);
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPassword);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const filteredServants = servants.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,82 +131,45 @@ export default function ServantsPage() {
   const formContent = (
     <>
       <form onSubmit={handleCreate} className="grid gap-6">
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Nome Completo</label>
-          <input
-            className="input"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Usuário</label>
-          <input
-            className="input"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            placeholder="Ex: joao.silva"
-            required
-          />
-        </div>
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>E-mail (opcional)</label>
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
-          <label>Setor Principal</label>
-          <select
-            className="input"
-            value={sectorId}
-            onChange={e => setSectorId(e.target.value)}
-            required
-          >
-            <option value="">Selecione um setor</option>
-            {sectors.map(s => (
-              <option key={s.id} value={s.id}>{s.ministry.name} - {s.name}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={loading}>
+        <Field
+          label="Nome Completo"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          required
+        />
+        <Field
+          label="Usuário"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          placeholder="Ex: joao.silva"
+          required
+        />
+        <Field
+          label="E-mail (opcional)"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+        <SelectField
+          label="Setor Principal"
+          value={sectorId}
+          onChange={e => setSectorId(e.target.value)}
+          placeholder="Selecione um setor"
+          options={sectors.map(sec => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
+          required
+        />
+        <Button type="submit" disabled={loading}>
           <UserPlus size={18} />
           {loading ? "Cadastrando..." : "Cadastrar Servo"}
-        </button>
+        </Button>
       </form>
 
       {generatedPassword && (
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1rem',
-          background: 'rgba(245, 158, 11, 0.1)',
-          border: '1px solid var(--accent)',
-          borderRadius: 'var(--radius)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem'
-        }}>
-          <div className="flex items-center gap-4" style={{ color: 'var(--accent)' }}>
-            <ShieldAlert size={18} />
-            <span style={{ fontWeight: 600 }}>Senha de Primeiro Acesso</span>
-          </div>
-          <p style={{ fontSize: '0.875rem' }}>Passe esta senha ao servo. Ele poderá alterá-la após o login.</p>
-          <div className="flex items-center gap-4 justify-between" style={{
-            background: 'var(--input)',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.5rem',
-            border: '1px solid var(--border)'
-          }}>
-            <code style={{ fontSize: '1.125rem', color: 'var(--accent)' }}>{generatedPassword}</code>
-            <button onClick={copyToClipboard} style={{ color: copied ? '#10b981' : 'inherit' }}>
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-            </button>
-          </div>
-        </div>
+        <GeneratedPassword
+          password={generatedPassword}
+          title="Senha de Primeiro Acesso"
+          description="Passe esta senha ao servo. Ele poderá alterá-la após o login."
+        />
       )}
     </>
   );
@@ -221,10 +183,7 @@ export default function ServantsPage() {
 
       <div className="admin-panel-layout">
         {/* Form */}
-        <div className="card glass admin-form-panel">
-          <h3 style={{ marginBottom: '1.5rem' }}>Cadastrar Novo Servo</h3>
-          {formContent}
-        </div>
+        <FormPanel title="Cadastrar Novo Servo">{formContent}</FormPanel>
 
         {/* List */}
         <DataPanel
