@@ -33,7 +33,6 @@ export default async function AdminDashboard() {
     .select({
       id: schedules.id,
       name: schedules.name,
-      createdAt: schedules.createdAt,
       ministryName: ministries.name,
       sectorName: sectors.name,
     })
@@ -47,6 +46,7 @@ export default async function AdminDashboard() {
   const latestServants = await db
     .select({
       id: servants.id,
+      userId: servants.userId,
       name: users.name,
       sectorName: sectors.name,
     })
@@ -62,7 +62,6 @@ export default async function AdminDashboard() {
       id: sectors.id,
       name: sectors.name,
       ministryName: ministries.name,
-      createdAt: sectors.createdAt,
     })
     .from(sectors)
     .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
@@ -78,7 +77,6 @@ export default async function AdminDashboard() {
           id: ministries.id,
           name: ministries.name,
           leaderName: users.name,
-          createdAt: ministries.createdAt,
         })
         .from(ministries)
         .innerJoin(users, eq(ministries.leaderId, users.id))
@@ -93,8 +91,6 @@ export default async function AdminDashboard() {
     { icon: Users, label: "Servos", value: servantCount.value },
     { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value },
   ];
-
-  const dataBR = (d: Date | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : null);
 
   return (
     <div className="animate-fade-in">
@@ -115,7 +111,7 @@ export default async function AdminDashboard() {
                 key={s.id}
                 title={s.name}
                 subtitle={`${s.ministryName} — ${s.sectorName}`}
-                trailing={dataBR(s.createdAt)}
+                href="/admin/schedules"
               />
             ))
           ) : (
@@ -131,6 +127,7 @@ export default async function AdminDashboard() {
                 leading={<Avatar name={s.name} size="sm" />}
                 title={s.name}
                 subtitle={s.sectorName}
+                href={`/admin/servants/${s.userId}`}
               />
             ))
           ) : (
@@ -147,7 +144,7 @@ export default async function AdminDashboard() {
                   leading={<Church size={16} className="text-primary" />}
                   title={m.name}
                   subtitle={`Líder: ${m.leaderName}`}
-                  trailing={dataBR(m.createdAt)}
+                  href={`/admin/ministries/${m.id}`}
                 />
               ))
             ) : (
@@ -164,7 +161,7 @@ export default async function AdminDashboard() {
                 leading={<Layers size={16} className="text-primary" />}
                 title={s.name}
                 subtitle={s.ministryName}
-                trailing={dataBR(s.createdAt)}
+                href={`/admin/sectors/${s.id}`}
               />
             ))
           ) : (
