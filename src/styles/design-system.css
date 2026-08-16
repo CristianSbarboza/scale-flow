@@ -60,36 +60,43 @@
   --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Resets de elemento
+ *
+ * Em @layer base pela mesma razao das classes de componente: fora de layer,
+ * `a { color: inherit }` venceria `text-primary` e todo link do app ficaria
+ * sem cor ao ser estilizado por utilitario. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  background: radial-gradient(circle at top right, #1a0f05, #0a0908);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
-}
+  body {
+    background: radial-gradient(circle at top right, #1a0f05, #0a0908);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
 }
 
 /* Base UI Components
