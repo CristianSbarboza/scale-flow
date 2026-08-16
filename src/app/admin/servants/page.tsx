@@ -219,7 +219,7 @@ export default function ServantsPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Cadastre e gerencie os voluntários da sua igreja.</p>
       </header>
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 2.5fr' } as React.CSSProperties}>
+      <div className="admin-panel-layout">
         {/* Form */}
         <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Cadastrar Novo Servo</h3>

@@ -240,7 +240,7 @@ export default function SchedulesPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Crie escalas e envie o link para os servos selecionarem suas datas.</p>
       </header>
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 1fr' } as React.CSSProperties}>
+      <div className="admin-panel-layout">
         {/* Create Form */}
         <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Criar Nova Escala</h3>

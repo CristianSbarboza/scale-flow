@@ -184,7 +184,7 @@ export default function MinistriesPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Gerencie os ministérios da sua igreja.</p>
       </header>
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 2fr' } as React.CSSProperties}>
+      <div className="admin-panel-layout">
         <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Novo Ministério</h3>
           {formContent}

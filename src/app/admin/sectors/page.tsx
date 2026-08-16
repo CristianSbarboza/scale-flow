@@ -123,7 +123,7 @@ export default function SectorsPage() {
         <p style={{ color: 'var(--muted-foreground)' }}>Defina os setores dentro de cada ministério.</p>
       </header>
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '1fr 2fr' } as React.CSSProperties}>
+      <div className="admin-panel-layout">
         <div className="card glass admin-form-panel">
           <h3 style={{ marginBottom: '1.5rem' }}>Novo Setor</h3>
           {formContent}

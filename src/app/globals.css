@@ -80,10 +80,12 @@ main {
   align-items: start;
 }
 
+/* Formulario a esquerda, painel de dados a direita. A proporcao e fixa de
+   proposito: o DataPanel tem a mesma largura em todas as telas de lista. */
 .admin-panel-layout {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: var(--panel-ratio, 1fr 2fr);
+  grid-template-columns: 1fr 2fr;
   align-items: start;
 }
 
