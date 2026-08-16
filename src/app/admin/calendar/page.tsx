@@ -179,7 +179,7 @@ export default function AdminCalendarPage() {
             <p style={{ color: "var(--muted-foreground)" }}>Carregando calendário...</p>
           </div>
         ) : (
-          <div className="servant-calendar-grid">
+          <div className="servant-calendar-grid max-w-[560px]">
             {WEEKDAY_LABELS.map((label, i) => (
               <div key={i} className="text-center text-xs font-semibold text-muted-foreground">
                 {label}
