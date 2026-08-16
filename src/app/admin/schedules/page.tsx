@@ -10,6 +10,8 @@ import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DataPanel from "@/components/ui/DataPanel";
 import IconButton from "@/components/ui/IconButton";
+import FilterSelect from "@/components/ui/FilterSelect";
+import SearchInput from "@/components/ui/SearchInput";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
@@ -27,6 +29,8 @@ interface Schedule {
   status: "draft" | "published";
   visibility: ScheduleVisibility;
   shareLink: string;
+  ministryId: number;
+  sectorId: number;
   ministry: { name: string };
   sector: { name: string };
   dates: ScheduleDate[];
@@ -64,7 +68,24 @@ export default function SchedulesPage() {
   const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMinistryId, setFilterMinistryId] = useState("all");
+  const [filterSectorId, setFilterSectorId] = useState("all");
+
   const { setAction } = useAdminTopbar();
+
+  const filteredSchedules = schedules.filter((s) => {
+    if (filterMinistryId !== "all" && s.ministryId !== parseInt(filterMinistryId)) return false;
+    if (filterSectorId !== "all" && s.sectorId !== parseInt(filterSectorId)) return false;
+    const termo = searchTerm.trim().toLowerCase();
+    if (!termo) return true;
+    return (
+      s.name.toLowerCase().includes(termo) ||
+      s.ministry.name.toLowerCase().includes(termo) ||
+      s.sector.name.toLowerCase().includes(termo)
+    );
+  });
 
   useEffect(() => {
     setAction(
@@ -230,9 +251,48 @@ export default function SchedulesPage() {
         <DataPanel
           className="self-start"
           title="Escalas Recentes"
-          rows={schedules}
+          stackToolbar
+          toolbar={
+            <>
+              {ministries.length > 1 && (
+                <FilterSelect
+                  label="Filtrar por ministério"
+                  value={filterMinistryId}
+                  onChange={(v) => {
+                    setFilterMinistryId(v);
+                    setFilterSectorId("all"); // troca de ministério zera o setor
+                  }}
+                  options={[
+                    { value: "all", label: "Todos Ministérios" },
+                    ...ministries.map((m) => ({ value: String(m.id), label: m.name })),
+                  ]}
+                />
+              )}
+              <FilterSelect
+                label="Filtrar por setor"
+                value={filterSectorId}
+                onChange={setFilterSectorId}
+                options={[
+                  { value: "all", label: "Todos Setores" },
+                  ...sectors
+                    .filter((sec) => filterMinistryId === "all" || sec.ministryId === parseInt(filterMinistryId))
+                    .map((sec) => ({ value: String(sec.id), label: sec.name })),
+                ]}
+              />
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Pesquisar escala, ministério ou setor..."
+              />
+            </>
+          }
+          rows={filteredSchedules}
           rowKey={(s) => s.id}
-          empty="Nenhuma escala criada ainda."
+          empty={
+            schedules.length === 0
+              ? "Nenhuma escala criada ainda."
+              : "Nenhuma escala encontrada para os filtros selecionados."
+          }
           columns={[
             {
               header: "Nome",
