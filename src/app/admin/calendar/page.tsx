@@ -100,7 +100,9 @@ export default function AdminCalendarPage() {
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  while (cells.length % 7 !== 0) cells.push(null);
+  // Sempre 6 linhas: e o maximo que um mes ocupa (agosto/2026, por exemplo).
+  // Assim a altura do calendario nao muda ao trocar de mes.
+  while (cells.length < 42) cells.push(null);
 
   const goToMonth = (offset: number) => {
     const next = new Date(viewYear, viewMonth + offset, 1);
@@ -179,9 +181,9 @@ export default function AdminCalendarPage() {
             <p style={{ color: "var(--muted-foreground)" }}>Carregando calendário...</p>
           </div>
         ) : (
-          <div className="servant-calendar-grid max-w-[560px]">
+          <div className="servant-calendar-grid mx-auto max-w-[560px]">
             {WEEKDAY_LABELS.map((label, i) => (
-              <div key={i} className="text-center text-xs font-semibold text-muted-foreground">
+              <div key={i} className="mb-2 text-center text-xs font-semibold text-muted-foreground">
                 {label}
               </div>
             ))}
