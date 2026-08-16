@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star } from "lucide-react";
-import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions";
+import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import type { ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";

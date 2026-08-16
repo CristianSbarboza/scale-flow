@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createServant, getServants } from "@/lib/actions";
+import { createServant, getServants } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { UserPlus, Copy, Check, ShieldAlert, Search, Filter, Plus } from "lucide-react";
