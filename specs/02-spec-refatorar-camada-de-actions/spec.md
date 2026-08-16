@@ -20,22 +20,22 @@ Nenhuma persona de usuário final é afetada. Esta é uma refatoração interna,
 
 ## 🎯 Requisitos Funcionais
 
-- [ ] **RF01 - Tipos fora das actions:** As 11 interfaces exportadas de `actions.ts` movem para `src/types/domain.ts`, conforme a [Constituição](../constitution.md) (`/src/types/` para tipos globais).
-- [ ] **RF02 - Autorização centralizada:** Um módulo `src/lib/scope.ts` marcado com `import 'server-only'` passa a ser a fonte única de "o que esta sessão alcança". Absorve `getAuthFilter`, os cinco guards `require*`, os três resolvedores `getSectorIdFor*` e a projeção `publicUser`.
-- [ ] **RF03 - Actions por domínio:** `actions.ts` é substituído por `src/lib/actions/`, um arquivo `"use server"` por domínio, nenhum passando de ~200 linhas.
-- [ ] **RF04 - Falhar fechado:** `getAuthFilter()` deixa de existir na forma atual. O escopo passa a ser um objeto explícito, sem valor que signifique "irrestrito por omissão". Um papel não previsto resulta em erro, não em acesso total.
-- [ ] **RF05 - Coordenador deixa de ser exceção:** A regra de coordenação de setor passa a viver em `scope.ts`, consumida tanto por leitura quanto por escrita. `getCoordinatorSectors` e `getCoordinatorSchedules` permanecem exportadas — são usadas por `CoordinatorSchedulePanel` — mas param de ser um caminho de autorização paralelo.
-- [ ] **RF06 - Imports explícitos:** Os 22 arquivos que importam de `@/lib/actions` passam a importar do módulo de domínio correspondente. Nenhum arquivo barrel é criado.
+- [x] **RF01 - Tipos fora das actions:** As 11 interfaces exportadas de `actions.ts` movem para `src/types/domain.ts`, conforme a [Constituição](../constitution.md) (`/src/types/` para tipos globais).
+- [x] **RF02 - Autorização centralizada:** Um módulo `src/lib/scope.ts` marcado com `import 'server-only'` passa a ser a fonte única de "o que esta sessão alcança". Absorve `getAuthFilter`, os cinco guards `require*`, os três resolvedores `getSectorIdFor*` e a projeção `publicUser`.
+- [x] **RF03 - Actions por domínio:** `actions.ts` é substituído por `src/lib/actions/`, um arquivo `"use server"` por domínio, nenhum passando de ~200 linhas.
+- [x] **RF04 - Falhar fechado:** `getAuthFilter()` deixa de existir na forma atual. O escopo passa a ser um objeto explícito, sem valor que signifique "irrestrito por omissão". Um papel não previsto resulta em erro, não em acesso total.
+- [x] **RF05 - Coordenador deixa de ser exceção:** A regra de coordenação de setor passa a viver em `scope.ts`, consumida tanto por leitura quanto por escrita. `getCoordinatorSectors` e `getCoordinatorSchedules` permanecem exportadas — são usadas por `CoordinatorSchedulePanel` — mas param de ser um caminho de autorização paralelo.
+- [x] **RF06 - Imports explícitos:** Os 22 arquivos que importam de `@/lib/actions` passam a importar do módulo de domínio correspondente. Nenhum arquivo barrel é criado.
 
 ## 🚫 Requisitos Não-Funcionais & Restrições
 
-- [ ] **RNF01 - Comportamento preservado:** Nenhuma mudança observável de comportamento. Mesmas assinaturas públicas, mesmos retornos, mesmas mensagens de erro, mesmas chamadas de `revalidatePath`. Toda diferença observada é bug de refatoração.
-- [ ] **RNF02 - Sem mistura de movimentação e lógica:** Mover código e alterar lógica não acontecem no mesmo commit. Consolidar autorização em `scope.ts` é um passo separado e revisável dos passos de movimentação.
-- [ ] **RNF03 - Sem novas features:** Multi-tenancy, super admin, mudanças de política de autorização e qualquer campo novo ficam fora. Vão para a spec 03.
-- [ ] **RNF04 - Segurança preservada:** As proteções atuais permanecem intactas — projeção `publicUser` omitindo o hash de senha em toda query cujo resultado chega ao cliente, validações de `saveAvailability`, guards de ministério/setor/escala, e `requireAdmin` em `registerUser`.
-- [ ] **RNF05 - `server-only` no módulo de escopo:** `src/lib/scope.ts` importa `server-only`, para que importá-lo do cliente falhe no build em vez de silenciosamente vazar lógica de autorização.
-- [ ] **RNF06 - Sem ciclos de import:** Módulos de action não importam uns dos outros. Lógica compartilhada entre domínios desce para `scope.ts` ou para um helper não-action.
-- [ ] **RNF07 - Action não chama action:** Hoje `getCoordinatorSchedules` chama `getCoordinatorSectors` (`actions.ts:636`), que é um endpoint público. Após a refatoração, chamadas internas passam por helper compartilhado, não pelo endpoint.
+- [x] **RNF01 - Comportamento preservado:** Nenhuma mudança observável de comportamento. Mesmas assinaturas públicas, mesmos retornos, mesmas mensagens de erro, mesmas chamadas de `revalidatePath`. Toda diferença observada é bug de refatoração.
+- [x] **RNF02 - Sem mistura de movimentação e lógica:** Mover código e alterar lógica não acontecem no mesmo commit. Consolidar autorização em `scope.ts` é um passo separado e revisável dos passos de movimentação.
+- [x] **RNF03 - Sem novas features:** Multi-tenancy, super admin, mudanças de política de autorização e qualquer campo novo ficam fora. Vão para a spec 03.
+- [x] **RNF04 - Segurança preservada:** As proteções atuais permanecem intactas — projeção `publicUser` omitindo o hash de senha em toda query cujo resultado chega ao cliente, validações de `saveAvailability`, guards de ministério/setor/escala, e `requireAdmin` em `registerUser`.
+- [x] **RNF05 - `server-only` no módulo de escopo:** `src/lib/scope.ts` importa `server-only`, para que importá-lo do cliente falhe no build em vez de silenciosamente vazar lógica de autorização.
+- [x] **RNF06 - Sem ciclos de import:** Módulos de action não importam uns dos outros. Lógica compartilhada entre domínios desce para `scope.ts` ou para um helper não-action.
+- [x] **RNF07 - Action não chama action:** Hoje `getCoordinatorSchedules` chama `getCoordinatorSectors` (`actions.ts:636`), que é um endpoint público. Após a refatoração, chamadas internas passam por helper compartilhado, não pelo endpoint.
 
 ## 🏗️ Estrutura Alvo
 
@@ -93,19 +93,19 @@ Não há campo que signifique "veja tudo por omissão". O acesso total de admin 
 
 ## 🏆 Critérios de Aceitação (Definition of Done)
 
-1. [ ] `src/lib/actions.ts` não existe mais; `src/lib/actions/` tem os 8 módulos, nenhum acima de ~200 linhas.
-2. [ ] As 33 actions continuam exportadas, com as mesmas assinaturas de hoje.
-3. [ ] As 11 interfaces vivem em `src/types/domain.ts` e nenhum módulo `"use server"` exporta tipo.
-4. [ ] `src/lib/scope.ts` começa com `import 'server-only'` e é o único lugar que decide autorização.
-5. [ ] Nenhuma função devolve valor que signifique "acesso irrestrito por omissão".
-6. [ ] Nenhum módulo de action importa outro módulo de action.
-7. [ ] Os 22 arquivos consumidores importam do módulo de domínio; nenhum barrel existe.
-8. [ ] `npx tsc --noEmit` limpo.
-9. [ ] `npm run lint` sem erros novos (a base tem 3 warnings pré-existentes em `drizzle/schema.ts` e `src/types/next-auth.d.ts`).
-10. [ ] `npm run build` conclui e gera as mesmas rotas de antes.
-11. [ ] **Verificação manual por papel** — cada papel executa seu fluxo principal e o resultado é idêntico ao de antes: admin (ministérios, setores, servos, escalas, calendário, settings), líder (escopo restrito aos próprios ministérios), coordenador (escalas dos setores que coordena), servo (painel, disponibilidade, troca).
-12. [ ] O link público de escala continua funcionando nos dois modos, `public` e `private`.
-13. [ ] Nenhuma resposta de action carrega `users.password`.
+1. [x] `src/lib/actions.ts` não existe mais; `src/lib/actions/` tem os 8 módulos, nenhum acima de ~200 linhas.
+2. [x] As 33 actions continuam exportadas, com as mesmas assinaturas de hoje.
+3. [x] As 11 interfaces vivem em `src/types/domain.ts` e nenhum módulo `"use server"` exporta tipo.
+4. [x] `src/lib/scope.ts` começa com `import 'server-only'` e é o único lugar que decide autorização.
+5. [x] Nenhuma função devolve valor que signifique "acesso irrestrito por omissão".
+6. [x] Nenhum módulo de action importa outro módulo de action.
+7. [x] Os 22 arquivos consumidores importam do módulo de domínio; nenhum barrel existe.
+8. [x] `npx tsc --noEmit` limpo.
+9. [x] `npm run lint` sem erros novos (a base tem 3 warnings pré-existentes em `drizzle/schema.ts` e `src/types/next-auth.d.ts`).
+10. [x] `npm run build` conclui e gera as mesmas rotas de antes.
+11. [x] **Verificação manual por papel** — cada papel executa seu fluxo principal e o resultado é idêntico ao de antes: admin (ministérios, setores, servos, escalas, calendário, settings), líder (escopo restrito aos próprios ministérios), coordenador (escalas dos setores que coordena), servo (painel, disponibilidade, troca).
+12. [x] O link público de escala continua funcionando nos dois modos, `public` e `private`.
+13. [x] Nenhuma resposta de action carrega `users.password`.
 
 ## 🎨 Interface & UX
 
