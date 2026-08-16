@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star } from "lucide-react";
 import { getServantMember, getSectors, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions";
-import type { ServantSummary } from "@/lib/actions";
+import type { ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 

@@ -8,6 +8,15 @@ import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hash, compare } from "bcryptjs";
+import type {
+  ServantMembership,
+  ServantSummary,
+  ServantOverviewSchedule,
+  CoordinatorSector,
+  CoordinatorSchedule,
+  CalendarSchedule,
+  PendingSwapRequest,
+} from "@/types/domain";
 
 /**
  * Projeção segura de `users` para uso dentro de `with: { ... }`.
@@ -316,23 +325,6 @@ export async function createServant(name: string, username: string, email: strin
   return { password: generatedPassword };
 }
 
-export interface ServantMembership {
-  servantId: number;
-  sectorId: number;
-  sectorName: string;
-  ministryId: number;
-  ministryName: string;
-  isCoordinator: boolean;
-}
-
-export interface ServantSummary {
-  userId: string;
-  name: string;
-  username: string | null;
-  email: string | null;
-  memberships: ServantMembership[];
-}
-
 export async function getServants(): Promise<ServantSummary[]> {
   const leaderId = await getAuthFilter();
   const rows = leaderId
@@ -416,33 +408,6 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
       isCoordinator: row.isCoordinator,
     })),
   };
-}
-
-export interface ServantOverviewAssignee {
-  servantId: number;
-  userId: string;
-  name: string;
-  isSelf: boolean;
-  color: string | null;
-}
-
-export interface ServantOverviewDate {
-  id: number;
-  date: string;
-  startTime: string;
-  confirmed: boolean;
-  available: boolean;
-  assignees: ServantOverviewAssignee[];
-}
-
-export interface ServantOverviewSchedule {
-  id: number;
-  name: string;
-  ministryName: string;
-  sectorName: string;
-  shareLink: string;
-  servantId: number;
-  dates: ServantOverviewDate[];
 }
 
 // Returns every schedule for the logged-in servant's sector, with each date
@@ -595,24 +560,6 @@ export async function getSchedules() {
   });
 }
 
-export interface CoordinatorSector {
-  id: number;
-  name: string;
-  ministryId: number;
-  ministryName: string;
-}
-
-export interface CoordinatorSchedule {
-  id: number;
-  name: string;
-  status: "draft" | "published";
-  visibility: "public" | "private";
-  shareLink: string;
-  ministry: { name: string };
-  sector: { name: string };
-  dates: { id: number; date: string; startTime: string }[];
-}
-
 // Setores onde o servo logado foi marcado como coordenador.
 export async function getCoordinatorSectors(): Promise<CoordinatorSector[]> {
   const session = await getServerSession(authOptions);
@@ -651,28 +598,6 @@ export async function getCoordinatorSchedules(): Promise<CoordinatorSchedule[]> 
     sector: { name: s.sector.name },
     dates: s.dates.map((d) => ({ id: d.id, date: d.date, startTime: d.startTime })),
   }));
-}
-
-export interface CalendarAssignee {
-  servantId: number;
-  name: string;
-}
-
-export interface CalendarDate {
-  id: number;
-  date: string;
-  startTime: string;
-  assignees: CalendarAssignee[];
-}
-
-export interface CalendarSchedule {
-  id: number;
-  name: string;
-  ministryId: number;
-  ministryName: string;
-  sectorId: number;
-  sectorName: string;
-  dates: CalendarDate[];
 }
 
 // Visão de calendário para admin/líder: todas as escalas (com quem está escalado
@@ -963,18 +888,6 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
 
   await db.insert(swapRequests).values({ dateId, requesterServantId, targetServantId });
   revalidatePath("/servant");
-}
-
-export interface PendingSwapRequest {
-  id: number;
-  dateId: number;
-  date: string;
-  startTime: string;
-  scheduleName: string;
-  sectorName: string;
-  ministryName: string;
-  requesterName: string;
-  createdAt: string;
 }
 
 export async function getPendingSwapRequests(): Promise<PendingSwapRequest[]> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Clock, CalendarDays } from "lucide-react";
-import type { ServantOverviewSchedule } from "@/lib/actions";
+import type { ServantOverviewSchedule } from "@/types/domain";
 
 interface ServantScheduleDetailModalProps {
   schedule: ServantOverviewSchedule;

@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, CalendarRange, ListChecks, ClipboardList } from "lucide-react";
-import type { ServantOverviewSchedule, CoordinatorSector } from "@/lib/actions";
+import type { ServantOverviewSchedule, CoordinatorSector } from "@/types/domain";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";

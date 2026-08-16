@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { ChevronLeft, ChevronRight, Filter, X, Clock, Users, Church } from "lucide-react";
 import { getCalendarSchedules, getMinistries, getSectors } from "@/lib/actions";
-import type { CalendarSchedule } from "@/lib/actions";
+import type { CalendarSchedule } from "@/types/domain";
 
 interface Ministry {
   id: number;

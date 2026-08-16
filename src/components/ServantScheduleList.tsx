@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar } from "lucide-react";
-import type { ServantOverviewSchedule } from "@/lib/actions";
+import type { ServantOverviewSchedule } from "@/types/domain";
 import ServantScheduleDetailModal from "@/components/ServantScheduleDetailModal";
 
 interface ServantScheduleListProps {

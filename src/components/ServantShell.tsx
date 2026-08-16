@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ServantOverviewSchedule, CoordinatorSector } from "@/lib/actions";
+import type { ServantOverviewSchedule, CoordinatorSector } from "@/types/domain";
 import ServantHome, { getServantTabs, type ServantTab } from "@/components/ServantHome";
 import ServantSidebar from "@/components/ServantSidebar";
 import ServantProfileMenu from "@/components/ServantProfileMenu";

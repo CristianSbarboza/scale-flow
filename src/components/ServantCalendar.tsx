@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "lucide-react";
-import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/lib/actions";
+import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/types/domain";
 import { createSwapRequest } from "@/lib/actions";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
