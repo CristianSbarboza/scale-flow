@@ -5,8 +5,18 @@ import { Bell, Check, X } from "lucide-react";
 import { getPendingSwapRequests, respondToSwapRequest } from "@/lib/actions/swaps";
 import type { PendingSwapRequest } from "@/types/domain";
 import { useToast } from "@/components/Toast";
+import { cn } from "@/lib/cn";
 
-export default function NotificationBell() {
+/**
+ * `placement` decide para onde o painel abre. No desktop o sino fica no rodape
+ * da sidebar, entao abrir para baixo joga o conteudo para fora da tela; no
+ * celular ele fica no cabecalho e precisa abrir para baixo.
+ */
+export default function NotificationBell({
+  placement = "bottom",
+}: {
+  placement?: "top" | "bottom";
+} = {}) {
   const [open, setOpen] = useState(false);
   const [requests, setRequests] = useState<PendingSwapRequest[]>([]);
   const [respondingId, setRespondingId] = useState<number | null>(null);
@@ -80,20 +90,17 @@ export default function NotificationBell() {
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
           <div
-            className="card glass"
-            style={{
-              position: "absolute",
-              right: 0,
-              top: "calc(100% + 0.5rem)",
-              width: "320px",
-              maxWidth: "90vw",
-              maxHeight: "420px",
-              overflowY: "auto",
-              padding: "1rem",
-              zIndex: 31,
-              display: "grid",
-              gap: "0.75rem",
-            }}
+            className={cn(
+              "card glass z-[31] grid max-h-[420px] gap-3 overflow-y-auto p-4",
+              // No celular o painel e preso a viewport: ancorado ao sino ele
+              // vazava pela esquerda, porque o sino nao fica na borda direita.
+              "fixed inset-x-3 top-[4.5rem]",
+              // A partir de sm volta a ser um dropdown ancorado ao sino.
+              "sm:absolute sm:inset-x-auto sm:right-0 sm:w-80",
+              placement === "top"
+                ? "sm:bottom-[calc(100%+0.5rem)] sm:top-auto"
+                : "sm:top-[calc(100%+0.5rem)]",
+            )}
           >
             <p style={{ fontWeight: 700, fontSize: "0.875rem" }}>Pedidos de troca</p>
             {requests.length === 0 && (

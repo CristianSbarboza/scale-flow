@@ -218,7 +218,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 <X size={18} />
               </button>
             </div>
-            <div style={{ display: "grid", gap: "0.75rem", overflowY: "auto", flex: "1 1 auto", minHeight: 0 }}>
+            <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-3 overflow-y-auto pr-3">
               {selectedEntries.map((entry, i) => (
                 <div key={i} style={{ padding: "0.75rem 1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
                   <p style={{ fontWeight: 600, marginBottom: "0.375rem" }}>{entry.scheduleName}</p>

@@ -40,7 +40,7 @@ export default function AdminCreateModal({ title, onClose, children }: Props) {
             <X size={18} />
           </button>
         </div>
-        <div style={{ overflowY: "auto", flex: "1 1 auto", minHeight: 0 }}>
+        <div className="-mr-3 min-h-0 flex-[1_1_auto] overflow-y-auto pr-3">
           {children}
         </div>
       </motion.div>

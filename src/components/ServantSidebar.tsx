@@ -64,7 +64,7 @@ export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorNam
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
-          <NotificationBell />
+          <NotificationBell placement="top" />
           <ServantProfileMenu name={name} sectorName={sectorName} color={color} />
         </div>
       </div>

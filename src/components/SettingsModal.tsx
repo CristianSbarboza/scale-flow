@@ -121,7 +121,10 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
           </button>
         </div>
 
-        <div style={{ overflowY: "auto", flex: "1 1 auto", minHeight: 0, display: "grid", gap: "1.5rem" }}>
+        {/* -mr-3 pr-3 empurra a borda do container ate a margem do card e devolve
+            o espaco como padding: a barra de rolagem passa a ocupar essa faixa
+            em vez de ficar por cima do conteudo. */}
+        <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-6 overflow-y-auto pr-3">
           {/* Perfil */}
           <div>
             <p style={{ ...sectionLabelStyle, marginBottom: "0.75rem" }}>Perfil</p>
