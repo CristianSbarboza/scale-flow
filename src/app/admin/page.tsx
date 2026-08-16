@@ -1,5 +1,9 @@
 import { Church, Layers, Users, Calendar } from "lucide-react";
 import StatsRule, { type StatItem } from "@/components/ui/StatsRule";
+import Avatar from "@/components/ui/Avatar";
+import EmptyState from "@/components/ui/EmptyState";
+import ListRow from "@/components/ui/ListRow";
+import Panel from "@/components/ui/Panel";
 import { db } from "@/db";
 import { ministries, sectors, servants, schedules, users } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
@@ -53,6 +57,34 @@ export default async function AdminDashboard() {
     .orderBy(desc(servants.createdAt))
     .limit(5);
 
+  const latestSectors = await db
+    .select({
+      id: sectors.id,
+      name: sectors.name,
+      ministryName: ministries.name,
+      createdAt: sectors.createdAt,
+    })
+    .from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined)
+    .orderBy(desc(sectors.createdAt))
+    .limit(5);
+
+  // Líder lidera um ministério só — o painel não teria o que listar.
+  const latestMinistries = isLeader
+    ? []
+    : await db
+        .select({
+          id: ministries.id,
+          name: ministries.name,
+          leaderName: users.name,
+          createdAt: ministries.createdAt,
+        })
+        .from(ministries)
+        .innerJoin(users, eq(ministries.leaderId, users.id))
+        .orderBy(desc(ministries.createdAt))
+        .limit(5);
+
   const ministryCount = isLeader ? null : (await db.select({ value: count() }).from(ministries))[0];
 
   const stats: StatItem[] = [
@@ -61,6 +93,8 @@ export default async function AdminDashboard() {
     { icon: Users, label: "Servos", value: servantCount.value },
     { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value },
   ];
+
+  const dataBR = (d: Date | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : null);
 
   return (
     <div className="animate-fade-in">
@@ -73,51 +107,70 @@ export default async function AdminDashboard() {
 
       <StatsRule items={stats} />
 
-      <div className="admin-panel-layout" style={{ '--panel-ratio': '2fr 1fr' } as React.CSSProperties}>
-        <div className="card glass">
-          <h3 style={{ marginBottom: '1.5rem' }}>Últimas Escalas Criadas</h3>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Últimas Escalas Criadas">
           {latestSchedules.length > 0 ? (
-            <div className="grid gap-6" style={{ gap: '1rem' }}>
-              {latestSchedules.map((s) => (
-                <div key={s.id} className="flex items-center gap-4 justify-between" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
-                  <div>
-                    <p style={{ fontWeight: 600 }}>{s.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.ministryName} - {s.sectorName}</p>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                    {new Date(s.createdAt!).toLocaleDateString('pt-BR')}
-                  </div>
-                </div>
-              ))}
-            </div>
+            latestSchedules.map((s) => (
+              <ListRow
+                key={s.id}
+                title={s.name}
+                subtitle={`${s.ministryName} — ${s.sectorName}`}
+                trailing={dataBR(s.createdAt)}
+              />
+            ))
           ) : (
-            <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', padding: '2rem' }}>
-              Nenhuma escala ativa no momento.
-            </p>
+            <EmptyState>Nenhuma escala ativa no momento.</EmptyState>
           )}
-        </div>
-        <div className="card glass">
-          <h3 style={{ marginBottom: '1.5rem' }}>Servos Recentemente Cadastrados</h3>
+        </Panel>
+
+        <Panel title="Servos Recentemente Cadastrados">
           {latestServants.length > 0 ? (
-            <div className="grid gap-6" style={{ gap: '1rem' }}>
-              {latestServants.map((s) => (
-                <div key={s.id} className="flex items-center gap-4" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'white', marginRight: '0.75rem' }}>
-                    {s.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{s.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.sectorName}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            latestServants.map((s) => (
+              <ListRow
+                key={s.id}
+                leading={<Avatar name={s.name} size="sm" />}
+                title={s.name}
+                subtitle={s.sectorName}
+              />
+            ))
           ) : (
-            <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', padding: '2rem' }}>
-              Aguardando novos cadastros.
-            </p>
+            <EmptyState>Aguardando novos cadastros.</EmptyState>
           )}
-        </div>
+        </Panel>
+
+        {!isLeader && (
+          <Panel title="Ministérios">
+            {latestMinistries.length > 0 ? (
+              latestMinistries.map((m) => (
+                <ListRow
+                  key={m.id}
+                  leading={<Church size={16} className="text-primary" />}
+                  title={m.name}
+                  subtitle={`Líder: ${m.leaderName}`}
+                  trailing={dataBR(m.createdAt)}
+                />
+              ))
+            ) : (
+              <EmptyState>Nenhum ministério cadastrado.</EmptyState>
+            )}
+          </Panel>
+        )}
+
+        <Panel title="Setores">
+          {latestSectors.length > 0 ? (
+            latestSectors.map((s) => (
+              <ListRow
+                key={s.id}
+                leading={<Layers size={16} className="text-primary" />}
+                title={s.name}
+                subtitle={s.ministryName}
+                trailing={dataBR(s.createdAt)}
+              />
+            ))
+          ) : (
+            <EmptyState>Nenhum setor cadastrado.</EmptyState>
+          )}
+        </Panel>
       </div>
     </div>
   );
