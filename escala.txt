@@ -1,0 +1,19 @@
+Transmissao:
+
+16 - domingo manha	Davi;
+16 - domingo noite	Cristian;
+20 - quinta	Sophia;
+23 - domingo manha	Filipe;
+23 - domingo noite	Davi;
+27 - quinta	Fernando;
+30 - domingo noite	Cristian;
+
+Fotografia:
+
+16 - domingo manha	Ana Tito;
+16 - domingo noite	Letícia Russell ;
+20 - quinta	Maria;
+23 - domingo manha	Maria;
+23 - domingo noite	Ana Tito;
+27 - quinta	Sophia;
+30 - domingo noite	Ana Tito;
