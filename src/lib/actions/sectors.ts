@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { ministries, sectors, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { publicUser, getAuthFilter, requireMinistryAccess } from "@/lib/scope";
+import { publicUser, getScope, requireMinistryAccess } from "@/lib/scope";
 
 export async function createSector(name: string, ministryId: number) {
   await requireMinistryAccess(ministryId);
@@ -18,7 +18,7 @@ export async function createSector(name: string, ministryId: number) {
 }
 
 export async function getSectors() {
-  const leaderId = await getAuthFilter();
+  const scope = await getScope();
   
   const allSectors = await db.select({
     id: sectors.id,
@@ -31,7 +31,7 @@ export async function getSectors() {
   })
   .from(sectors)
   .leftJoin(ministries, eq(sectors.ministryId, ministries.id))
-  .where(leaderId ? eq(ministries.leaderId, leaderId) : undefined);
+  .where(scope.role === "admin" ? undefined : eq(ministries.leaderId, scope.userId));
 
   const sectorsWithServants = await Promise.all(allSectors.map(async (s) => {
     const srvs = await db.query.servants.findMany({
@@ -48,7 +48,7 @@ export async function getSectors() {
 }
 
 export async function getSectorById(id: number) {
-  const leaderId = await getAuthFilter();
+  const scope = await getScope();
 
   const [sector] = await db.select({
     id: sectors.id,
@@ -65,7 +65,7 @@ export async function getSectorById(id: number) {
   .where(eq(sectors.id, id));
 
   if (!sector) return null;
-  if (leaderId && sector.ministry?.leaderId !== leaderId) return null;
+  if (scope.role !== "admin" && sector.ministry?.leaderId !== scope.userId) return null;
 
   const srvs = await db.query.servants.findMany({
     where: eq(servants.sectorId, id),

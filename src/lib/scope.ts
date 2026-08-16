@@ -6,6 +6,30 @@ import { eq, and } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hash } from "bcryptjs";
+import type { Scope } from "@/types/scope";
+
+/**
+ * Monta o escopo da sessão atual. Duas consultas, sempre as mesmas,
+ * independente do papel — assim o custo é previsível e o resultado
+ * não depende de qual ramo do código chamou.
+ */
+export async function getScope(): Promise<Scope> {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+
+  const led = await db.select({ id: ministries.id }).from(ministries)
+    .where(eq(ministries.leaderId, session.user.id));
+
+  const coordinated = await db.select({ sectorId: servants.sectorId }).from(servants)
+    .where(and(eq(servants.userId, session.user.id), eq(servants.isCoordinator, true)));
+
+  return {
+    userId: session.user.id,
+    role: session.user.role,
+    ledMinistryIds: led.map((m) => m.id),
+    coordinatedSectorIds: coordinated.map((c) => c.sectorId),
+  };
+}
 
 /**
  * Projeção segura de `users` para uso dentro de `with: { ... }`.
@@ -16,15 +40,6 @@ import { hash } from "bcryptjs";
  * cujo retorno vá para o cliente.
  */
 export const publicUser = { columns: { password: false } } as const;
-
-// Helper to check role and filter
-export async function getAuthFilter() {
-  const session = await getServerSession(authOptions);
-  if (!session) throw new Error("Não autorizado");
-
-  if (session.user.role === "admin") return null;
-  return session.user.id;
-}
 
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);

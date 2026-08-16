@@ -5,7 +5,7 @@ import { ministries, schedules, scheduleDates } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { eq, and } from "drizzle-orm";
-import { publicUser, getAuthFilter, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
+import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
 import type { CalendarSchedule } from "@/types/domain";
 
 export async function createSchedule(
@@ -74,14 +74,14 @@ export async function updateSchedule(
 }
 
 export async function getSchedules() {
-  const leaderId = await getAuthFilter();
-  if (leaderId) {
+  const scope = await getScope();
+  if (scope.role !== "admin") {
     return await db.query.schedules.findMany({
       where: (schedules, { exists }) => exists(
         db.select().from(ministries).where(
           and(
             eq(ministries.id, schedules.ministryId),
-            eq(ministries.leaderId, leaderId)
+            eq(ministries.leaderId, scope.userId)
           )
         )
       ),
@@ -104,7 +104,7 @@ export async function getSchedules() {
 // Visão de calendário para admin/líder: todas as escalas (com quem está escalado
 // em cada dia), escopadas por ministério do líder quando aplicável.
 export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
-  const leaderId = await getAuthFilter();
+  const scope = await getScope();
   const withClause = {
     ministry: true,
     sector: true,
@@ -115,13 +115,13 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
     },
   } as const;
 
-  const rows = leaderId
+  const rows = scope.role !== "admin"
     ? await db.query.schedules.findMany({
         where: (schedules, { exists }) => exists(
           db.select().from(ministries).where(
             and(
               eq(ministries.id, schedules.ministryId),
-              eq(ministries.leaderId, leaderId)
+              eq(ministries.leaderId, scope.userId)
             )
           )
         ),

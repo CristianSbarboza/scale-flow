@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { ministries } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { publicUser, getAuthFilter, requireAdmin, getOrCreateUser } from "@/lib/scope";
+import { publicUser, getScope, requireAdmin, getOrCreateUser } from "@/lib/scope";
 
 export async function createMinistry(name: string, description: string, leaderName: string, leaderEmail: string) {
   await requireAdmin();
@@ -35,9 +35,9 @@ export async function updateMinistry(id: number, name: string, description: stri
 }
 
 export async function getMinistries() {
-  const leaderId = await getAuthFilter();
+  const scope = await getScope();
   return await db.query.ministries.findMany({
-    where: leaderId ? eq(ministries.leaderId, leaderId) : undefined,
+    where: scope.role === "admin" ? undefined : eq(ministries.leaderId, scope.userId),
     with: {
       sectors: {
         with: {
@@ -52,7 +52,7 @@ export async function getMinistries() {
 }
 
 export async function getMinistryById(id: number) {
-  const leaderId = await getAuthFilter();
+  const scope = await getScope();
   const ministry = await db.query.ministries.findFirst({
     where: eq(ministries.id, id),
     with: {
@@ -67,6 +67,6 @@ export async function getMinistryById(id: number) {
     }
   });
   if (!ministry) return null;
-  if (leaderId && ministry.leaderId !== leaderId) return null;
+  if (scope.role !== "admin" && ministry.leaderId !== scope.userId) return null;
   return ministry;
 }

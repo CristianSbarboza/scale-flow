@@ -7,7 +7,7 @@ import { eq, and } from "drizzle-orm";
 import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { publicUser, getAuthFilter, requireSectorAccess, requireServantAccess, getOrCreateUser } from "@/lib/scope";
+import { publicUser, getScope, requireSectorAccess, requireServantAccess, getOrCreateUser } from "@/lib/scope";
 import type { ServantMembership, ServantSummary } from "@/types/domain";
 
 export async function createServant(name: string, username: string, email: string | null, sectorId: number) {
@@ -38,8 +38,8 @@ export async function createServant(name: string, username: string, email: strin
 }
 
 export async function getServants(): Promise<ServantSummary[]> {
-  const leaderId = await getAuthFilter();
-  const rows = leaderId
+  const scope = await getScope();
+  const rows = scope.role !== "admin"
     ? await db.query.servants.findMany({
         where: (servants, { exists }) => exists(
           db.select().from(sectors).where(
@@ -49,7 +49,7 @@ export async function getServants(): Promise<ServantSummary[]> {
                 db.select().from(ministries).where(
                   and(
                     eq(ministries.id, sectors.ministryId),
-                    eq(ministries.leaderId, leaderId)
+                    eq(ministries.leaderId, scope.userId)
                   )
                 )
               )
