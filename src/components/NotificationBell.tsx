@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Check, X } from "lucide-react";
-import { getPendingSwapRequests, respondToSwapRequest } from "@/lib/actions";
+import { getPendingSwapRequests, respondToSwapRequest } from "@/lib/actions/swaps";
 import type { PendingSwapRequest } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getServantOverview } from "@/lib/actions";
+import { getServantOverview } from "@/lib/actions/availability";
 import ServantShell from "@/components/ServantShell";
 
 export default async function ServantDashboard() {

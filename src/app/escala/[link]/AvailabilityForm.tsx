@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Send, Lock } from "lucide-react";
-import { saveAvailability } from "@/lib/actions";
+import { saveAvailability } from "@/lib/actions/availability";
 
 interface AvailabilityFormProps {
   dates: Array<{
