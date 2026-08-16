@@ -86,10 +86,12 @@ export default async function AdminDashboard() {
   const ministryCount = isLeader ? null : (await db.select({ value: count() }).from(ministries))[0];
 
   const stats: StatItem[] = [
-    ...(ministryCount ? [{ icon: Church, label: "Ministérios", value: ministryCount.value }] : []),
-    { icon: Layers, label: "Setores", value: sectorCount.value },
-    { icon: Users, label: "Servos", value: servantCount.value },
-    { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value },
+    ...(ministryCount
+      ? [{ icon: Church, label: "Ministérios", value: ministryCount.value, href: "/admin/ministries" }]
+      : []),
+    { icon: Layers, label: "Setores", value: sectorCount.value, href: "/admin/sectors" },
+    { icon: Users, label: "Servos", value: servantCount.value, href: "/admin/servants" },
+    { icon: Calendar, label: "Escalas Ativas", value: scheduleCount.value, href: "/admin/schedules" },
   ];
 
   return (
