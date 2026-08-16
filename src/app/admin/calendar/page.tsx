@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { ChevronLeft, ChevronRight, X, Clock, Users, Church } from "lucide-react";
 import { getCalendarSchedules } from "@/lib/actions/schedules";
 import FilterSelect from "@/components/ui/FilterSelect";
+import DataPanel from "@/components/ui/DataPanel";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import type { CalendarSchedule } from "@/types/domain";
@@ -94,6 +95,15 @@ export default function AdminCalendarPage() {
     return map;
   }, [filteredSchedules]);
 
+  // Escalas com pelo menos uma data no mês em exibição, ja passadas pelos
+  // mesmos filtros do calendario.
+  const monthSchedules = useMemo(() => {
+    const prefixo = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
+    return filteredSchedules
+      .map((s) => ({ ...s, monthDates: s.dates.filter((d) => d.date.slice(0, 7) === prefixo) }))
+      .filter((s) => s.monthDates.length > 0);
+  }, [filteredSchedules, viewYear, viewMonth]);
+
   const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const cells: (number | null)[] = [
@@ -161,7 +171,8 @@ export default function AdminCalendarPage() {
         />
       </div>
 
-      <div className="card glass mr-auto w-full lg:w-1/2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="card glass">
         <div className="mb-6 flex items-center justify-between">
           <button onClick={() => goToMonth(-1)} className="btn btn-ghost p-2" aria-label="Mês anterior">
             <ChevronLeft size={20} />
@@ -210,6 +221,27 @@ export default function AdminCalendarPage() {
             })}
           </div>
         )}
+        </div>
+
+        <DataPanel
+          title="Escalas do Mês"
+          rows={monthSchedules}
+          rowKey={(s) => s.id}
+          empty="Nenhuma escala neste mês."
+          columns={[
+            { header: "Escala", primary: true, cell: (s) => s.name },
+            { header: "Setor", cell: (s) => s.sectorName },
+            {
+              header: "Datas",
+              cell: (s) => s.monthDates.length,
+            },
+            {
+              header: "Escalados",
+              cell: (s) =>
+                new Set(s.monthDates.flatMap((d) => d.assignees.map((a) => a.servantId))).size,
+            },
+          ]}
+        />
       </div>
 
       {selectedDay && (
