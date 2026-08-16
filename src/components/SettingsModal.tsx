@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { motion } from "framer-motion";
-import { X, Settings, KeyRound, Save, User, Sun, Moon, Palette, LogOut, Check } from "lucide-react";
+import { X, Settings, KeyRound, Save, User, Sun, Moon, Palette, LogOut, Check, Plus } from "lucide-react";
 import { changeOwnPassword, updateOwnColor } from "@/lib/actions/account";
 import { useTheme } from "@/components/Providers";
+import ColorPicker from "@/components/ui/ColorPicker";
 import { useToast } from "@/components/Toast";
 
 interface Props {
@@ -41,6 +42,7 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
   const router = useRouter();
 
   const [showStyler, setShowStyler] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState(color);
   const [savingColor, setSavingColor] = useState<string | null>(null);
 
@@ -48,6 +50,10 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Cor fora da paleta: o circulo do + passa a mostra-la em vez do arco-iris.
+  const ehPersonalizada =
+    !!currentColor && !COLOR_OPTIONS.some((o) => o.value === currentColor);
 
   const handlePickColor = async (value: string | null) => {
     setSavingColor(value ?? "__default__");
@@ -190,10 +196,36 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={() => setShowPicker(true)}
+                    title="Cor personalizada"
+                    aria-label="Escolher cor personalizada"
+                    className="flex size-10 items-center justify-center rounded-full border-[3px] transition-transform hover:scale-105"
+                    style={{
+                      background: ehPersonalizada
+                        ? currentColor!
+                        : "conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444)",
+                      borderColor: ehPersonalizada ? "var(--foreground)" : "transparent",
+                    }}
+                  >
+                    <Plus size={16} color="white" strokeWidth={3} />
+                  </button>
                 </div>
               </div>
             )}
           </div>
+
+          {showPicker && (
+            <ColorPicker
+              value={currentColor ?? "#f97316"}
+              onClose={() => setShowPicker(false)}
+              onConfirm={(hex) => {
+                setShowPicker(false);
+                handlePickColor(hex);
+              }}
+            />
+          )}
 
           {/* Segurança */}
           <div>

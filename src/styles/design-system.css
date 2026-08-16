@@ -191,6 +191,28 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   }
 
+  /* Barra de matiz do ColorPicker. Sem isto o appearance-none apaga o thumb
+     junto com o estilo padrao do navegador, e a barra fica sem pegador. */
+  .color-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid rgb(0 0 0 / 0.35);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+    cursor: pointer;
+  }
+
+  .color-slider::-moz-range-thumb {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid rgb(0 0 0 / 0.35);
+    cursor: pointer;
+  }
+
   /* Animations */
   /* Onda que percorre os pontos do LoadingDots: cada um sobe e desce, e o
      atraso entre eles faz o movimento correr da esquerda para a direita. */
