@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { ChevronLeft, ChevronRight, Filter, X, Clock, Users, Church } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Clock, Users, Church } from "lucide-react";
 import { getCalendarSchedules } from "@/lib/actions/schedules";
 import FilterSelect from "@/components/ui/FilterSelect";
 import { getSectors } from "@/lib/actions/sectors";
@@ -133,10 +133,7 @@ export default function AdminCalendarPage() {
         <p style={{ color: "var(--muted-foreground)" }}>Veja quem está escalado em cada dia, por ministério.</p>
       </header>
 
-      <div className="card glass mb-6 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground">
-          <Filter size={16} /> Filtros
-        </div>
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         {!isLeader && (
           <FilterSelect
             label="Filtrar por ministério"
