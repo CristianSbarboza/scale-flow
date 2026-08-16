@@ -3,6 +3,7 @@
 import type { ServantTab, ServantTabItem } from "@/components/ServantHome";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
 import NotificationBell from "@/components/NotificationBell";
+import NavLink from "@/components/ui/NavLink";
 
 interface ServantSidebarProps {
   tabs: ServantTabItem[];
@@ -33,25 +34,14 @@ export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorNam
         {tabs.map((t) => {
           const isActive = tab === t.value;
           return (
-            <button
+            <NavLink
               key={t.value}
-              type="button"
               onClick={() => onTabChange(t.value)}
-              className={`btn ${isActive ? "active" : ""}`}
-              style={{
-                justifyContent: "flex-start",
-                width: "100%",
-                background: "transparent",
-                color: isActive ? "var(--primary)" : "var(--muted-foreground)",
-                borderBottom: isActive ? "2px solid var(--primary)" : "2px solid transparent",
-                borderRadius: "0",
-                padding: "0.625rem 1rem",
-                transition: "all 0.2s",
-              }}
+              icon={t.icon}
+              active={isActive}
             >
-              <t.icon size={20} style={{ minWidth: "20px" }} />
-              <span style={{ whiteSpace: "nowrap" }}>{t.label}</span>
-            </button>
+              {t.label}
+            </NavLink>
           );
         })}
       </nav>

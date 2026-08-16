@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -16,6 +15,7 @@ import {
   Settings
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import NavLink from "@/components/ui/NavLink";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Visão Geral", href: "/admin" },
@@ -142,25 +142,15 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           {visibleMenuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <NavLink
                 key={item.href}
                 href={item.href}
-                className={`btn ${isActive ? 'active' : ''}`}
-                style={{
-                  justifyContent: isCollapsed ? 'center' : 'flex-start',
-                  width: '100%',
-                  background: 'transparent',
-                  color: isActive ? 'var(--primary)' : 'var(--muted-foreground)',
-                  borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                  borderRadius: '0',
-                  padding: isCollapsed ? '0.75rem 0' : '0.625rem 1rem',
-                  transition: 'all 0.2s',
-                  overflow: 'hidden'
-                }}
+                icon={item.icon}
+                active={isActive}
+                collapsed={isCollapsed}
               >
-                <item.icon size={20} style={{ minWidth: '20px' }} />
-                {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
-              </Link>
+                {item.label}
+              </NavLink>
             );
           })}
         </nav>
@@ -170,24 +160,14 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           paddingTop: '1rem',
           borderTop: '1px solid var(--border)',
         }}>
-          <Link
+          <NavLink
             href="/admin/settings"
-            className={`btn ${pathname === '/admin/settings' ? 'active' : ''}`}
-            style={{
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              width: '100%',
-              background: 'transparent',
-              color: pathname === '/admin/settings' ? 'var(--primary)' : 'var(--muted-foreground)',
-              borderBottom: pathname === '/admin/settings' ? '2px solid var(--primary)' : '2px solid transparent',
-              borderRadius: '0',
-              padding: isCollapsed ? '0.75rem 0' : '0.625rem 1rem',
-              transition: 'all 0.2s',
-              overflow: 'hidden'
-            }}
+            icon={Settings}
+            active={pathname === '/admin/settings'}
+            collapsed={isCollapsed}
           >
-            <Settings size={20} style={{ minWidth: '20px' }} />
-            {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>Configurações</span>}
-          </Link>
+            Configurações
+          </NavLink>
         </div>
       </aside>
     </>
