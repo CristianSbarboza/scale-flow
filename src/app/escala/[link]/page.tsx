@@ -8,13 +8,11 @@ import { authOptions } from "@/lib/auth";
 import { Lock } from "lucide-react";
 import AvailabilityForm from "./AvailabilityForm";
 
-const PAGE_BACKGROUND = 'radial-gradient(circle at top right, #1a0f05, #0a0908)';
-
 // Escala privada e o visitante não pode responder: explica o porquê em vez de
 // mostrar um formulário que o servidor vai recusar no envio.
 function BlockedNotice({ title, message, action }: { title: string; message: string; action?: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: PAGE_BACKGROUND, padding: '2rem 1rem' }}>
+    <div className="min-h-screen px-4 py-8">
       <div className="w-full max-w-[600px] mx-auto px-6">
         <div className="card glass animate-fade-in" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
           <Lock size={32} color="var(--primary)" style={{ margin: '0 auto 1.25rem' }} />
@@ -138,11 +136,7 @@ interface SchedulePageProps {
 
 function SchedulePage({ schedule, dates, servants, initialServantId, lockedServantName, returnToServant }: SchedulePageProps) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: PAGE_BACKGROUND,
-      padding: '2rem 1rem'
-    }}>
+    <div className="min-h-screen px-4 py-8">
       <div className="w-full max-w-[600px] mx-auto px-6">
         <div className="card glass animate-fade-in" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{schedule.name}</h1>

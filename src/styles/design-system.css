@@ -73,7 +73,7 @@
   }
 
   body {
-    background: radial-gradient(circle at top right, #2a2623, #1b1a18);
+    background: radial-gradient(circle at top left, #2a2623, #1b1a18);
     color: var(--foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -227,7 +227,7 @@
 }
 
 .light body {
-  background: radial-gradient(circle at top right, #fff7ed, #ffffff);
+  background: radial-gradient(circle at top left, #fff7ed, #ffffff);
 }
 
 
