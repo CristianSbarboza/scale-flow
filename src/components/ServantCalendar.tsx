@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "lucide-react";
 import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/types/domain";
 import { createSwapRequest } from "@/lib/actions/swaps";
+import DataPanel from "@/components/ui/DataPanel";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -81,7 +82,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  while (cells.length % 7 !== 0) cells.push(null);
+  // Sempre 6 linhas, igual ao calendario do admin: a altura nao muda ao
+  // trocar de mes.
+  while (cells.length < 42) cells.push(null);
 
   const goToMonth = (offset: number) => {
     const next = new Date(viewYear, viewMonth + offset, 1);
@@ -121,21 +124,21 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
 
   return (
     <div>
-      <div className="servant-calendar-layout">
-        <div style={{ maxWidth: "810px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-            <button onClick={() => goToMonth(-1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Mês anterior">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="card glass">
+          <div className="mb-6 flex items-center justify-between">
+            <button onClick={() => goToMonth(-1)} className="btn btn-ghost p-2" aria-label="Mês anterior">
               <ChevronLeft size={20} />
             </button>
-            <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
-            <button onClick={() => goToMonth(1)} className="btn btn-ghost" style={{ padding: "0.5rem" }} aria-label="Próximo mês">
+            <h3 className="capitalize">{monthLabel}</h3>
+            <button onClick={() => goToMonth(1)} className="btn btn-ghost p-2" aria-label="Próximo mês">
               <ChevronRight size={20} />
             </button>
           </div>
 
-          <div className="servant-calendar-grid">
+          <div className="servant-calendar-grid mx-auto max-w-[560px]">
             {WEEKDAY_LABELS.map((label, i) => (
-              <div key={i} style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--muted-foreground)", fontWeight: 600 }}>
+              <div key={i} className="mb-2 text-center text-xs font-semibold text-muted-foreground">
                 {label}
               </div>
             ))}
@@ -171,40 +174,30 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: "0.5rem", alignContent: "start" }}>
-        <h3 style={{ marginBottom: "0.5rem" }}>Seus dias</h3>
-        {monthEntries.length === 0 ? (
-          <p style={{ textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.875rem", padding: "1.5rem 0" }}>
-            Nenhum dia confirmado neste mês.
-          </p>
-        ) : (
-          monthEntries.map((entry, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "1rem",
-                padding: "0.75rem 1rem",
-                background: "var(--muted)",
-                borderRadius: "var(--radius)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontWeight: 700, color: "var(--primary)" }}>
-                  {new Date(`${entry.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+        <DataPanel
+          title="Seus dias"
+          rows={monthEntries}
+          rowKey={(e) => `${e.dateId}-${e.date}`}
+          empty="Nenhum dia confirmado neste mês."
+          onRowClick={(e) => setSelectedDay(e.date)}
+          columns={[
+            {
+              header: "Dia",
+              primary: true,
+              cell: (e) => (
+                <span className="font-bold text-primary">
+                  {new Date(`${e.date}T00:00:00`).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })}
                 </span>
-                <span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.startTime.slice(0, 5)}</span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{entry.ministryName}</p>
-                <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{entry.sectorName}</p>
-              </div>
-            </div>
-          ))
-        )}
-        </div>
+              ),
+            },
+            { header: "Horário", cell: (e) => e.startTime.slice(0, 5) },
+            { header: "Ministério", cell: (e) => e.ministryName },
+            { header: "Setor", cell: (e) => e.sectorName },
+          ]}
+        />
       </div>
 
       {selectedDay && createPortal(

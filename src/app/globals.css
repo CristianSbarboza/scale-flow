@@ -73,12 +73,6 @@ main {
   flex-shrink: 0;
 }
 
-.servant-calendar-layout {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 480px);
-  align-items: start;
-}
 
 /* Formulario a esquerda, painel de dados a direita. A proporcao e fixa de
    proposito: o DataPanel tem a mesma largura em todas as telas de lista. */
@@ -221,9 +215,6 @@ main {
     display: none;
   }
 
-  .servant-calendar-layout {
-    grid-template-columns: 1fr;
-  }
 
   .admin-panel-layout {
     display: block;
