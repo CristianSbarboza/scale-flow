@@ -32,7 +32,7 @@ Environment variables (`.env`, gitignored): `DATABASE_URL`, `NEXTAUTH_SECRET`, `
 
 **Stack:** Next.js 16 App Router + React 19 + TypeScript, Tailwind CSS v4, Drizzle ORM over PostgreSQL, Auth.js (NextAuth v4, JWT sessions, Credentials provider), Framer Motion, Lucide icons.
 
-**Data layer.** The entire schema lives in `src/db/schema.ts` (Drizzle `pgTable` + `relations`). Core entities: `users` (role: `admin` | `leader` | `servant`) → `ministries` (led by a user) → `sectors` → `servants` (join of user + sector) → `schedules` (has a unique `shareLink` nanoid) → `scheduleDates` → `scheduleAvailability` / `scheduleAssignments`. `src/db/index.ts` exports the singleton `db` (drizzle + node-postgres `Pool`). Always check `src/db/schema.ts` before writing a query — don't assume table shape.
+**Data layer.** The entire schema lives in `src/db/schema.ts` (Drizzle `pgTable` + `relations`). Core entities: `users` (role: `admin` | `leader` | `servant`) → `ministries` (led by a user) → `sectors` → `servants` (join of user + sector) → `schedules` (status: `draft` | `published`; visibility: `public` | `private`; has a unique `shareLink` nanoid) → `scheduleDates` → `scheduleAvailability` / `scheduleAssignments`. `swapRequests` links two `servants` for a given `scheduleDate` with a `pending` | `accepted` | `rejected` status. `src/db/index.ts` exports the singleton `db` (drizzle + node-postgres `Pool`). Always check `src/db/schema.ts` before writing a query — don't assume table shape.
 
 **Server actions, not API routes.** Nearly all mutations and reads go through `"use server"` functions in `src/lib/actions.ts` (not `src/app/actions.ts`, which is an unused stub — put new server actions in `src/lib/actions.ts`). Components call these directly rather than fetching from REST endpoints. The only real API route is NextAuth's catch-all at `src/app/api/auth/[...nextauth]/route.ts`.
 
@@ -40,7 +40,7 @@ Environment variables (`.env`, gitignored): `DATABASE_URL`, `NEXTAUTH_SECRET`, `
 
 **User provisioning pattern.** Ministries/sectors/servants are created by an admin who types a leader's/servant's name+email; `getOrCreateUser()` in `src/lib/actions.ts` either creates the user with a random generated password (returned once to the caller so the admin can share it) or reuses an existing user, upgrading `servant`→`leader` role if needed. Reuse this helper rather than inserting into `users` directly.
 
-**Public share-link flow.** `src/app/escala/[link]/page.tsx` is an unauthenticated route: it looks up a `schedule` by its `shareLink`, lists the sector's servants, and renders `AvailabilityForm` (client component) so servants can self-report availability without logging in.
+**Public share-link flow.** `src/app/escala/[link]/page.tsx` looks up a `schedule` by its `shareLink`, lists the sector's servants, and renders `AvailabilityForm` (client component) so servants can self-report availability. Whether it's actually reachable without login depends on `schedules.visibility`: `public` schedules accept any visitor; `private` schedules require a session and sector membership, and the page renders a `BlockedNotice` explaining why instead of a form the server would reject on submit anyway. Keep that gating logic in sync between the page (UX) and the server action (actual enforcement) when touching this flow.
 
 **Routing structure:**
 - `/src/app/admin/*` — authenticated admin/leader console (ministries, sectors, servants, schedules), guarded by `admin/layout.tsx`.
