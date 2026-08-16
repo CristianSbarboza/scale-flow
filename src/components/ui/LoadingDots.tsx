@@ -6,8 +6,8 @@ const sizes = {
 } as const;
 
 /**
- * Três pontinhos pulsando, para o intervalo entre abrir a tela e os dados
- * chegarem.
+ * Três pontinhos em onda, para o intervalo entre abrir a tela e os dados
+ * chegarem. Cada um sobe e desce, e o atraso entre eles faz a onda correr.
  *
  * Herda a cor do texto do pai, então basta envolvê-lo em algo com
  * `text-muted-foreground` para deixá-lo discreto.
@@ -27,8 +27,8 @@ export default function LoadingDots({
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className={cn("animate-dot-pulse rounded-full bg-current", sizes[size])}
-          style={{ animationDelay: `${i * 0.16}s` }}
+          className={cn("animate-dot-snake rounded-full bg-current", sizes[size])}
+          style={{ animationDelay: `${i * 0.14}s` }}
         />
       ))}
     </span>

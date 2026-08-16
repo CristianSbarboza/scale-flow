@@ -192,6 +192,13 @@
   }
 
   /* Animations */
+  /* Onda que percorre os pontos do LoadingDots: cada um sobe e desce, e o
+     atraso entre eles faz o movimento correr da esquerda para a direita. */
+  @keyframes dotSnake {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+    30% { transform: translateY(-0.4em); opacity: 1; }
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -276,5 +283,5 @@
   --font-logo: var(--font-logo);
 
   /* Pontinho do LoadingDots. O atraso de cada um vem do proprio componente. */
-  --animate-dot-pulse: dotPulse 1.4s ease-in-out infinite;
+  --animate-dot-snake: dotSnake 1.2s ease-in-out infinite;
 }
