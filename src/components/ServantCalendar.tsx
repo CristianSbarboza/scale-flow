@@ -209,7 +209,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
 
       {selectedDay && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center gap-4 items-center justify-center p-4 bg-black/80 backdrop-blur-md"
           onClick={() => setSelectedDay(null)}
         >
           <div

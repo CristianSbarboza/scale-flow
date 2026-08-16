@@ -1,3 +1,21 @@
+/**
+ * Design system do ScaleFlow — fonte única de verdade de cor e tema.
+ *
+ * Três blocos, nesta ordem:
+ *   1. :root            a paleta (tema escuro, o padrão)
+ *   2. .light           os overrides do tema claro
+ *   3. @theme inline    a ponte que expõe tudo como utilitário Tailwind
+ *
+ * O `inline` faz o Tailwind gerar `var(--primary)` em vez de copiar o valor,
+ * então trocar de tema continua sendo só a troca da classe no <html> — os
+ * utilitários acompanham sozinhos e é impossível a paleta divergir deles.
+ */
+
+/* O tema é trocado por classe no <html> (ver src/components/Providers.tsx),
+   não por prefers-color-scheme — então `dark:` precisa escutar a classe. */
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+
 :root {
   /* Colors - Orange, Black, White Palette */
   --primary: #f97316; /* Orange 500 */
@@ -10,6 +28,14 @@
 
   --accent: #fdba74; /* Orange 300 */
   --accent-foreground: #000000;
+
+  /* Estado. Antes destas duas, #10b981 e #ef4444 estavam escritos na mão em
+     21 arquivos — sem token não havia como o tema claro ajustá-los. */
+  --success: #10b981; /* Emerald 500 */
+  --success-foreground: #ffffff;
+
+  --destructive: #ef4444; /* Red 500 */
+  --destructive-foreground: #ffffff;
 
   --background: #0a0908; /* Warm Near-Black */
   --foreground: #ffffff; /* Pure White */
@@ -68,7 +94,7 @@ button {
 
 /* Base UI Components */
 .glass {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(23, 18, 14, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-border);
@@ -94,7 +120,7 @@ button {
 .btn-primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgb(249 115 22 / 0.3);
 }
 
 .btn-secondary {
@@ -105,7 +131,7 @@ button {
 .btn-secondary:hover {
   background-color: var(--secondary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 4px 12px rgb(251 146 60 / 0.3);
 }
 
 .btn-ghost {
@@ -130,7 +156,7 @@ button {
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 2px rgb(249 115 22 / 0.2);
 }
 
 .card {
@@ -187,4 +213,44 @@ button {
 
 .light .login-container {
   background: radial-gradient(circle at top left, #fff7ed, #f3f4f6);
+}
+
+/* --- Ponte para os utilitários do Tailwind ------------------------------- */
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-token: var(--radius);
 }

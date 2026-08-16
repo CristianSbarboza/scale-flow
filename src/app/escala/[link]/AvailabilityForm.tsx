@@ -80,7 +80,7 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid" style={{ gap: '1.5rem' }}>
+    <form onSubmit={handleSubmit} className="grid gap-6" style={{ gap: '1.5rem' }}>
       <div className="card glass">
         <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Quem é você?</label>
         {lockedServantName ? (
@@ -103,7 +103,7 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
         )}
       </div>
 
-      <div className="grid" style={{ gap: '0.75rem' }}>
+      <div className="grid gap-6" style={{ gap: '0.75rem' }}>
         {dates.map((d) => {
           const isSelected = selectedDates.includes(d.id);
           return (

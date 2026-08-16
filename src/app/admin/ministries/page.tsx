@@ -116,23 +116,23 @@ export default function MinistriesPage() {
 
   const formContent = (
     <>
-      <form onSubmit={handleCreate} className="grid">
-        <div className="grid" style={{ gap: '0.5rem' }}>
+      <form onSubmit={handleCreate} className="grid gap-6">
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Nome do Ministério</label>
           <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Adoração" required />
         </div>
-        <div className="grid" style={{ gap: '0.5rem' }}>
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Descrição</label>
           <textarea className="input" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Opcional..." />
         </div>
         <div style={{ margin: '1rem 0', padding: '1rem', background: 'var(--muted)', borderRadius: '0.5rem' }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem' }}>DADOS DO LÍDER</p>
-          <div className="grid" style={{ gap: '1rem' }}>
-            <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '1rem' }}>
+            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
               <label>Nome do Líder</label>
               <input className="input" value={leaderName} onChange={e => setLeaderName(e.target.value)} required />
             </div>
-            <div className="grid" style={{ gap: '0.5rem' }}>
+            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
               <label>Email do Líder</label>
               <input className="input" type="email" value={leaderEmail} onChange={e => setLeaderEmail(e.target.value)} required />
             </div>
@@ -155,12 +155,12 @@ export default function MinistriesPage() {
           flexDirection: 'column',
           gap: '0.75rem'
         }}>
-          <div className="flex" style={{ color: 'var(--accent)' }}>
+          <div className="flex items-center gap-4" style={{ color: 'var(--accent)' }}>
             <ShieldAlert size={18} />
             <span style={{ fontWeight: 600 }}>Senha Gerada para o Líder</span>
           </div>
           <p style={{ fontSize: '0.875rem' }}>Esta pessoa é nova no sistema. Passe esta senha para ela logar.</p>
-          <div className="flex justify-between" style={{
+          <div className="flex items-center gap-4 justify-between" style={{
             background: 'var(--input)',
             padding: '0.5rem 1rem',
             borderRadius: '0.5rem',

@@ -15,7 +15,7 @@ const PAGE_BACKGROUND = 'radial-gradient(circle at top right, #1a0f05, #0a0908)'
 function BlockedNotice({ title, message, action }: { title: string; message: string; action?: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', background: PAGE_BACKGROUND, padding: '2rem 1rem' }}>
-      <div className="container" style={{ maxWidth: '600px' }}>
+      <div className="w-full max-w-[600px] mx-auto px-6">
         <div className="card glass animate-fade-in" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
           <Lock size={32} color="var(--primary)" style={{ margin: '0 auto 1.25rem' }} />
           <h1 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{title}</h1>
@@ -143,7 +143,7 @@ function SchedulePage({ schedule, dates, servants, initialServantId, lockedServa
       background: PAGE_BACKGROUND,
       padding: '2rem 1rem'
     }}>
-      <div className="container" style={{ maxWidth: '600px' }}>
+      <div className="w-full max-w-[600px] mx-auto px-6">
         <div className="card glass animate-fade-in" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{schedule.name}</h1>
           <p style={{ color: 'var(--primary)', fontWeight: 600 }}>{schedule.ministry.name} - {schedule.sector.name}</p>

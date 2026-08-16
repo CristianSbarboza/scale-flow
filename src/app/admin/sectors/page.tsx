@@ -92,12 +92,12 @@ export default function SectorsPage() {
   });
 
   const formContent = (
-    <form onSubmit={handleCreate} className="grid">
-      <div className="grid" style={{ gap: '0.5rem' }}>
+    <form onSubmit={handleCreate} className="grid gap-6">
+      <div className="grid gap-6" style={{ gap: '0.5rem' }}>
         <label>Nome do Setor</label>
         <input className="input" value={name} onChange={e => setName(e.target.value)} required />
       </div>
-      <div className="grid" style={{ gap: '0.5rem' }}>
+      <div className="grid gap-6" style={{ gap: '0.5rem' }}>
         <label>Ministério</label>
         <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
           <option value="">Selecione um ministério</option>
@@ -175,7 +175,7 @@ export default function SectorsPage() {
                     style={{ borderBottom: '1px solid var(--border)' }}
                   >
                     <td style={{ padding: '1rem 0.5rem' }}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-4 items-center gap-2">
                         <LayoutGrid size={14} className="text-primary/60" />
                         <span>{s.name}</span>
                       </div>

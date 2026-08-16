@@ -34,7 +34,7 @@ export function StackedStats({ data }: { data: StatsData }) {
       onClick={() => setIsExpanded(!isExpanded)}
     >
       <div 
-        className={isExpanded ? "grid" : ""} 
+        className={isExpanded ? "grid gap-6" : ""} 
         style={{ 
           display: isExpanded ? 'grid' : 'block',
           gridTemplateColumns: isExpanded ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'none',
@@ -66,7 +66,7 @@ export function StackedStats({ data }: { data: StatsData }) {
               userSelect: 'none'
             }}
           >
-            <div className="flex justify-between" style={{ marginBottom: '1rem' }}>
+            <div className="flex items-center gap-4 justify-between" style={{ marginBottom: '1rem' }}>
               <div style={{ 
                 background: stat.color, 
                 padding: '0.5rem', 

@@ -87,7 +87,7 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
         top: '1rem',
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
-        <div className="flex" style={{
+        <div className="flex items-center gap-4" style={{
           marginBottom: '2.5rem',
           padding: '0 0.5rem',
           justifyContent: isCollapsed ? 'center' : 'space-between',

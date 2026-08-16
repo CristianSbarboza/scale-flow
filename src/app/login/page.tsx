@@ -99,7 +99,7 @@ function LoginForm() {
           </div>
         )}
 
-        <div className="flex" style={{
+        <div className="flex items-center gap-4" style={{
           gap: '0.5rem',
           padding: '0.375rem',
           borderRadius: 'var(--radius)',
@@ -114,7 +114,7 @@ function LoginForm() {
                 key={r.value}
                 type="button"
                 onClick={() => { setRole(r.value); setError(""); setIdentifier(""); }}
-                className="flex"
+                className="flex items-center gap-4"
                 style={{
                   flex: 1,
                   justifyContent: 'center',
@@ -138,8 +138,8 @@ function LoginForm() {
           })}
         </div>
 
-        <form onSubmit={handleSubmit} className="grid">
-          <div className="grid" style={{ gap: '0.5rem' }}>
+        <form onSubmit={handleSubmit} className="grid gap-6">
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="identifier">{isServant ? "Usuário" : "E-mail"}</label>
             <input
               id="identifier"
@@ -152,7 +152,7 @@ function LoginForm() {
             />
           </div>
 
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="password">Senha</label>
             <div style={{ position: 'relative' }}>
               <input 

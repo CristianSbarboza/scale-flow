@@ -76,9 +76,9 @@ export default async function AdminDashboard() {
         <div className="card glass">
           <h3 style={{ marginBottom: '1.5rem' }}>Últimas Escalas Criadas</h3>
           {latestSchedules.length > 0 ? (
-            <div className="grid" style={{ gap: '1rem' }}>
+            <div className="grid gap-6" style={{ gap: '1rem' }}>
               {latestSchedules.map((s) => (
-                <div key={s.id} className="flex justify-between" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
+                <div key={s.id} className="flex items-center gap-4 justify-between" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
                   <div>
                     <p style={{ fontWeight: 600 }}>{s.name}</p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.ministryName} - {s.sectorName}</p>
@@ -98,9 +98,9 @@ export default async function AdminDashboard() {
         <div className="card glass">
           <h3 style={{ marginBottom: '1.5rem' }}>Servos Recentemente Cadastrados</h3>
           {latestServants.length > 0 ? (
-            <div className="grid" style={{ gap: '1rem' }}>
+            <div className="grid gap-6" style={{ gap: '1rem' }}>
               {latestServants.map((s) => (
-                <div key={s.id} className="flex" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
+                <div key={s.id} className="flex items-center gap-4" style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'white', marginRight: '0.75rem' }}>
                     {s.name.charAt(0)}
                   </div>

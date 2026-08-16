@@ -145,21 +145,21 @@ export default function SchedulesPage() {
 
   const formContent = (
     <>
-      <form onSubmit={handleCreate} className="grid">
-        <div className="grid" style={{ gap: '0.5rem' }}>
+      <form onSubmit={handleCreate} className="grid gap-6">
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Nome da Escala (ex: Escala de Maio)</label>
           <input className="input" value={name} onChange={e => setName(e.target.value)} required />
         </div>
 
-        <div className="grid" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
-          <div className="grid" style={{ gap: '0.5rem' }}>
+        <div className="grid gap-6" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label>Ministério</label>
             <select className="input" value={ministryId} onChange={e => setMinistryId(e.target.value)} required>
               <option value="">Selecionar</option>
               {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label>Setor</label>
             <select className="input" value={sectorId} onChange={e => setSectorId(e.target.value)} required>
               <option value="">Selecionar</option>
@@ -174,7 +174,7 @@ export default function SchedulesPage() {
 
         <div style={{ padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)', marginTop: '0.5rem' }}>
           <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>Adicionar Datas e Horários</h4>
-          <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem', gridTemplateColumns: '2fr 1fr auto' }}>
             <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
             <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
             <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
@@ -184,7 +184,7 @@ export default function SchedulesPage() {
 
           <div style={{ marginTop: '1rem' }}>
             {dates.map((d, i) => (
-              <div key={i} className="flex justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+              <div key={i} className="flex items-center gap-4 justify-between" style={{ padding: '0.5rem', background: 'var(--card)', borderRadius: '0.25rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
                 <span>{d.date} | {d.startTime}</span>
                 <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444' }}>Remover</button>
               </div>
@@ -203,7 +203,7 @@ export default function SchedulesPage() {
           <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
             Escala gerada com sucesso. Copie o link e envie para o voluntário, ou avise a ele que já está disponível no perfil dele.
           </p>
-          <div className="flex" style={{ wordBreak: 'break-all' }}>
+          <div className="flex items-center gap-4" style={{ wordBreak: 'break-all' }}>
             <code style={{ fontSize: '0.875rem', color: '#10b981' }}>{lastLink}</code>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default function SchedulesPage() {
                 {schedules.map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 0.5rem' }}>
-                      <span className="flex items-center" style={{ gap: '0.375rem' }}>
+                      <span className="flex items-center gap-4 items-center" style={{ gap: '0.375rem' }}>
                         {s.name}
                         {s.visibility === "private" && (
                           <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />
@@ -252,7 +252,7 @@ export default function SchedulesPage() {
                     <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.ministry.name}</td>
                     <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{s.sector.name}</td>
                     <td style={{ padding: '0.75rem 0.5rem' }}>
-                      <div className="flex" style={{ gap: '0.25rem', justifyContent: 'flex-end' }}>
+                      <div className="flex items-center gap-4" style={{ gap: '0.25rem', justifyContent: 'flex-end' }}>
                         <button onClick={() => handleEdit(s)} title="Editar" style={{ color: 'var(--primary)', padding: '0.375rem' }}>
                           <Edit3 size={16} />
                         </button>
@@ -290,7 +290,7 @@ export default function SchedulesPage() {
           <div className="admin-mobile-list">
             {schedules.map((s) => (
               <AdminMobileListItem key={s.id}>
-                <span className="flex items-center" style={{ fontWeight: 600, gap: '0.375rem' }}>
+                <span className="flex items-center gap-4 items-center" style={{ fontWeight: 600, gap: '0.375rem' }}>
                   {s.name}
                   {s.visibility === "private" && (
                     <Lock size={13} color="var(--muted-foreground)" aria-label="Escala privada" />

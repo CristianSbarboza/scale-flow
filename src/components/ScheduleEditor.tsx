@@ -87,8 +87,8 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleUpdate} className="grid" style={{ padding: '1.5rem', gap: '1.5rem', overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
-          <div className="grid" style={{ gap: '0.5rem' }}>
+        <form onSubmit={handleUpdate} className="grid gap-6" style={{ padding: '1.5rem', gap: '1.5rem', overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label>Nome da Escala</label>
             <input
               className="input"
@@ -105,7 +105,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
             <h4 style={{ marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <CalendarPlus size={18} color="var(--primary)" /> Adicionar Novo Horário
             </h4>
-            <div className="grid" style={{ gap: '0.5rem', gridTemplateColumns: '1.5fr 1fr auto' }}>
+            <div className="grid gap-6" style={{ gap: '0.5rem', gridTemplateColumns: '1.5fr 1fr auto' }}>
               <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
               <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
               <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
@@ -114,9 +114,9 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
             </div>
           </div>
 
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label>Datas Configuradas</label>
-            <div className="grid" style={{ gap: '0.5rem' }}>
+            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
               <AnimatePresence mode="popLayout">
                 {dates.map((d, i) => (
                   <motion.div
@@ -125,17 +125,17 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
-                    className="flex justify-between items-center"
+                    className="flex items-center gap-4 justify-between items-center"
                     style={{ padding: '0.75rem 1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}
                   >
-                    <div className="flex items-center" style={{ gap: '1rem' }}>
-                      <div className="flex items-center" style={{ gap: '0.5rem', color: 'var(--primary)' }}>
+                    <div className="flex items-center gap-4 items-center" style={{ gap: '1rem' }}>
+                      <div className="flex items-center gap-4 items-center" style={{ gap: '0.5rem', color: 'var(--primary)' }}>
                         <CalendarIcon size={16} />
                         <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>
                           {new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       </div>
-                      <div className="flex items-center" style={{ gap: '0.375rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+                      <div className="flex items-center gap-4 items-center" style={{ gap: '0.375rem', fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
                         <Clock size={14} />
                         {d.startTime.slice(0, 5)}
                       </div>
@@ -149,7 +149,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
             </div>
           </div>
 
-          <div className="flex" style={{ gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-4" style={{ gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
             <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loading}>
               <Save size={18} />

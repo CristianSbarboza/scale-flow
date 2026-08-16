@@ -129,8 +129,8 @@ export default function ServantsPage() {
 
   const formContent = (
     <>
-      <form onSubmit={handleCreate} className="grid">
-        <div className="grid" style={{ gap: '0.5rem' }}>
+      <form onSubmit={handleCreate} className="grid gap-6">
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Nome Completo</label>
           <input
             className="input"
@@ -139,7 +139,7 @@ export default function ServantsPage() {
             required
           />
         </div>
-        <div className="grid" style={{ gap: '0.5rem' }}>
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Usuário</label>
           <input
             className="input"
@@ -149,7 +149,7 @@ export default function ServantsPage() {
             required
           />
         </div>
-        <div className="grid" style={{ gap: '0.5rem' }}>
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>E-mail (opcional)</label>
           <input
             className="input"
@@ -158,7 +158,7 @@ export default function ServantsPage() {
             onChange={e => setEmail(e.target.value)}
           />
         </div>
-        <div className="grid" style={{ gap: '0.5rem' }}>
+        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
           <label>Setor Principal</label>
           <select
             className="input"
@@ -189,12 +189,12 @@ export default function ServantsPage() {
           flexDirection: 'column',
           gap: '0.75rem'
         }}>
-          <div className="flex" style={{ color: 'var(--accent)' }}>
+          <div className="flex items-center gap-4" style={{ color: 'var(--accent)' }}>
             <ShieldAlert size={18} />
             <span style={{ fontWeight: 600 }}>Senha de Primeiro Acesso</span>
           </div>
           <p style={{ fontSize: '0.875rem' }}>Passe esta senha ao servo. Ele poderá alterá-la após o login.</p>
-          <div className="flex justify-between" style={{
+          <div className="flex items-center gap-4 justify-between" style={{
             background: 'var(--input)',
             padding: '0.5rem 1rem',
             borderRadius: '0.5rem',
@@ -229,10 +229,10 @@ export default function ServantsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Servos Cadastrados</h3>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-4 flex-wrap gap-3">
               {/* Ministry Filter */}
               {!isLeader && (
-                <div className="flex flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
+                <div className="flex items-center gap-4 flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                   <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
                   <select
                     style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
@@ -251,7 +251,7 @@ export default function ServantsPage() {
               )}
 
               {/* Sector Filter */}
-              <div className="flex flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-4 flex-1" style={{ minWidth: '180px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Filter size={14} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
                 <select
                   style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', outline: 'none', padding: '0.5rem 0', width: '100%' }}
@@ -268,7 +268,7 @@ export default function ServantsPage() {
               </div>
 
               {/* Search */}
-              <div className="flex flex-1" style={{ minWidth: '200px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-4 flex-1" style={{ minWidth: '200px', background: 'var(--muted)', borderRadius: '0.75rem', padding: '0.25rem 0.75rem', border: '1px solid var(--border)' }}>
                 <Search size={16} style={{ marginRight: '0.5rem', color: 'var(--muted-foreground)', marginTop: '0.6rem' }} />
                 <input
                   placeholder="Pesquisar nome, usuário ou e-mail..."

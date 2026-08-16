@@ -99,8 +99,8 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
             <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
               {schedule.ministry.name} · {schedule.sector.name}
             </p>
-            <div className="flex items-center" style={{ gap: '0.75rem', marginTop: '0.75rem' }}>
-              <span className="flex items-center" style={{ gap: '0.375rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+            <div className="flex items-center gap-4 items-center" style={{ gap: '0.75rem', marginTop: '0.75rem' }}>
+              <span className="flex items-center gap-4 items-center" style={{ gap: '0.375rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
                 <Calendar size={14} /> {schedule.dates.length} {schedule.dates.length === 1 ? 'data' : 'datas'}
               </span>
             </div>
@@ -118,12 +118,12 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
         <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin', flex: '1 1 auto', minHeight: 0 }}>
           <label style={{ display: 'block', marginBottom: '1rem' }}>Respostas e Escalação</label>
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="flex items-center gap-4 flex-col items-center justify-center py-20 gap-4">
               <div className="animate-spin" style={{ width: '40px', height: '40px', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
               <p style={{ color: 'var(--muted-foreground)' }}>Carregando dados da escala...</p>
             </div>
           ) : (
-            <div className="grid" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+            <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
               <AnimatePresence mode="popLayout">
                 {dates.map((d) => (
                   <motion.div
@@ -142,28 +142,28 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                         <h4 style={{ fontWeight: 600, fontSize: '1.1rem' }}>
                           {new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}
                         </h4>
-                        <div className="flex items-center" style={{ gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+                        <div className="flex items-center gap-4 items-center" style={{ gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
                           <Clock size={12} /> {d.startTime.slice(0, 5)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid" style={{ gap: '1rem' }}>
+                    <div className="grid gap-6" style={{ gap: '1rem' }}>
                       {/* Assigned Section */}
                       <div>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', display: 'block', marginBottom: '0.75rem' }}>
                           Confirmados ({d.assignments.length})
                         </span>
-                        <div className="grid" style={{ gap: '0.5rem' }}>
+                        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
                           {d.assignments.map((as) => (
                             <motion.div
                               initial={{ x: -10, opacity: 0 }}
                               animate={{ x: 0, opacity: 1 }}
                               key={as.id}
-                              className="flex justify-between items-center"
+                              className="flex items-center gap-4 justify-between items-center"
                               style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius)', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)' }}
                             >
-                              <div className="flex items-center" style={{ gap: '0.5rem' }}>
+                              <div className="flex items-center gap-4 items-center" style={{ gap: '0.5rem' }}>
                                 <CheckCircle2 size={14} color="#10b981" />
                                 <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{as.servant.user.name}</span>
                               </div>
@@ -189,7 +189,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', display: 'block', marginBottom: '0.75rem' }}>
                           Disponíveis
                         </span>
-                        <div className="grid" style={{ gap: '0.5rem' }}>
+                        <div className="grid gap-6" style={{ gap: '0.5rem' }}>
                           {d.availabilities
                             .filter((av) => !d.assignments.some((as) => as.servantId === av.servantId))
                             .map((av) => (
@@ -197,7 +197,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 key={av.id}
-                                className="flex justify-between items-center"
+                                className="flex items-center gap-4 justify-between items-center"
                                 style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius)', background: 'var(--muted)' }}
                               >
                                 <span style={{ fontSize: '0.875rem' }}>{av.servant.user.name}</span>
@@ -228,7 +228,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
 
         {/* Footer info */}
         {!loading && (
-          <div className="flex justify-center" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-4 justify-center" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
             <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
               As alterações são salvas automaticamente e refletidas na agenda dos servos.
             </p>

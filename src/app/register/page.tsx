@@ -73,8 +73,8 @@ export default function RegisterPage() {
           <p style={{ color: 'var(--muted-foreground)' }}>Crie sua conta administrativa</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid">
-          <div className="grid" style={{ gap: '0.5rem' }}>
+        <form onSubmit={handleSubmit} className="grid gap-6">
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="name">Nome Completo</label>
             <input 
               id="name"
@@ -87,7 +87,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="email">E-mail</label>
             <input 
               id="email"
@@ -100,7 +100,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="password">Senha</label>
             <div style={{ position: 'relative' }}>
               <input 
@@ -130,7 +130,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="grid" style={{ gap: '0.5rem' }}>
+          <div className="grid gap-6" style={{ gap: '0.5rem' }}>
             <label htmlFor="confirmPassword">Confirmar Senha</label>
             <div style={{ position: 'relative' }}>
               <input 
