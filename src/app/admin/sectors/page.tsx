@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createSector, getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { Plus, LayoutGrid } from "lucide-react";
-import Badge from "@/components/ui/Badge";
 import DataPanel from "@/components/ui/DataPanel";
 import FormPanel from "@/components/ui/FormPanel";
 import Button from "@/components/ui/Button";
@@ -166,7 +165,7 @@ export default function SectorsPage() {
             },
             {
               header: "Ministério",
-              cell: (s) => <Badge tone="primary" solid>{s.ministry.name}</Badge>,
+              cell: (s) => s.ministry.name,
             },
             {
               header: "Servos",

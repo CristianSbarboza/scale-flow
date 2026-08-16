@@ -235,15 +235,7 @@ export default function ServantsPage() {
             },
             {
               header: "Setores",
-              cell: (s) => (
-                <div className="flex flex-wrap gap-1.5">
-                  {s.memberships.map((m) => (
-                    <span key={m.servantId} className="rounded-full bg-muted px-2 py-1 text-xs">
-                      {m.sectorName}
-                    </span>
-                  ))}
-                </div>
-              ),
+              cell: (s) => s.memberships.map((m) => m.sectorName).join(", "),
             },
           ]}
         />

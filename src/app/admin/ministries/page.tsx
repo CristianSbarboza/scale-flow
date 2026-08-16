@@ -199,9 +199,7 @@ export default function MinistriesPage() {
             },
             {
               header: "Setores",
-              cell: (m) => (
-                <span className="rounded-full bg-muted px-2 py-1 text-xs">{m.sectors?.length || 0}</span>
-              ),
+              cell: (m) => m.sectors?.length || 0,
             },
             {
               header: "Servos",
