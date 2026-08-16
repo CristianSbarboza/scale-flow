@@ -218,13 +218,6 @@ button {
   background: radial-gradient(circle at top right, #fff7ed, #ffffff);
 }
 
-.login-container {
-  background: radial-gradient(circle at top left, #ea580c, #000000);
-}
-
-.light .login-container {
-  background: radial-gradient(circle at top left, #fff7ed, #f3f4f6);
-}
 
 /* --- Ponte para os utilitários do Tailwind ------------------------------- */
 
