@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createMinistry, getMinistries } from "@/lib/actions";
+import { createMinistry, getMinistries } from "@/lib/actions/ministries";
 import { Church, Plus, ShieldAlert, Check, Copy, Search } from "lucide-react";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";

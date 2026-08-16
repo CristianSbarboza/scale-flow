@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createSector, getSectors, getMinistries } from "@/lib/actions";
+import { createSector, getSectors } from "@/lib/actions/sectors";
+import { getMinistries } from "@/lib/actions/ministries";
 import { Plus, Search, Filter, LayoutGrid } from "lucide-react";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { AdminMobileListItem, AdminMobileField } from "@/components/AdminMobileListItem";

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, Save, ShieldAlert, Copy, Check } from "lucide-react";
-import { getMinistryById, updateMinistry } from "@/lib/actions";
+import { getMinistryById, updateMinistry } from "@/lib/actions/ministries";
 
 interface Ministry {
   id: number;

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Activity } from "lucide-react";
-import { getSectorById } from "@/lib/actions";
+import { getSectorById } from "@/lib/actions/sectors";
 
 interface Sector {
   id: number;
