@@ -7,6 +7,28 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hash } from "bcryptjs";
 import type { Scope } from "@/types/scope";
+import type { CoordinatorSector } from "@/types/domain";
+
+/**
+ * Converte vínculos de servo (com setor e ministério carregados) na forma
+ * `CoordinatorSector`. Pura de propósito: `src/app/servant/page.tsx` já
+ * carregou esses vínculos e não deve consultar o banco de novo.
+ */
+export function mapCoordinatorSectors(
+  rows: Array<{
+    isCoordinator: boolean;
+    sector: { id: number; name: string; ministry: { id: number; name: string } };
+  }>
+): CoordinatorSector[] {
+  return rows
+    .filter((r) => r.isCoordinator)
+    .map((r) => ({
+      id: r.sector.id,
+      name: r.sector.name,
+      ministryId: r.sector.ministry.id,
+      ministryName: r.sector.ministry.name,
+    }));
+}
 
 /**
  * Monta o escopo da sessão atual. Duas consultas, sempre as mesmas,

@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getServantOverview } from "@/lib/actions/availability";
+import { mapCoordinatorSectors } from "@/lib/scope";
 import ServantShell from "@/components/ServantShell";
 
 export default async function ServantDashboard() {
@@ -31,14 +32,7 @@ export default async function ServantDashboard() {
   const currentUser = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
   const ownColor = currentUser?.color ?? null;
 
-  const coordinatorSectors = memberships
-    .filter((m) => m.isCoordinator)
-    .map((m) => ({
-      id: m.sector.id,
-      name: m.sector.name,
-      ministryId: m.sector.ministry.id,
-      ministryName: m.sector.ministry.name,
-    }));
+  const coordinatorSectors = mapCoordinatorSectors(memberships);
 
   return (
     <ServantShell

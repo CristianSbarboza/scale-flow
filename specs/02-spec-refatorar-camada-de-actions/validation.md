@@ -70,6 +70,24 @@ anon:  IDENTICO
 => RNF01 confirmado: comportamento observavel identico nos 6 papeis
 ```
 
+O mesmo diff foi repetido depois da Tarefa 10 (que substituiu `getAuthFilter`
+pelo `Scope`) e depois da Tarefa 11 (que reescreveu `coordinator.ts`), sempre
+contra o mesmo baseline pré-refatoração: **idêntico nas três rodadas**. Além
+disso, o HTML renderizado das 26 páginas server-side — incluindo `/servant`, que
+a Tarefa 11 alterou, e o link público nos dois modos — saiu byte a byte igual
+antes e depois das duas tarefas que mudam lógica.
+
+> [!IMPORTANT]
+> As duas tarefas que mudam lógica são exatamente onde o risco mora, e os pontos
+> abaixo foram conferidos no diff:
+> - **Tarefa 10** — o escopo do líder Alfa continua restrito a ALFA e o do Beta a
+>   BETA; `getMinistryById`/`getSectorById` de recurso alheio continuam devolvendo
+>   `null` (filtro pós-consulta preservado, não virou filtro na query).
+> - **Tarefa 11** — `loadCoordinatedSectors` passou a filtrar em memória em vez de
+>   na query. O conjunto e a ordem do resultado saíram iguais para a Carla
+>   (coordena A-UM, só serve em A-DOIS) e para o líder Beta (coordena A-DOIS, de
+>   outro ministério).
+
 ---
 
 ## 🙋 Validação Manual (Checklist)
@@ -110,6 +128,26 @@ Verificado pela Prova 3 acima, que exercita as leituras de cada tela:
       leituras, nos 6 papéis, foram varridas e não contêm o campo.
 - [x] Toda inclusão de `user`/`leader` nos módulos novos usa a projeção
       `publicUser`.
+
+---
+
+### Critérios de aceitação da spec
+
+| # | Critério | Estado |
+|---|---|---|
+| 1 | `src/lib/actions.ts` não existe; 8 módulos, nenhum acima de ~200 linhas | ✅ maior é `servants.ts`, 186 |
+| 2 | 33 actions exportadas, mesmas assinaturas | ✅ `check-surface.sh` |
+| 3 | 11 interfaces em `src/types/domain.ts`; nenhum tipo exportado de `"use server"` | ✅ |
+| 4 | `src/lib/scope.ts` começa com `import 'server-only'` | ✅ |
+| 5 | Nada devolve "acesso irrestrito por omissão" | ✅ `getAuthFilter` não existe mais |
+| 6 | Nenhum módulo de action importa outro | ✅ |
+| 7 | Consumidores importam do módulo de domínio; nenhum barrel | ✅ zero imports de `@/lib/actions` |
+| 8 | `npx tsc --noEmit` limpo | ✅ |
+| 9 | `npm run lint` sem erros novos | ✅ os mesmos 3 warnings pré-existentes |
+| 10 | `npm run build` gera as mesmas rotas | ✅ 17 rotas, idênticas ao baseline |
+| 11 | Verificação por papel | ✅ Prova 3 |
+| 12 | Link público nos modos `public` e `private` | ✅ |
+| 13 | Nenhuma resposta carrega `users.password` | ✅ |
 
 ---
 
