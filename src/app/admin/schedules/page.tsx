@@ -17,6 +17,7 @@ import IconButton from "@/components/ui/IconButton";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
+import PageHeader from "@/components/ui/PageHeader";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -219,10 +220,7 @@ export default function SchedulesPage() {
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem' }}>Escalas</h1>
-        <p style={{ color: 'var(--muted-foreground)' }}>Crie escalas e envie o link para os servos selecionarem suas datas.</p>
-      </header>
+      <PageHeader title="Escalas" subtitle="Crie escalas e envie o link para os servos selecionarem suas datas." />
 
       <div className="admin-panel-layout">
         {/* Create Form */}

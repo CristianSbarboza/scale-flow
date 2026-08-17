@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import PageHeader from "@/components/ui/PageHeader";
 import ProfileSection from "@/components/settings/ProfileSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PasswordSection from "@/components/settings/PasswordSection";
@@ -18,10 +19,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="animate-fade-in">
-      <header className="mb-10">
-        <h1 className="text-3xl">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie seu perfil, aparência e segurança.</p>
-      </header>
+      <PageHeader title="Configurações" subtitle="Gerencie seu perfil, aparência e segurança." />
 
       <div className="grid max-w-[640px] gap-6">
         <ProfileSection

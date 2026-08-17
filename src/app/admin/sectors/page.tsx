@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
+import PageHeader from "@/components/ui/PageHeader";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
@@ -125,10 +126,7 @@ export default function SectorsPage() {
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem' }}>Setores</h1>
-        <p style={{ color: 'var(--muted-foreground)' }}>Defina os setores dentro de cada ministério.</p>
-      </header>
+      <PageHeader title="Setores" subtitle="Defina os setores dentro de cada ministério." />
 
       <div className="admin-panel-layout">
         <FormPanel title="Novo Setor">{formContent}</FormPanel>

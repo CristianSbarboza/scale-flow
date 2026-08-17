@@ -12,6 +12,7 @@ import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import TextareaField from "@/components/ui/TextareaField";
 import SectionLabel from "@/components/ui/SectionLabel";
+import PageHeader from "@/components/ui/PageHeader";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
@@ -170,10 +171,7 @@ export default function MinistriesPage() {
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem' }}>Ministérios</h1>
-        <p style={{ color: 'var(--muted-foreground)' }}>Gerencie os ministérios da sua igreja.</p>
-      </header>
+      <PageHeader title="Ministérios" subtitle="Gerencie os ministérios da sua igreja." />
 
       <div className="admin-panel-layout">
         <FormPanel title="Novo Ministério">{formContent}</FormPanel>

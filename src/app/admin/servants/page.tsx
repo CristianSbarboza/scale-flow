@@ -14,6 +14,7 @@ import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
+import PageHeader from "@/components/ui/PageHeader";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
@@ -179,10 +180,7 @@ export default function ServantsPage() {
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2rem' }}>Gestão de Servos</h1>
-        <p style={{ color: 'var(--muted-foreground)' }}>Cadastre e gerencie os voluntários da sua igreja.</p>
-      </header>
+      <PageHeader title="Gestão de Servos" subtitle="Cadastre e gerencie os voluntários da sua igreja." />
 
       <div className="admin-panel-layout">
         {/* Form */}

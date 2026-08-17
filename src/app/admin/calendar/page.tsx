@@ -7,6 +7,7 @@ import { getCalendarSchedules } from "@/lib/actions/schedules";
 import FilterSelect from "@/components/ui/FilterSelect";
 import DataPanel from "@/components/ui/DataPanel";
 import LoadingDots from "@/components/ui/LoadingDots";
+import PageHeader from "@/components/ui/PageHeader";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import type { CalendarSchedule } from "@/types/domain";
@@ -139,10 +140,7 @@ export default function AdminCalendarPage() {
 
   return (
     <div className="animate-fade-in">
-      <header style={{ marginBottom: "2.5rem" }}>
-        <h1 style={{ fontSize: "2rem" }}>Calendário</h1>
-        <p style={{ color: "var(--muted-foreground)" }}>Veja quem está escalado em cada dia, por ministério.</p>
-      </header>
+      <PageHeader title="Calendário" subtitle="Veja quem está escalado em cada dia, por ministério." />
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         {!isLeader && (

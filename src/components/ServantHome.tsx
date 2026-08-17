@@ -5,25 +5,49 @@ import type { ServantOverviewSchedule, CoordinatorSector } from "@/types/domain"
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
+import PageHeader from "@/components/ui/PageHeader";
 
 export type ServantTab = "calendar" | "month" | "all" | "coordinator";
 
 export interface ServantTabItem {
   value: ServantTab;
+  /** Texto curto da tab bar do celular e da sidebar. */
   label: string;
   icon: typeof CalendarDays;
+  /** Linha de apoio do cabeçalho no desktop, onde a tab bar não aparece. */
+  subtitle: string;
 }
 
 const BASE_TABS: ServantTabItem[] = [
-  { value: "calendar", label: "Calendário", icon: CalendarDays },
-  { value: "month", label: "Escalas do Mês", icon: CalendarRange },
-  { value: "all", label: "Todas as Escalas", icon: ListChecks },
+  {
+    value: "calendar",
+    label: "Calendário",
+    icon: CalendarDays,
+    subtitle: "Suas escalas do mês em formato de calendário.",
+  },
+  {
+    value: "month",
+    label: "Escalas do Mês",
+    icon: CalendarRange,
+    subtitle: "As escalas do seu setor com datas neste mês.",
+  },
+  {
+    value: "all",
+    label: "Todas as Escalas",
+    icon: ListChecks,
+    subtitle: "Todas as escalas do seu setor.",
+  },
 ];
 
+const COORDINATOR_TAB: ServantTabItem = {
+  value: "coordinator",
+  label: "Gestão de Escala",
+  icon: ClipboardList,
+  subtitle: "Gerencie as escalas dos setores que você coordena.",
+};
+
 export function getServantTabs(isCoordinator: boolean): ServantTabItem[] {
-  return isCoordinator
-    ? [...BASE_TABS, { value: "coordinator", label: "Gestão de Escala", icon: ClipboardList }]
-    : BASE_TABS;
+  return isCoordinator ? [...BASE_TABS, COORDINATOR_TAB] : BASE_TABS;
 }
 
 interface ServantHomeProps {
@@ -37,9 +61,16 @@ export default function ServantHome({ schedules, coordinatorSectors, tab, onTabC
   const today = new Date();
   const isCoordinator = coordinatorSectors.length > 0;
   const tabs = getServantTabs(isCoordinator);
+  const current = tabs.find((t) => t.value === tab);
 
   return (
     <div className="servant-tab-content">
+      {/* No celular a tab bar já diz onde você está; no desktop ela some, então
+          o cabeçalho é o que nomeia a aba aberta. */}
+      {current && (
+        <PageHeader className="mb-4 hidden sm:flex" title={current.label} subtitle={current.subtitle} />
+      )}
+
       <nav className="servant-tabbar">
         {tabs.map((t) => {
           const isActive = tab === t.value;

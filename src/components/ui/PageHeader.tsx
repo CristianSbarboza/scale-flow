@@ -1,10 +1,15 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Cabeçalho das telas de detalhe: ladrilho com ícone, título e uma linha de
- * apoio embaixo (nome do ministério, e-mail do servo, etc).
+ * Cabeçalho de tela: título e uma linha de apoio embaixo.
  *
- * `action` encosta à direita — botões de editar/excluir vão aqui.
+ * Serve os dois casos: as telas de lista passam só `title` + `subtitle`
+ * (a descrição da seção), e as telas de detalhe acrescentam o ladrilho de
+ * `icon` e o nome da entidade. `action` encosta à direita — botões de
+ * editar/excluir vão aqui.
+ *
+ * O subtítulo é esmaecido por padrão; quem passa um elemento com cor própria
+ * (um Link, por exemplo) continua mandando na cor.
  */
 export default function PageHeader({
   icon,
@@ -27,8 +32,10 @@ export default function PageHeader({
         </div>
       )}
       <div className="min-w-0">
-        <h1 className="truncate text-3xl">{title}</h1>
-        {subtitle && <div className="text-[0.9375rem]">{subtitle}</div>}
+        {/* Sem `truncate`: título de tela quebra linha em vez de virar
+            reticências — o `action` ao lado é shrink-0, então não estoura. */}
+        <h1 className="text-3xl">{title}</h1>
+        {subtitle && <div className="text-[0.9375rem] text-muted-foreground">{subtitle}</div>}
       </div>
       {action && <div className="ml-auto shrink-0">{action}</div>}
     </header>

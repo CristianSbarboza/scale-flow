@@ -9,6 +9,7 @@ import { ministries, sectors, servants, schedules, users } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
@@ -96,12 +97,11 @@ export default async function AdminDashboard() {
 
   return (
     <div className="animate-fade-in">
-      <header className="mb-6">
-        <h1 className="mb-2 text-3xl">
-          Painel Administrativo{ministry ? ` — ${ministry.name}` : ""}
-        </h1>
-        <p className="text-muted-foreground">Bem-vindo de volta! Aqui está o resumo da sua gestão.</p>
-      </header>
+      <PageHeader
+        className="mb-6"
+        title={`Painel Administrativo${ministry ? ` — ${ministry.name}` : ""}`}
+        subtitle="Bem-vindo de volta! Aqui está o resumo da sua gestão."
+      />
 
       <StatsRule items={stats} />
 
