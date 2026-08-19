@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ Next.js 16 / React 19 — do not rely on training data
 
-This project pins `next@16.2.4` and `react@19.2.4`, which include breaking API/convention changes vs. older Next.js. Before writing any Next.js code (routing, data fetching, server actions, config), consult `node_modules/next/dist/docs/01-app/` for current guidance rather than assuming familiar patterns. One concrete example already present in this codebase: dynamic route `params` are async — see `src/app/escala/[link]/page.tsx` (`{ params }: { params: Promise<{ link: string }> }`, then `const { link } = await params`).
+This project pins `next@16.3.1` and `react@19.2.4`, which include breaking API/convention changes vs. older Next.js. Before writing any Next.js code (routing, data fetching, server actions, config), consult `node_modules/next/dist/docs/01-app/` for current guidance rather than assuming familiar patterns. One concrete example already present in this codebase: dynamic route `params` are async — see `src/app/escala/[link]/page.tsx` (`{ params }: { params: Promise<{ link: string }> }`, then `const { link } = await params`).
 
 ## Commands
 
