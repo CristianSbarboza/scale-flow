@@ -1,13 +1,13 @@
 "use client";
 
-import { CalendarDays, CalendarRange, ListChecks, ClipboardList } from "lucide-react";
+import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList } from "lucide-react";
 import type { ServantOverviewSchedule, CoordinatorSector } from "@/types/domain";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
 import PageHeader from "@/components/ui/PageHeader";
 
-export type ServantTab = "calendar" | "month" | "all" | "coordinator";
+export type ServantTab = "calendar" | "next" | "month" | "all" | "coordinator";
 
 export interface ServantTabItem {
   value: ServantTab;
@@ -24,6 +24,12 @@ const BASE_TABS: ServantTabItem[] = [
     label: "Calendário",
     icon: CalendarDays,
     subtitle: "Suas escalas do mês em formato de calendário.",
+  },
+  {
+    value: "next",
+    label: "Próxima Escala",
+    icon: CalendarPlus,
+    subtitle: "Escalas do seu setor já abertas para o mês que vem.",
   },
   {
     value: "month",
@@ -59,6 +65,7 @@ interface ServantHomeProps {
 
 export default function ServantHome({ schedules, coordinatorSectors, tab, onTabChange }: ServantHomeProps) {
   const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const isCoordinator = coordinatorSectors.length > 0;
   const tabs = getServantTabs(isCoordinator);
   const current = tabs.find((t) => t.value === tab);
@@ -101,6 +108,13 @@ export default function ServantHome({ schedules, coordinatorSectors, tab, onTabC
 
       <div style={{ marginTop: "1.5rem" }}>
         {tab === "calendar" && <ServantCalendar schedules={schedules} />}
+        {tab === "next" && (
+          <ServantScheduleList
+            schedules={schedules}
+            monthFilter={{ year: nextMonth.getFullYear(), month: nextMonth.getMonth() }}
+            emptyMessage="Nenhuma escala aberta para o mês que vem ainda."
+          />
+        )}
         {tab === "month" && (
           <ServantScheduleList
             schedules={schedules}
