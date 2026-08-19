@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -86,16 +87,21 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           justifyContent: isCollapsed ? 'center' : 'space-between',
           alignItems: 'center',
         }}>
-          <span style={{
-            fontSize: isCollapsed ? '1.5rem' : '1.75rem',
-            fontWeight: 400,
-            whiteSpace: 'nowrap',
-            fontFamily: 'var(--font-logo)',
-            color: 'var(--primary)',
-            letterSpacing: '1px'
-          }}>
-            {isCollapsed ? 'S' : 'ScaleFlow'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+            <Image src="/logo-mark.png" alt="" width={32} height={32} style={{ borderRadius: '8px', flexShrink: 0 }} />
+            {!isCollapsed && (
+              <span style={{
+                fontSize: '1.75rem',
+                fontWeight: 400,
+                whiteSpace: 'nowrap',
+                fontFamily: 'var(--font-logo)',
+                color: 'var(--primary)',
+                letterSpacing: '1px'
+              }}>
+                ScaleFlow
+              </span>
+            )}
+          </div>
 
         </div>
 

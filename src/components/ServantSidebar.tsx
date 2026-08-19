@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { ServantTab, ServantTabItem } from "@/components/ServantHome";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
 import NotificationBell from "@/components/NotificationBell";
@@ -17,7 +18,8 @@ interface ServantSidebarProps {
 export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorName, color }: ServantSidebarProps) {
   return (
     <aside className="glass servant-sidebar">
-      <div style={{ marginBottom: "2.5rem", padding: "0 0.5rem" }}>
+      <div style={{ marginBottom: "2.5rem", padding: "0 0.5rem", display: "flex", alignItems: "center", gap: "0.625rem" }}>
+        <Image src="/logo-mark.png" alt="" width={32} height={32} style={{ borderRadius: "8px", flexShrink: 0 }} />
         <span style={{
           fontSize: "1.75rem",
           fontWeight: 400,
