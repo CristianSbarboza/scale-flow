@@ -26,20 +26,20 @@ const BASE_TABS: ServantTabItem[] = [
     subtitle: "Suas escalas do mês em formato de calendário.",
   },
   {
-    value: "next",
-    label: "Próxima Escala",
-    icon: CalendarPlus,
-    subtitle: "Escalas do seu setor já abertas para o mês que vem.",
-  },
-  {
     value: "month",
-    label: "Escalas do Mês",
+    label: "Atual",
     icon: CalendarRange,
     subtitle: "As escalas do seu setor com datas neste mês.",
   },
   {
+    value: "next",
+    label: "Próxima",
+    icon: CalendarPlus,
+    subtitle: "Escalas do seu setor já abertas para o mês que vem.",
+  },
+  {
     value: "all",
-    label: "Todas as Escalas",
+    label: "Todas",
     icon: ListChecks,
     subtitle: "Todas as escalas do seu setor.",
   },
@@ -47,7 +47,7 @@ const BASE_TABS: ServantTabItem[] = [
 
 const COORDINATOR_TAB: ServantTabItem = {
   value: "coordinator",
-  label: "Gestão de Escala",
+  label: "Gestão",
   icon: ClipboardList,
   subtitle: "Gerencie as escalas dos setores que você coordena.",
 };
