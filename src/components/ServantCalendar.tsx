@@ -195,7 +195,12 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 </span>
               ),
             },
-            { header: "Horário", mobileRow: 1, cell: (e) => e.startTime.slice(0, 5) },
+            {
+              header: "Horário",
+              primary: true,
+              mobileRow: 1,
+              cell: (e) => <span className="font-bold text-primary">{e.startTime.slice(0, 5)}</span>,
+            },
             { header: "Ministério", mobileRow: 2, cell: (e) => e.ministryName },
             { header: "Setor", mobileRow: 2, cell: (e) => e.sectorName },
           ]}

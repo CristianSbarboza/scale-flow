@@ -8,7 +8,9 @@ export interface Column<T> {
   /** Nome da coluna: vira o <th> no desktop e o rótulo do campo no celular. */
   header: string;
   cell: (row: T) => React.ReactNode;
-  /** Coluna principal: no celular vira o título do card, sem rótulo. */
+  /** Sem rótulo no celular — o valor sai puro, do jeito que o `cell` desenhar.
+   *  Normalmente é uma só (o título do card), mas outra coluna do mesmo
+   *  `mobileRow` também pode usar pra ficar no mesmo estilo. */
   primary?: boolean;
   align?: "left" | "right";
   /** Esconde a coluna no celular, para dados que só fazem sentido na tabela. */
@@ -151,7 +153,7 @@ export default function DataPanel<T>({
             className={cn("card grid gap-2.5", clickable && "cursor-pointer")}
           >
             {mobileGroups.map((group) => (
-              <div key={group.map((c) => c.header).join("+")} className={cn(group.length > 1 && "flex items-baseline gap-3")}>
+              <div key={group.map((c) => c.header).join("+")} className={cn(group.length > 1 && "flex items-center justify-between gap-3")}>
                 {group.map((c) =>
                   c.primary ? (
                     <div key={c.header} className="font-semibold">
