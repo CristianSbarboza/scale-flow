@@ -180,10 +180,12 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
           rowKey={(e) => `${e.dateId}-${e.date}`}
           empty="Nenhum dia confirmado neste mês."
           onRowClick={(e) => setSelectedDay(e.date)}
+          style={{ background: "none", border: "none", boxShadow: "none", backdropFilter: "none" }}
           columns={[
             {
               header: "Dia",
               primary: true,
+              mobileRow: 1,
               cell: (e) => (
                 <span className="font-bold text-primary">
                   {new Date(`${e.date}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -193,9 +195,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 </span>
               ),
             },
-            { header: "Horário", cell: (e) => e.startTime.slice(0, 5) },
-            { header: "Ministério", cell: (e) => e.ministryName },
-            { header: "Setor", cell: (e) => e.sectorName },
+            { header: "Horário", mobileRow: 1, cell: (e) => e.startTime.slice(0, 5) },
+            { header: "Ministério", mobileRow: 2, cell: (e) => e.ministryName },
+            { header: "Setor", mobileRow: 2, cell: (e) => e.sectorName },
           ]}
         />
       </div>

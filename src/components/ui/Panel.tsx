@@ -18,15 +18,17 @@ export default function Panel({
   stack = false,
   children,
   className,
+  style,
 }: {
   title: React.ReactNode;
   action?: React.ReactNode;
   stack?: boolean;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <Card glass className={className}>
+    <Card glass className={className} style={style}>
       <div
         className={cn(
           "mb-6 gap-3",
