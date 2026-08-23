@@ -11,6 +11,8 @@
  */
 import { ServiceClock } from "../time/ServiceClock.js";
 import { ReminderScheduler } from "../reminders/ReminderScheduler.js";
+import { ControlServer } from "../http/ControlServer.js";
+import type { WhatsAppSession } from "../whatsapp/WhatsAppSession.js";
 import type {
   DueReminder,
   ReminderKind,
@@ -221,8 +223,52 @@ async function main() {
     eq("traz data e hora do culto", texto.includes("23/08 (domingo) às 19:00"), true);
   }
 
+  console.log("\n--- rotas de controle ---");
+  await checkRotas();
+
   console.log(`\n${falhas === 0 ? "✅ tudo passou" : `❌ ${falhas} falha(s)`}`);
   process.exit(falhas === 0 ? 0 : 1);
+}
+
+/**
+ * Sobe o ControlServer com uma sessão falsa e bate nas rotas de verdade.
+ *
+ * Existe porque a primeira versão do `/qr` servia um PNG estático de um código
+ * que o Baileys rotaciona a cada poucos segundos — quem abria a página quase
+ * sempre apontava o celular para um QR vencido, e o log só dizia "QR refs
+ * attempts ended". Nenhum teste pegava isso, porque não havia teste de rota.
+ */
+async function checkRotas() {
+  const store = { async countByStatus() { return { sent: 3, skipped: 1 }; } } as unknown as ReminderStore;
+  let estado = "awaiting_qr";
+  let qr: string | null = "2@abcDEF/ghi+jkl,mno=";
+  const session = {
+    get qr() { return qr; },
+    status: () => ({ state: estado, lastConnectedAt: null, lastDisconnectReason: null, hasQr: qr !== null }),
+  } as unknown as WhatsAppSession;
+
+  const PORT = 3199;
+  new ControlServer(session, store, PORT, () => {}).listen();
+  await new Promise((r) => setTimeout(r, 300));
+  const base = `http://localhost:${PORT}`;
+
+  const html = await (await fetch(`${base}/qr`)).text();
+  eq("/qr se atualiza sozinha", html.includes("setInterval") && html.includes("/qr.png?t="), true);
+  eq("/qr diz onde parear no celular", html.includes("Aparelhos conectados"), true);
+
+  const png = await fetch(`${base}/qr.png`);
+  eq("/qr.png é imagem sem cache", `${png.headers.get("content-type")}|${png.headers.get("cache-control")}`, "image/png|no-store");
+  eq("/qr.png tem bytes de verdade", (await png.arrayBuffer()).byteLength > 100, true);
+
+  qr = null;
+  estado = "connected";
+  eq("/qr.png sem QR devolve 409", (await fetch(`${base}/qr.png`)).status, 409);
+  eq("/health é 200 conectado", (await fetch(`${base}/health`)).status, 200);
+  const saude = await (await fetch(`${base}/health`)).json() as { notificationLog: unknown };
+  eq("/health traz o contador", saude.notificationLog, { sent: 3, skipped: 1 });
+
+  estado = "disconnected";
+  eq("/health é 503 com a sessão caída", (await fetch(`${base}/health`)).status, 503);
 }
 
 main().catch((e) => {

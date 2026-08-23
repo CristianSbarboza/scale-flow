@@ -4,6 +4,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   type WASocket,
 } from "@whiskeysockets/baileys";
+import { quietLogger } from "./quietLogger.js";
 
 /**
  * O erro de desconexão do Baileys carrega o código dentro de `output`, no
@@ -49,6 +50,12 @@ export class WhatsAppSession {
       const socket = makeWASocket({
         version,
         auth: state,
+        // Sem isto o pino do Baileys despeja um JSON por handshake e enterra
+        // as mensagens do próprio serviço.
+        logger: quietLogger(),
+        // Mais folga para ler o QR antes de ele rodar. O padrão dá pouco
+        // tempo para quem precisa abrir a página, olhar o celular e apontar.
+        qrTimeout: 90_000,
         // O QR vai para o /qr, não para o terminal: o processo roda num host
         // remoto onde ninguém está olhando stdout na hora de parear.
         printQRInTerminal: false,

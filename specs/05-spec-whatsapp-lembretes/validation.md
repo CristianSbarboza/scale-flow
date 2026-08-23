@@ -9,7 +9,7 @@
 ## 🧪 Automatizado
 
 - **Comando:** `npx tsc --noEmit` nos dois projetos — ✅ limpo.
-- **Comando:** `npm run check` em `whatsapp/` — ✅ **22 casos**, sem rede, sem banco e sem WhatsApp. Ficou no repositório: diferente das specs 03 e 04, onde a verificação rodou em script temporário e foi apagada, aqui existe rede para a próxima mudança.
+- **Comando:** `npm run check` em `whatsapp/` — ✅ **31 casos**, sem rede, sem banco e sem WhatsApp. Ficou no repositório: diferente das specs 03 e 04, onde a verificação rodou em script temporário e foi apagada, aqui existe rede para a próxima mudança.
   - [x] Culto 19:00 → lembrete de 2h às 17:00 do mesmo dia
   - [x] Culto 19:00 do dia 10 → lembrete de véspera às 09:00 do dia 9
   - [x] Culto 00:30 → lembrete de 2h cai às 22:30 do **dia anterior** (o instante **e** a leitura local são conferidos: confundir os dois foi o que quebrou este teste na primeira tentativa)
@@ -39,7 +39,10 @@ Verificados com dublês (relógio, banco e remetente falsos) e com o SQL real:
 
 ## 🔌 Sessão e operação
 
-- [ ] `GET /qr` parea um número novo do zero. Resultado: `[preencher]`
+- [x] `/qr` se atualiza sozinha e `/qr.png` devolve o código atual sem cache — verificado contra um servidor de verdade, com sessão falsa.
+- [x] **Defeito encontrado na primeira tentativa real de parear:** o `/qr` servia um PNG estático, mas o Baileys rotaciona o código a cada poucos segundos. Quem abria a página apontava o celular para um QR já vencido, e a única pista era `QR refs attempts ended` no log. Virou página que recarrega sozinha a cada 5s e avisa quando conecta. Nenhum teste pegava isso porque não havia teste de rota — agora há.
+- [x] O log do Baileys (pino em `info`) despejava um JSON por handshake e enterrava as mensagens do próprio serviço. Trocado por um logger que só passa `warn` e `error`.
+- [ ] `GET /qr` **conclui o pareamento** com um telefone real. Resultado: `[preencher]`
 - [ ] Reiniciar o processo **não** pede QR de novo (estado persistiu no volume). Resultado: `[preencher]`
 - [ ] Apagar o volume força o QR — confirmando que é ali que o estado mora. Resultado: `[preencher]`
 - [ ] Desconectar o aparelho pelo WhatsApp: `GET /health` acusa a queda **antes** de a próxima escala passar em branco. Resultado: `[preencher]`

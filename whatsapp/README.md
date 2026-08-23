@@ -55,7 +55,12 @@ npm run dev               # sobe o serviço
 ```
 
 Depois abra `http://localhost:3100/qr` e leia o código no WhatsApp
-(**Aparelhos conectados**). `GET /health` responde 200 só quando a sessão está
+(**Aparelhos conectados** › **Conectar um aparelho**). A página se atualiza
+sozinha e avisa quando conecta — o Baileys rotaciona o QR a cada poucos
+segundos, então um print da tela não serve.
+
+Se ninguém ler a tempo, o log mostra `QR refs attempts ended` e o serviço
+reconecta em 5s com um código novo. Isso é o esperado, não erro. `GET /health` responde 200 só quando a sessão está
 conectada — 503 serve para um monitor externo distinguir "de pé" de "de pé e
 inútil".
 
@@ -65,9 +70,9 @@ mandar de verdade.
 
 ## Verificação
 
-`npm run check` cobre fuso horário (inclusive um fuso com horário de verão, para
+`npm run check` cobre 30 casos: fuso horário (inclusive um fuso com horário de verão, para
 provar que não há `-03:00` escrito em lugar nenhum), a janela de disparo, envio
-único com duas instâncias, falha que não derruba a fila, e o texto da mensagem.
+único com duas instâncias, falha que não derruba a fila, o texto da mensagem, e as rotas `/qr` e `/health` contra um servidor de verdade.
 
 O que **não** cobre: o Baileys de verdade. Conectar exige um telefone lendo o
 QR, e não há como automatizar isso.
