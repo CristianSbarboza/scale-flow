@@ -45,7 +45,35 @@ Ver o desenho das classes em
 Precisa do próprio `.env` com o mesmo `DATABASE_URL` do `web/` — cada processo
 lê o seu; o Next só enxerga o `.env` da própria pasta.
 
+## Rodando
+
+```bash
+cp .env.example .env      # ajuste o DATABASE_URL
+npm install
+npm run check             # 22 verificações, sem rede e sem banco
+npm run dev               # sobe o serviço
+```
+
+Depois abra `http://localhost:3100/qr` e leia o código no WhatsApp
+(**Aparelhos conectados**). `GET /health` responde 200 só quando a sessão está
+conectada — 503 serve para um monitor externo distinguir "de pé" de "de pé e
+inútil".
+
+**No primeiro dia em produção, use `DRY_RUN=true`.** Ele decide tudo e grava no
+`notification_log`, mas não envia — dá para conferir quem receberia antes de
+mandar de verdade.
+
+## Verificação
+
+`npm run check` cobre fuso horário (inclusive um fuso com horário de verão, para
+provar que não há `-03:00` escrito em lugar nenhum), a janela de disparo, envio
+único com duas instâncias, falha que não derruba a fila, e o texto da mensagem.
+
+O que **não** cobre: o Baileys de verdade. Conectar exige um telefone lendo o
+QR, e não há como automatizar isso.
+
 ## Estado
 
-Esqueleto. Nada implementado ainda — ver o checklist em
-[`tasks.md`](../specs/05-spec-whatsapp-lembretes/tasks.md).
+Implementado, **nunca conectado a um WhatsApp real**. Ver
+[`validation.md`](../specs/05-spec-whatsapp-lembretes/validation.md) para o que
+falta verificar.

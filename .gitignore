@@ -38,6 +38,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 
 .env*
+# ...menos o exemplo: e ele que documenta quais variaveis existem, e `.env*`
+# o engoliria junto com os segredos.
+!.env.example
 
 # vercel
 .vercel
@@ -51,3 +54,6 @@ next-env.d.ts
 
 # Dumps de banco: contêm hashes de senha e e-mails reais.
 backups/
+
+# Sessao do Baileys: contem as credenciais do WhatsApp pareado.
+.session/

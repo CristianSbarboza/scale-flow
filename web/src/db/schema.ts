@@ -164,6 +164,45 @@ export const swapRequestsRelations = relations(swapRequests, ({ one }) => ({
   target: one(servants, { fields: [swapRequests.targetServantId], references: [servants.id], relationName: "swapTarget" }),
 }));
 
+/**
+ * Lembretes de WhatsApp já processados. Escrita pelo serviço `whatsapp/`.
+ *
+ * Está aqui, e não só no serviço, porque este arquivo é a única descrição
+ * completa do banco — schema que mora em dois lugares diverge.
+ *
+ * `status` guarda também o que **não** foi enviado: `skipped` marca o lembrete
+ * cuja hora já tinha passado quando o processo subiu. Registrar isso tira a
+ * linha da fila sem tirá-la do histórico, e é o que impede "seu culto é em 2
+ * horas" chegar depois do culto.
+ */
+export const notificationLog = pgTable("notification_log", {
+  id: serial("id").primaryKey(),
+  dateId: integer("date_id").references(() => scheduleDates.id, { onDelete: "cascade" }).notNull(),
+  servantId: integer("servant_id").references(() => servants.id, { onDelete: "cascade" }).notNull(),
+  kind: text("kind", { enum: ["day_before", "two_hours"] }).notNull(),
+  status: text("status", { enum: ["pending", "sent", "failed", "skipped"] }).notNull(),
+  /** Motivo, quando falhou ou foi pulado. */
+  detail: text("detail"),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+}, (t) => [
+  // É esta linha que garante o envio único, e não a lógica do serviço.
+  //
+  // O fluxo é **reservar e depois enviar**: o serviço insere `pending` com
+  // `ON CONFLICT DO NOTHING` e só envia se a inserção foi dele. Marcar depois
+  // do envio pareceria mais seguro, mas não sobrevive a duas instâncias no ar
+  // ao mesmo tempo — as duas mandariam antes de qualquer uma registrar.
+  //
+  // O preço é uma linha ficar `pending` se o processo morrer entre reservar e
+  // enviar. Por isso a reserva também reaproveita `pending` parado há mais de
+  // 5 minutos: a janela de tolerância ainda estará aberta.
+  uniqueIndex("notification_log_unique").on(t.dateId, t.servantId, t.kind),
+]);
+
+export const notificationLogRelations = relations(notificationLog, ({ one }) => ({
+  date: one(scheduleDates, { fields: [notificationLog.dateId], references: [scheduleDates.id] }),
+  servant: one(servants, { fields: [notificationLog.servantId], references: [servants.id] }),
+}));
+
 export const scheduleDatesRelations = relations(scheduleDates, ({ one, many }) => ({
   schedule: one(schedules, { fields: [scheduleDates.scheduleId], references: [schedules.id] }),
   availabilities: many(scheduleAvailability),

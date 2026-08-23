@@ -1,6 +1,6 @@
 # Plano Técnico - Lembretes por WhatsApp
 
-> **Status:** planejado, não iniciado.
+> **Status:** implementado em 23/08/2026. Nunca conectado a um WhatsApp real — ver validation.md.
 
 ## 🛠️ Arquitetura
 
@@ -94,35 +94,49 @@ export const notificationLog = pgTable("notification_log", {
 
 ### Fase 1: Fundação
 
-- [ ] Tabela `notification_log` em `src/db/schema.ts` + SQL em `drizzle/manual/`.
-- [ ] `services/whatsapp/` com `package.json` próprio, `@whiskeysockets/baileys` e a conexão ao mesmo `DATABASE_URL`.
-- [ ] Sessão com `useMultiFileAuthState` apontando para um **volume persistente**. Se a pasta se perder, o QR precisa ser lido de novo — e ninguém descobre isso sozinho.
+- [x] Tabela `notification_log` em `src/db/schema.ts` + SQL em `drizzle/manual/`.
+- [x] `services/whatsapp/` com `package.json` próprio, `@whiskeysockets/baileys` e a conexão ao mesmo `DATABASE_URL`.
+- [x] Sessão com `useMultiFileAuthState` apontando para um **volume persistente**. Se a pasta se perder, o QR precisa ser lido de novo — e ninguém descobre isso sozinho.
 
 ### Fase 2: Fuso e número (onde os bugs moram)
 
-- [ ] Um único módulo resolvendo `date` + `start_time` → instante real em `America/Sao_Paulo`. Nenhum outro arquivo faz aritmética de data. Este é o defeito mais provável da spec inteira.
-- [ ] Conversão para JID do WhatsApp: dígitos → `55` + DDD + número → `<numero>@s.whatsapp.net`. Tratar o nono dígito ausente em números antigos.
-- [ ] Validar o número **antes** de enviar (`onWhatsApp()` do Baileys) e registrar `skipped` se não existir, em vez de estourar.
+- [x] Um único módulo resolvendo `date` + `start_time` → instante real em `America/Sao_Paulo`. Nenhum outro arquivo faz aritmética de data. Este é o defeito mais provável da spec inteira.
+- [x] Conversão para JID do WhatsApp: dígitos → `55` + DDD + número → `<numero>@s.whatsapp.net`. Tratar o nono dígito ausente em números antigos.
+- [x] Validar o número **antes** de enviar (`onWhatsApp()` do Baileys) e registrar `skipped` se não existir, em vez de estourar.
 
 ### Fase 3: O cron
 
-- [ ] A cada minuto, buscar as datas cuja janela de disparo caiu, juntando `schedule_assignments` → `servants` → `users` (com telefone) e filtrando `schedules.status = 'published'`.
-- [ ] `LEFT JOIN notification_log` para excluir quem já recebeu — a consulta já devolve só quem falta.
-- [ ] **Janela de tolerância, não igualdade.** Disparar entre 0 e ~15 min de atraso. Sem janela, um minuto de indisponibilidade pula o lembrete de vez; com janela grande demais, volta o problema do lembrete atrasado (RF05). Fora da janela, gravar `skipped` com o motivo — assim some do relatório sem sumir do histórico.
-- [ ] Enviar em série, com intervalo aleatório de alguns segundos entre mensagens. Rajada é o sinal mais forte de automação que existe.
-- [ ] Registrar `sent` ou `failed` com o motivo. Falha de um não interrompe os outros (RF06).
+- [x] A cada minuto, buscar as datas cuja janela de disparo caiu, juntando `schedule_assignments` → `servants` → `users` (com telefone) e filtrando `schedules.status = 'published'`.
+- [x] `LEFT JOIN notification_log` para excluir quem já recebeu — a consulta já devolve só quem falta.
+- [x] **Janela de tolerância, não igualdade.** Disparar entre 0 e ~15 min de atraso. Sem janela, um minuto de indisponibilidade pula o lembrete de vez; com janela grande demais, volta o problema do lembrete atrasado (RF05). Fora da janela, gravar `skipped` com o motivo — assim some do relatório sem sumir do histórico.
+- [x] Enviar em série, com intervalo aleatório de alguns segundos entre mensagens. Rajada é o sinal mais forte de automação que existe.
+- [x] Registrar `sent` ou `failed` com o motivo. Falha de um não interrompe os outros (RF06).
 
 ### Fase 4: Operação
 
-- [ ] `GET /qr` (imagem ou terminal) e `GET /health` com estado da sessão e horário do último envio bem-sucedido.
-- [ ] Log em arquivo ou stdout com data, servo e resultado.
-- [ ] Alerta quando a sessão cair. Uma sessão morta não dá erro — ela só para de mandar, e o primeiro a perceber seria o servo que faltou.
+- [x] `GET /qr` (imagem ou terminal) e `GET /health` com estado da sessão e horário do último envio bem-sucedido.
+- [x] Log em arquivo ou stdout com data, servo e resultado.
+- [x] Alerta quando a sessão cair. Uma sessão morta não dá erro — ela só para de mandar, e o primeiro a perceber seria o servo que faltou.
 
 ### Fase 5: Fechamento
 
-- [ ] Preencher [validation.md](./validation.md).
-- [ ] `npx tsc --noEmit` e `npm run lint` limpos nos dois projetos.
+- [x] Preencher [validation.md](./validation.md).
+- [x] `npx tsc --noEmit` e `npm run lint` limpos nos dois projetos.
 - [ ] Aplicar a migração da tabela nova na produção.
+
+## ✍️ O que mudou em relação ao plano
+
+**A ordem de gravação virou reserva-e-envia.** O plano dizia para registrar *depois* de enviar, argumentando que mensagem repetida incomoda menos que lembrete que não chega. Mas a própria validação prometia que duas instâncias simultâneas não duplicam — e com marcação posterior as duas mandariam antes de qualquer uma registrar. As duas coisas não podiam ser verdade.
+
+Ficou: `INSERT ... ON CONFLICT DO NOTHING` com status `pending`, envio, e depois `UPDATE`. O preço é uma linha ficar `pending` se o processo morrer entre reservar e enviar — resolvido no mesmo comando, que reaproveita reserva parada há mais de 5 minutos, ainda dentro da janela de tolerância. Um status novo (`pending`) entrou no schema; a coluna é `text` sem CHECK, então não exigiu migração nova.
+
+**`@hapi/boom` não foi importado.** O erro de desconexão do Baileys traz o código em formato Boom, e o pacote está instalado — mas só como dependência transitiva. Importá-lo direto quebraria sem aviso numa atualização do Baileys, então a forma é declarada localmente em três linhas.
+
+**A conversão de telefone para JID virou uma linha.** Era item da Fase 2 do plano. Como a spec 04 passou a guardar E.164, `BaileysSender` só precisa tirar não-dígitos e perguntar ao `onWhatsApp()`. Nono dígito e código de país deixaram de ser problema deste serviço.
+
+**Um `Env` apareceu.** Não estava no plano, mas validar variáveis no primeiro uso significaria descobrir que falta `DATABASE_URL` às 09h, com o processo "no ar" havia horas. Valida na subida, inclusive se o fuso existe — fuso inválido deixaria toda conta de horário silenciosamente errada.
+
+**`npm run check` ficou no repositório.** As 22 verificações rodam sem rede, sem banco e sem WhatsApp, porque o agendador recebe relógio, banco e remetente pelo construtor. Foi exatamente isto que a POO comprou aqui, e diferente das specs 03 e 04 — onde os testes rodaram em scripts temporários e foram apagados — desta vez existe rede para a próxima mudança.
 
 ## 📊 Superfície da mudança
 
