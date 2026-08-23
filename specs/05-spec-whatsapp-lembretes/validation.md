@@ -9,7 +9,7 @@
 ## 🧪 Automatizado
 
 - **Comando:** `npx tsc --noEmit` nos dois projetos — ✅ limpo.
-- **Comando:** `npm run check` em `whatsapp/` — ✅ **31 casos**, sem rede, sem banco e sem WhatsApp. Ficou no repositório: diferente das specs 03 e 04, onde a verificação rodou em script temporário e foi apagada, aqui existe rede para a próxima mudança.
+- **Comando:** `npm run check` em `whatsapp/` — ✅ **40 casos**, sem rede, sem banco e sem WhatsApp. Ficou no repositório: diferente das specs 03 e 04, onde a verificação rodou em script temporário e foi apagada, aqui existe rede para a próxima mudança.
   - [x] Culto 19:00 → lembrete de 2h às 17:00 do mesmo dia
   - [x] Culto 19:00 do dia 10 → lembrete de véspera às 09:00 do dia 9
   - [x] Culto 00:30 → lembrete de 2h cai às 22:30 do **dia anterior** (o instante **e** a leitura local são conferidos: confundir os dois foi o que quebrou este teste na primeira tentativa)
@@ -33,6 +33,8 @@ Verificados com dublês (relógio, banco e remetente falsos) e com o SQL real:
 ## 💬 Conteúdo
 
 - [x] A mensagem traz igreja, ministério/setor, data e hora corretos (RF02).
+- [x] Cada mensagem fecha com um versículo, e os dois avisos do mesmo culto nunca repetem o texto (RF07).
+- [x] **Teste fraco corrigido:** a primeira versão comparava as mensagens inteiras para conferir que os versículos diferiam — mas elas já diferem por "amanhã"/"hoje", então passava mesmo com o versículo repetido. Só a amostra impressa revelou. Agora compara a linha da referência, em 60 servos.
 - [x] A saudação usa só o primeiro nome — "Olá, Maria!" soa como gente; o nome completo soa como cobrança de banco.
 - [ ] Nome com acento e emoji renderizados no WhatsApp de verdade. Resultado: `[preencher]`
 - [ ] Servo escalado em **duas** datas no mesmo dia recebe dois lembretes coerentes. Resultado: `[preencher]`

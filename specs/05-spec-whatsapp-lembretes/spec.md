@@ -20,6 +20,7 @@ Dois disparos, por servo e por data escalada:
 - **RF04** — Cada combinação (data escalada, servo, tipo de lembrete) dispara **no máximo uma vez**, mesmo que o processo reinicie no meio.
 - **RF05** — Um lembrete cujo horário já passou quando o processo sobe **não** é enviado com atraso. Lembrete atrasado é pior que lembrete nenhum: "seu culto é em 2 horas" chegando depois do culto destrói a confiança no aviso.
 - **RF06** — Falha de envio para um servo não interrompe os demais; fica registrada para consulta.
+- **RF07** — Cada mensagem fecha com **um** versículo, do acervo em `whatsapp/src/reminders/VerseBook.ts`. Os dois avisos do mesmo culto nunca trazem o mesmo texto — a pessoa recebe os dois em menos de um dia, e repetir pareceria falha de sistema.
 
 ## 🚫 Não Faz Parte
 

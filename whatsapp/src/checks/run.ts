@@ -11,6 +11,7 @@
  */
 import { ServiceClock } from "../time/ServiceClock.js";
 import { ReminderScheduler } from "../reminders/ReminderScheduler.js";
+import { VerseBook, DEFAULT_VERSES } from "../reminders/VerseBook.js";
 import { ControlServer } from "../http/ControlServer.js";
 import type { WhatsAppSession } from "../whatsapp/WhatsAppSession.js";
 import type {
@@ -221,6 +222,44 @@ async function main() {
     eq("saudação usa só o primeiro nome", texto.includes("Olá, Maria!"), true);
     eq("identifica a igreja (um número atende todas)", texto.includes("Igreja Somos Um"), true);
     eq("traz data e hora do culto", texto.includes("23/08 (domingo) às 19:00"), true);
+  }
+
+  console.log("\n--- versículos ---");
+  {
+    const book = new VerseBook();
+    eq("o acervo tem versículos", book.size, DEFAULT_VERSES.length);
+    eq("nenhum texto vazio", DEFAULT_VERSES.every((v) => v.text.trim().length > 20), true);
+    eq("nenhuma referência vazia", DEFAULT_VERSES.every((v) => /\d/.test(v.reference)), true);
+    eq("nenhuma referência repetida", new Set(DEFAULT_VERSES.map((v) => v.reference)).size, DEFAULT_VERSES.length);
+    eq("acervo vazio é recusado", (() => { try { new VerseBook([]); return false; } catch { return true; } })(), true);
+
+    // Mesma mensagem, mesmo versículo — é o que evita um reenvio parecer
+    // dois avisos distintos.
+    eq("estável para a mesma semente", book.pick("1:1:day_before").reference, book.pick("1:1:day_before").reference);
+
+    // Espalhamento: um hash quebrado devolveria sempre o mesmo item, e o
+    // acervo inteiro viraria enfeite sem ninguém notar.
+    const vistos = new Set<string>();
+    for (let d = 1; d <= 40; d++) for (let sv = 1; sv <= 10; sv++) {
+      vistos.add(book.pick(`${d}:${sv}:day_before`).reference);
+    }
+    eq("400 mensagens cobrem o acervo todo", vistos.size, book.size);
+
+    const msgClock = new ServiceClock(TZ);
+    const { ReminderMessage: RM } = await import("../reminders/ReminderMessage.js");
+    const rm = new RM(msgClock, book);
+    const texto = rm.build(servo(), "day_before");
+    eq("a mensagem termina com versículo e referência",
+      /_".+"_\n— \*.+\*/.test(texto), true);
+    // Compara a LINHA do versículo, não a mensagem inteira: as duas já diferem
+    // por "amanhã"/"hoje", então comparar tudo passava mesmo com o versículo
+    // repetido — foi assim que a repetição escapou na primeira versão.
+    const linhaVersiculo = (t: string) => t.split("\n").find((l) => l.startsWith("— *"));
+    eq("véspera e 2h nunca repetem o versículo",
+      [...Array(60).keys()].every((i) => {
+        const r = servo({ servantId: i + 1 });
+        return linhaVersiculo(rm.build(r, "day_before")) !== linhaVersiculo(rm.build(r, "two_hours"));
+      }), true);
   }
 
   console.log("\n--- rotas de controle ---");
