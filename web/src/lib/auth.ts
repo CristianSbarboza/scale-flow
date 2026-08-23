@@ -71,12 +71,28 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
         token.churchId = user.churchId;
       }
+
+      /**
+       * `update()` chamado no cliente cai aqui. Relemos o nome **do banco** em
+       * vez de aceitar o que o cliente mandou junto: o payload do update é
+       * controlado pelo navegador, e confiar nele deixaria qualquer um
+       * reescrever o próprio nome na sessão sem passar pela action.
+       *
+       * Sem isto, quem troca o nome nas configurações continua vendo o antigo
+       * até o próximo login — o nome mora no JWT.
+       */
+      if (trigger === "update" && token.id) {
+        const [atual] = await db.select({ name: users.name })
+          .from(users).where(eq(users.id, token.id));
+        if (atual) token.name = atual.name;
+      }
+
       return token;
     },
     async session({ session, token }) {

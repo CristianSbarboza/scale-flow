@@ -47,32 +47,41 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
   await db.update(users).set({ password: hashedPassword }).where(eq(users.id, session.user.id));
 }
 
-/** Telefone da própria conta, para a tela de configurações preencher o campo. */
-export async function getOwnPhone(): Promise<string | null> {
+/** Nome e telefone da própria conta, para a tela de configurações preencher. */
+export async function getOwnProfile(): Promise<{ name: string; phone: string | null }> {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
-  const [user] = await db.select({ phone: users.phone })
+  const [user] = await db.select({ name: users.name, phone: users.phone })
     .from(users).where(eq(users.id, session.user.id));
-  return user?.phone ?? null;
+  if (!user) throw new Error("Usuário não encontrado");
+  return { name: user.name, phone: user.phone };
 }
 
 /**
- * Telefone da própria conta. Vale para qualquer papel — admin, líder e servo
- * usam a mesma seção de configurações.
+ * Nome e telefone da própria conta. Vale para qualquer papel — admin, líder e
+ * servo usam a mesma seção de configurações.
  *
  * Não recebe id: o alvo é sempre a sessão. O que não é parâmetro não pode ser
  * forjado, e todo export de um módulo `"use server"` é um endpoint POST.
+ *
+ * Não mexe em `username` nem em `email`: são identificadores de login, e
+ * trocá-los aqui derrubaria o próprio acesso da pessoa.
  */
-export async function updateOwnPhone(phone: string | null) {
+export async function updateOwnProfile(name: string, phone: string | null) {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("O nome não pode ficar vazio");
+  if (trimmed.length > 120) throw new Error("Nome muito longo (máximo 120 caracteres)");
+
   await db.update(users)
-    .set({ phone: normalizeStoredPhone(phone) })
+    .set({ name: trimmed, phone: normalizeStoredPhone(phone) })
     .where(eq(users.id, session.user.id));
 
   revalidatePath("/servant");
+  revalidatePath("/admin");
   revalidatePath("/admin/settings");
 }
 

@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
+import { validateStoredPhone } from "@/lib/phone";
 import TextareaField from "@/components/ui/TextareaField";
 import SectionLabel from "@/components/ui/SectionLabel";
 import PageHeader from "@/components/ui/PageHeader";
@@ -166,7 +167,7 @@ export default function MinistriesPage() {
             />
           </div>
         </div>
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" disabled={loading || validateStoredPhone(leaderPhone) !== null} className="w-full">
           <Plus size={18} />
           {loading ? "Salvando..." : "Adicionar Ministério"}
         </Button>

@@ -6,7 +6,6 @@ import Select from "@/components/ui/Select";
 import { cn } from "@/lib/cn";
 import {
   COUNTRIES,
-  DEFAULT_COUNTRY,
   formatNational,
   getCountry,
   onlyDigits,
@@ -111,7 +110,9 @@ export default function PhoneField({
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          placeholder={country === DEFAULT_COUNTRY ? "(11) 98765-4321" : "número"}
+          // Exemplo do país escolhido, escrito como se digita. Um "número"
+          // genérico não diz se são 9 ou 10 dígitos, nem se leva o zero.
+          placeholder={getCountry(country).example}
           value={national}
           onChange={(e) => changeNational(e.target.value)}
           onBlur={() => setTouched(true)}

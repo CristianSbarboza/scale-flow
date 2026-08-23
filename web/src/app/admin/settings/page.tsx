@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import PageHeader from "@/components/ui/PageHeader";
 import ProfileSection from "@/components/settings/ProfileSection";
 import ChurchSection from "@/components/settings/ChurchSection";
-import PhoneSection from "@/components/settings/PhoneSection";
+import PersonalDataSection from "@/components/settings/PersonalDataSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PasswordSection from "@/components/settings/PasswordSection";
 import SessionSection from "@/components/settings/SessionSection";
@@ -29,7 +29,7 @@ export default function AdminSettingsPage() {
           subtitle={session.user.email}
           badge={ROLE_LABELS[session.user.role] ?? session.user.role}
         />
-        <PhoneSection />
+        <PersonalDataSection />
         {/* Só admin renomeia a igreja. Líder gerencia o próprio ministério,
             não a conta inteira — daí a seção nem aparecer para ele. */}
         {session.user.role === "admin" && <ChurchSection />}

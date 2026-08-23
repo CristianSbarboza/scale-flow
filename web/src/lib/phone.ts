@@ -19,6 +19,13 @@ export interface Country {
   /** Quantos dígitos o número nacional pode ter. */
   minDigits: number;
   maxDigits: number;
+  /**
+   * Exemplo escrito **exatamente como a pessoa deve digitar**, incluindo a
+   * pontuação que a máscara vai aplicar. Vira o placeholder do campo: um
+   * genérico "número" não diz se o país usa 9 ou 10 dígitos, nem se o zero
+   * inicial entra.
+   */
+  example: string;
 }
 
 /**
@@ -28,24 +35,24 @@ export interface Country {
  * 99% dos cadastros.
  */
 export const COUNTRIES: readonly Country[] = [
-  { code: "55", name: "Brasil", flag: "🇧🇷", minDigits: 10, maxDigits: 11 },
-  { code: "351", name: "Portugal", flag: "🇵🇹", minDigits: 9, maxDigits: 9 },
-  { code: "1", name: "EUA / Canadá", flag: "🇺🇸", minDigits: 10, maxDigits: 10 },
-  { code: "54", name: "Argentina", flag: "🇦🇷", minDigits: 10, maxDigits: 11 },
-  { code: "595", name: "Paraguai", flag: "🇵🇾", minDigits: 9, maxDigits: 9 },
-  { code: "598", name: "Uruguai", flag: "🇺🇾", minDigits: 8, maxDigits: 9 },
-  { code: "56", name: "Chile", flag: "🇨🇱", minDigits: 9, maxDigits: 9 },
-  { code: "591", name: "Bolívia", flag: "🇧🇴", minDigits: 8, maxDigits: 8 },
-  { code: "51", name: "Peru", flag: "🇵🇪", minDigits: 9, maxDigits: 9 },
-  { code: "57", name: "Colômbia", flag: "🇨🇴", minDigits: 10, maxDigits: 10 },
-  { code: "52", name: "México", flag: "🇲🇽", minDigits: 10, maxDigits: 10 },
-  { code: "34", name: "Espanha", flag: "🇪🇸", minDigits: 9, maxDigits: 9 },
-  { code: "39", name: "Itália", flag: "🇮🇹", minDigits: 9, maxDigits: 10 },
-  { code: "44", name: "Reino Unido", flag: "🇬🇧", minDigits: 10, maxDigits: 10 },
-  { code: "353", name: "Irlanda", flag: "🇮🇪", minDigits: 9, maxDigits: 9 },
-  { code: "244", name: "Angola", flag: "🇦🇴", minDigits: 9, maxDigits: 9 },
-  { code: "258", name: "Moçambique", flag: "🇲🇿", minDigits: 9, maxDigits: 9 },
-  { code: "81", name: "Japão", flag: "🇯🇵", minDigits: 10, maxDigits: 10 },
+  { code: "55", name: "Brasil", flag: "🇧🇷", minDigits: 10, maxDigits: 11, example: "(11) 98765-4321" },
+  { code: "351", name: "Portugal", flag: "🇵🇹", minDigits: 9, maxDigits: 9, example: "912 345 678" },
+  { code: "1", name: "EUA / Canadá", flag: "🇺🇸", minDigits: 10, maxDigits: 10, example: "415 555 1234" },
+  { code: "54", name: "Argentina", flag: "🇦🇷", minDigits: 10, maxDigits: 11, example: "11 2345 6789" },
+  { code: "595", name: "Paraguai", flag: "🇵🇾", minDigits: 9, maxDigits: 9, example: "981 234 567" },
+  { code: "598", name: "Uruguai", flag: "🇺🇾", minDigits: 8, maxDigits: 9, example: "99 123 456" },
+  { code: "56", name: "Chile", flag: "🇨🇱", minDigits: 9, maxDigits: 9, example: "9 1234 5678" },
+  { code: "591", name: "Bolívia", flag: "🇧🇴", minDigits: 8, maxDigits: 8, example: "7123 4567" },
+  { code: "51", name: "Peru", flag: "🇵🇪", minDigits: 9, maxDigits: 9, example: "912 345 678" },
+  { code: "57", name: "Colômbia", flag: "🇨🇴", minDigits: 10, maxDigits: 10, example: "301 234 5678" },
+  { code: "52", name: "México", flag: "🇲🇽", minDigits: 10, maxDigits: 10, example: "55 1234 5678" },
+  { code: "34", name: "Espanha", flag: "🇪🇸", minDigits: 9, maxDigits: 9, example: "612 345 678" },
+  { code: "39", name: "Itália", flag: "🇮🇹", minDigits: 9, maxDigits: 10, example: "312 345 6789" },
+  { code: "44", name: "Reino Unido", flag: "🇬🇧", minDigits: 10, maxDigits: 10, example: "7400 123456" },
+  { code: "353", name: "Irlanda", flag: "🇮🇪", minDigits: 9, maxDigits: 9, example: "85 123 4567" },
+  { code: "244", name: "Angola", flag: "🇦🇴", minDigits: 9, maxDigits: 9, example: "923 456 789" },
+  { code: "258", name: "Moçambique", flag: "🇲🇿", minDigits: 9, maxDigits: 9, example: "84 123 4567" },
+  { code: "81", name: "Japão", flag: "🇯🇵", minDigits: 10, maxDigits: 10, example: "90 1234 5678" },
 ];
 
 export const DEFAULT_COUNTRY = "55";
@@ -175,10 +182,26 @@ export function normalizeStoredPhone(input: string | null | undefined): string |
 
   if (!casa) {
     throw new Error(
-      "Número de telefone inválido. Informe com o código do país (ex.: 55 para o Brasil)."
+      "Número de telefone inválido. Envie com o código do país " +
+      "(ex.: 55 para o Brasil) e confira a quantidade de dígitos."
     );
   }
   return digits;
+}
+
+/**
+ * Valida um E.164 já montado, do jeito que ele sai do `PhoneField`.
+ *
+ * Devolve a mensagem de erro, ou `null` se está bom (vazio inclusive — o campo
+ * é opcional). Existe para o formulário poder **bloquear o envio**: sem isso a
+ * pessoa corrige o nome, o telefone está errado, e ela perde as duas coisas na
+ * recusa da action.
+ */
+export function validateStoredPhone(e164: string | null | undefined): string | null {
+  const digits = onlyDigits(e164 ?? "");
+  if (!digits) return null;
+  const { country, national } = splitPhone(digits);
+  return validatePhone(country, national);
 }
 
 /**

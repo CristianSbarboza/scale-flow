@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star, Phone, Save } from "lucide-react";
-import { formatPhone } from "@/lib/phone";
+import { formatPhone, validateStoredPhone } from "@/lib/phone";
 import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import Select from "@/components/ui/Select";
+import StatsRule from "@/components/ui/StatsRule";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import Button from "@/components/ui/Button";
@@ -78,6 +79,9 @@ export default function ServantMemberPage() {
   if (loading || !member) return null;
 
   const availableSectors = sectors.filter((s) => !member.memberships.some((m) => m.sectorId === s.id));
+  // Bloqueia o envio com telefone inválido. Sem isto a pessoa corrige o nome,
+  // o telefone está errado, e a recusa da action leva as duas coisas junto.
+  const phoneError = validateStoredPhone(editPhone);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,16 +205,15 @@ export default function ServantMemberPage() {
         </div>
       </header>
 
-      <div style={{ display: "flex", gap: "1.25rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
-        {/* `flex-none` no contador e `1 1 320px` no formulário: com os dois
-            crescendo, o número de setores ficava com meia tela vazia ao lado.
-            No celular o formulário quebra para baixo sozinho. */}
-        <div className="card" style={{ flex: "0 0 auto", minWidth: "160px", borderLeft: "3px solid var(--primary)" }}>
-          <p style={{ ...sectionLabelStyle, marginBottom: "0.25rem" }}>Setores Vinculados</p>
-          <p style={{ fontSize: "2rem", fontWeight: 700 }}>{member.memberships.length}</p>
-        </div>
+      {/* Mesma régua da Visão Geral, em vez de um card de 120px de altura para
+          exibir um número. O contador é referência, não o assunto da tela. */}
+      <StatsRule
+        className="mb-8"
+        items={[{ icon: LayoutGrid, label: "Setores Vinculados", value: member.memberships.length }]}
+      />
 
-        <form onSubmit={handleSaveProfile} className="card" style={{ flex: "1 1 320px" }}>
+      <div style={{ display: "flex", gap: "1.25rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
+        <form onSubmit={handleSaveProfile} className="card" style={{ flex: "1 1 320px", maxWidth: "520px" }}>
           <p style={{ ...sectionLabelStyle, marginBottom: "1rem" }}>Dados do Membro</p>
           <div className="grid gap-4">
             <Field
@@ -232,7 +235,11 @@ export default function ServantMemberPage() {
             />
             <Button
               type="submit"
-              disabled={profileLoading || (editName.trim() === member.name && editPhone === member.phone)}
+              disabled={
+                profileLoading
+                || phoneError !== null
+                || (editName.trim() === member.name && editPhone === member.phone)
+              }
               className="justify-self-start"
             >
               <Save size={16} />

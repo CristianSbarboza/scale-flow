@@ -13,6 +13,7 @@ import Button from "@/components/ui/Button";
 import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
+import { validateStoredPhone } from "@/lib/phone";
 import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
 import PageHeader from "@/components/ui/PageHeader";
@@ -181,7 +182,7 @@ export default function ServantsPage() {
           options={sectors.map(sec => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
           required
         />
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || validateStoredPhone(phone) !== null}>
           <UserPlus size={18} />
           {loading ? "Cadastrando..." : "Cadastrar Servo"}
         </Button>

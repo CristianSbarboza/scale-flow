@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { X, Settings } from "lucide-react";
 import ProfileSection from "@/components/settings/ProfileSection";
-import PhoneSection from "@/components/settings/PhoneSection";
+import PersonalDataSection from "@/components/settings/PersonalDataSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PanelStyleSection from "@/components/settings/PanelStyleSection";
 import PasswordSection from "@/components/settings/PasswordSection";
@@ -50,7 +50,7 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
             por cima do conteudo. */}
         <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-6 overflow-y-auto pr-3">
           <ProfileSection name={name} subtitle={sectorName} color={color} />
-          <PhoneSection />
+          <PersonalDataSection />
           <AppearanceSection />
           <PanelStyleSection color={color} />
           <PasswordSection />
