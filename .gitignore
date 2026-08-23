@@ -1,7 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Padroes SEM barra inicial de proposito: o repositorio tem mais de um
+# projeto (web/ e whatsapp/), e regra ancorada na raiz so pegaria o que
+# estivesse na raiz — deixando o .next e o node_modules de cada subprojeto
+# entrarem no git sem ninguem notar.
+
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,14 +16,14 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
 
 # misc
 .DS_Store
