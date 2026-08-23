@@ -6,29 +6,51 @@ import ListRow from "@/components/ui/ListRow";
 import Panel from "@/components/ui/Panel";
 import { db } from "@/db";
 import { ministries, sectors, servants, schedules, users } from "@/db/schema";
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { getMyChurch } from "@/lib/actions/church";
 import PageHeader from "@/components/ui/PageHeader";
 
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
-  const isLeader = session?.user.role === "leader";
+  if (!session) redirect("/login");
 
+  const isLeader = session.user.role === "leader";
+  const churchId = session.user.churchId;
+  const church = await getMyChurch();
+
+  /**
+   * O escopo do painel, numa expressão só.
+   *
+   * Este arquivo consulta o banco direto, sem passar pelas server actions, e
+   * por isso não herda nenhum dos filtros de `src/lib/actions/`. Antes, o ramo
+   * de admin era `undefined` — cláusula ausente — em sete consultas. Agora a
+   * igreja é obrigatória em todas, e o ministério só se soma a ela.
+   */
   const ministry = isLeader
-    ? await db.query.ministries.findFirst({ where: eq(ministries.leaderId, session!.user.id) })
+    ? await db.query.ministries.findFirst({
+        where: and(eq(ministries.leaderId, session.user.id), eq(ministries.churchId, churchId)),
+      })
     : null;
-  const ministryId = ministry?.id ?? -1; // no ministry match found: filter to a non-existent id instead of showing global data
+  const ministryId = ministry?.id ?? -1; // líder sem ministério: filtra por id inexistente, nunca por nada
+  const scoped = (extra?: SQL) =>
+    isLeader ? and(eq(ministries.churchId, churchId), extra) : eq(ministries.churchId, churchId);
 
+  // Contagens: todas passam por `ministries`, porque é lá que mora a igreja.
   const [sectorCount] = await db.select({ value: count() }).from(sectors)
-    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined);
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(scoped(eq(sectors.ministryId, ministryId)));
 
   const [servantCount] = await db.select({ value: count() }).from(servants)
     .innerJoin(sectors, eq(servants.sectorId, sectors.id))
-    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined);
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(scoped(eq(sectors.ministryId, ministryId)));
 
   const [scheduleCount] = await db.select({ value: count() }).from(schedules)
-    .where(isLeader ? eq(schedules.ministryId, ministryId) : undefined);
+    .innerJoin(ministries, eq(schedules.ministryId, ministries.id))
+    .where(scoped(eq(schedules.ministryId, ministryId)));
 
   const latestSchedules = await db
     .select({
@@ -40,7 +62,7 @@ export default async function AdminDashboard() {
     .from(schedules)
     .innerJoin(ministries, eq(schedules.ministryId, ministries.id))
     .innerJoin(sectors, eq(schedules.sectorId, sectors.id))
-    .where(isLeader ? eq(schedules.ministryId, ministryId) : undefined)
+    .where(scoped(eq(schedules.ministryId, ministryId)))
     .orderBy(desc(schedules.createdAt))
     .limit(5);
 
@@ -54,7 +76,8 @@ export default async function AdminDashboard() {
     .from(servants)
     .innerJoin(users, eq(servants.userId, users.id))
     .innerJoin(sectors, eq(servants.sectorId, sectors.id))
-    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(scoped(eq(sectors.ministryId, ministryId)))
     .orderBy(desc(servants.createdAt))
     .limit(5);
 
@@ -66,7 +89,7 @@ export default async function AdminDashboard() {
     })
     .from(sectors)
     .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-    .where(isLeader ? eq(sectors.ministryId, ministryId) : undefined)
+    .where(scoped(eq(sectors.ministryId, ministryId)))
     .orderBy(desc(sectors.createdAt))
     .limit(5);
 
@@ -81,10 +104,14 @@ export default async function AdminDashboard() {
         })
         .from(ministries)
         .innerJoin(users, eq(ministries.leaderId, users.id))
+        .where(eq(ministries.churchId, churchId))
         .orderBy(desc(ministries.createdAt))
         .limit(5);
 
-  const ministryCount = isLeader ? null : (await db.select({ value: count() }).from(ministries))[0];
+  const ministryCount = isLeader
+    ? null
+    : (await db.select({ value: count() }).from(ministries)
+        .where(eq(ministries.churchId, churchId)))[0];
 
   const stats: StatItem[] = [
     ...(ministryCount
@@ -97,10 +124,12 @@ export default async function AdminDashboard() {
 
   return (
     <div className="animate-fade-in">
+      {/* A igreja vai no subtítulo, não no título: o título diz o que a tela
+          é, o subtítulo diz de quem são os números que ela mostra. */}
       <PageHeader
         className="mb-6"
         title={`Painel Administrativo${ministry ? ` — ${ministry.name}` : ""}`}
-        subtitle="Bem-vindo de volta! Aqui está o resumo da sua gestão."
+        subtitle={church.name}
       />
 
       <StatsRule items={stats} />

@@ -66,7 +66,16 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
 }
 
 export async function assignServant(dateId: number, servantId: number) {
-  await requireScheduleSectorAccess(await getSectorIdForDateId(dateId));
+  const sectorId = await getSectorIdForDateId(dateId);
+  await requireScheduleSectorAccess(sectorId);
+
+  // O acesso acima cobre a data; `servantId` chegava sem nenhuma checagem.
+  // Exigir que o servo sirva no setor da escala é a mesma regra que
+  // `saveAvailability` já aplica — e, de quebra, garante a mesma igreja.
+  const [servant] = await db.select().from(servants).where(
+    and(eq(servants.id, servantId), eq(servants.sectorId, sectorId))
+  );
+  if (!servant) throw new Error("Este servo não pertence ao setor desta escala");
 
   await db.insert(scheduleAssignments).values({
     dateId,

@@ -1,22 +1,55 @@
-import { pgTable, serial, text, timestamp, integer, uuid, date, time, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, uuid, date, time, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+/**
+ * Topo da hierarquia: igreja → ministérios → setores → servos.
+ *
+ * `churchId` existe SÓ aqui embaixo, em `users` e `ministries`. As demais
+ * tabelas descobrem a igreja por join (setor → ministério, escala →
+ * ministério, vínculo → setor). Duplicar a coluna nelas criaria fontes de
+ * verdade que podem divergir num update malfeito — ver specs/03.
+ */
+export const churches = pgTable("churches", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // O "username da igreja": o servo digita isto no login antes do próprio
+  // usuário. É o que torna `maria` única sem precisar virar `maria47` —
+  // a igreja é o namespace. Único globalmente, e estável: não muda quando
+  // o nome de exibição muda.
+  username: text("username").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
-  username: text("username").unique(),
+  username: text("username"),
+  // Global de propósito: é o identificador de admin/líder e, sendo e-mail
+  // real, já é único por natureza. Só o `username` é escopado por igreja.
   email: text("email").unique(),
   password: text("password").notNull(),
+  // E.164 sem o `+`: código do país colado no número (`5511987654321`).
+  // Opcional para todos os papéis. Sem índice único — marido e esposa podem
+  // informar o mesmo número, e telefone fixo de família é normal numa igreja.
+  // Ver src/lib/phone.ts para o porquê deste formato.
+  phone: text("phone"),
   role: text("role", { enum: ["admin", "leader", "servant"] }).default("servant").notNull(),
   color: text("color"),
+  churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => [
+  // Dois servos podem se chamar "davi" em igrejas diferentes. No Postgres
+  // NULL nunca é igual a NULL, então isto não atrapalha admin/líder, que
+  // têm `username` nulo e se identificam por e-mail.
+  uniqueIndex("users_church_username_idx").on(t.churchId, t.username),
+]);
 
 export const ministries = pgTable("ministries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   leaderId: uuid("leader_id").references(() => users.id).notNull(),
+  churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -77,9 +110,15 @@ export const swapRequests = pgTable("swap_requests", {
 });
 
 // Relations
+export const churchesRelations = relations(churches, ({ many }) => ({
+  users: many(users),
+  ministries: many(ministries),
+}));
+
 export const ministriesRelations = relations(ministries, ({ one, many }) => ({
   sectors: many(sectors),
   leader: one(users, { fields: [ministries.leaderId], references: [users.id] }),
+  church: one(churches, { fields: [ministries.churchId], references: [churches.id] }),
 }));
 
 export const sectorsRelations = relations(sectors, ({ one, many }) => ({
@@ -91,6 +130,7 @@ export const sectorsRelations = relations(sectors, ({ one, many }) => ({
 export const usersRelations = relations(users, ({ one, many }) => ({
   servant: one(servants),
   ministriesLed: many(ministries),
+  church: one(churches, { fields: [users.churchId], references: [churches.id] }),
 }));
 
 export const servantsRelations = relations(servants, ({ one, many }) => ({

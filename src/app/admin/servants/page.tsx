@@ -12,12 +12,15 @@ import FormPanel from "@/components/ui/FormPanel";
 import Button from "@/components/ui/Button";
 import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
+import PhoneField from "@/components/ui/PhoneField";
 import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
 import PageHeader from "@/components/ui/PageHeader";
+import { useChurch } from "@/components/ChurchContext";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import { useToast } from "@/components/Toast";
 
 interface Membership {
   servantId: number;
@@ -50,6 +53,8 @@ interface Ministry {
 export default function ServantsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const church = useChurch();
+  const { showToast } = useToast();
   const isLeader = session?.user.role === "leader";
   const [servants, setServants] = useState<ServantSummary[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
@@ -58,6 +63,7 @@ export default function ServantsPage() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState<string | null>(null);
   const [sectorId, setSectorId] = useState("");
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,18 +114,25 @@ export default function ServantsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = await createServant(name, username, email || null, parseInt(sectorId));
-    setGeneratedPassword(result.password || "");
-    setName("");
-    setUsername("");
-    setEmail("");
-    setSectorId("");
+    try {
+      const result = await createServant(name, username, email || null, parseInt(sectorId), phone);
+      setGeneratedPassword(result.password || "");
+      setName("");
+      setUsername("");
+      setEmail("");
+      setPhone(null);
+      setSectorId("");
 
-    // Refresh list
-    const srv = await getServants();
-    setServants(srv as unknown as ServantSummary[]);
-    
-    setLoading(false);
+      // Refresh list
+      const srv = await getServants();
+      setServants(srv as unknown as ServantSummary[]);
+    } catch (error) {
+      // Sem isto, um e-mail já usado em outra igreja deixava o botão preso em
+      // "Cadastrando..." para sempre, sem dizer nada.
+      showToast(error instanceof Error ? error.message : "Erro ao cadastrar servo.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -153,6 +166,12 @@ export default function ServantsPage() {
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
+          hint="Se informado, o servo também poderá entrar com ele."
+        />
+        <PhoneField
+          label="Telefone (opcional)"
+          value={phone}
+          onChange={setPhone}
         />
         <SelectField
           label="Setor Principal"
@@ -180,7 +199,7 @@ export default function ServantsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Gestão de Servos" subtitle="Cadastre e gerencie os voluntários da sua igreja." />
+      <PageHeader title="Gestão de Servos" subtitle={`Cadastre e gerencie os voluntários de ${church.name}.`} />
 
       <div className="admin-panel-layout">
         {/* Form */}

@@ -1,12 +1,32 @@
 "use server";
 
 import { db } from "@/db";
-import { ministries, schedules, scheduleDates } from "@/db/schema";
+import { ministries, sectors, schedules, scheduleDates } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-import { eq, and } from "drizzle-orm";
+import { eq, and, exists } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
 import type { CalendarSchedule } from "@/types/domain";
+import type { Scope } from "@/types/scope";
+
+/**
+ * Quais escalas o escopo atual alcança: sempre dentro da igreja, e ainda
+ * restritas ao ministério do líder quando não for admin.
+ *
+ * Um predicado só, e não um ramo por papel, de propósito. Com dois ramos, o
+ * do admin era literalmente `findMany()` sem `where` — e a versão "sem filtro"
+ * é justamente a que vaza tudo se alguém esquecer de atualizá-la.
+ */
+function schedulesVisibleTo(scope: Scope) {
+  const conditions = [
+    eq(ministries.id, schedules.ministryId),
+    eq(ministries.churchId, scope.churchId),
+  ];
+  if (scope.role !== "admin") {
+    conditions.push(eq(ministries.leaderId, scope.userId));
+  }
+  return exists(db.select().from(ministries).where(and(...conditions)));
+}
 
 export async function createSchedule(
   name: string,
@@ -16,6 +36,15 @@ export async function createSchedule(
   visibility: "public" | "private" = "public",
 ) {
   await requireScheduleSectorAccess(sectorId);
+
+  // `requireScheduleSectorAccess` valida o setor, mas `ministryId` chega solto:
+  // sem esta checagem dá para casar um setor da própria igreja com o
+  // ministério de outra, e a escala nasceria contando para as duas.
+  const [sector] = await db.select({ ministryId: sectors.ministryId })
+    .from(sectors).where(eq(sectors.id, sectorId));
+  if (!sector || sector.ministryId !== ministryId) {
+    throw new Error("O setor informado não pertence a este ministério");
+  }
 
   const shareLink = nanoid(10);
   const [schedule] = await db.insert(schedules).values({
@@ -75,24 +104,8 @@ export async function updateSchedule(
 
 export async function getSchedules() {
   const scope = await getScope();
-  if (scope.role !== "admin") {
-    return await db.query.schedules.findMany({
-      where: (schedules, { exists }) => exists(
-        db.select().from(ministries).where(
-          and(
-            eq(ministries.id, schedules.ministryId),
-            eq(ministries.leaderId, scope.userId)
-          )
-        )
-      ),
-      with: {
-        ministry: true,
-        sector: true,
-        dates: true
-      }
-    });
-  }
   return await db.query.schedules.findMany({
+    where: schedulesVisibleTo(scope),
     with: {
       ministry: true,
       sector: true,
@@ -115,19 +128,10 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
     },
   } as const;
 
-  const rows = scope.role !== "admin"
-    ? await db.query.schedules.findMany({
-        where: (schedules, { exists }) => exists(
-          db.select().from(ministries).where(
-            and(
-              eq(ministries.id, schedules.ministryId),
-              eq(ministries.leaderId, scope.userId)
-            )
-          )
-        ),
-        with: withClause,
-      })
-    : await db.query.schedules.findMany({ with: withClause });
+  const rows = await db.query.schedules.findMany({
+    where: schedulesVisibleTo(scope),
+    with: withClause,
+  });
 
   return rows.map((s) => ({
     id: s.id,

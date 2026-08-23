@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { ministries, sectors, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { publicUser, getScope, requireMinistryAccess } from "@/lib/scope";
 
 export async function createSector(name: string, ministryId: number) {
@@ -30,8 +30,12 @@ export async function getSectors() {
     }
   })
   .from(sectors)
-  .leftJoin(ministries, eq(sectors.ministryId, ministries.id))
-  .where(scope.role === "admin" ? undefined : eq(ministries.leaderId, scope.userId));
+  // innerJoin, não leftJoin: com left, um setor órfão de ministério traria
+  // `ministries.church_id` nulo e escaparia do filtro de igreja.
+  .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+  .where(scope.role === "admin"
+    ? eq(ministries.churchId, scope.churchId)
+    : and(eq(ministries.churchId, scope.churchId), eq(ministries.leaderId, scope.userId)));
 
   const sectorsWithServants = await Promise.all(allSectors.map(async (s) => {
     const srvs = await db.query.servants.findMany({
@@ -58,11 +62,12 @@ export async function getSectorById(id: number) {
       id: ministries.id,
       name: ministries.name,
       leaderId: ministries.leaderId,
+      churchId: ministries.churchId,
     }
   })
   .from(sectors)
-  .leftJoin(ministries, eq(sectors.ministryId, ministries.id))
-  .where(eq(sectors.id, id));
+  .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+  .where(and(eq(sectors.id, id), eq(ministries.churchId, scope.churchId)));
 
   if (!sector) return null;
   if (scope.role !== "admin" && sector.ministry?.leaderId !== scope.userId) return null;

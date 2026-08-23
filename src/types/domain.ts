@@ -5,6 +5,13 @@
  * exportar apenas funções assíncronas: cada export lá vira um endpoint POST.
  */
 
+export interface Church {
+  id: number;
+  name: string;
+  /** O que o servo digita no login antes do próprio usuário. Nunca muda pela UI. */
+  username: string;
+}
+
 export interface ServantMembership {
   servantId: number;
   sectorId: number;
@@ -18,6 +25,8 @@ export interface ServantSummary {
   userId: string;
   name: string;
   username: string | null;
+  /** E.164 sem `+`. `null` quando a pessoa não informou — é opcional. */
+  phone: string | null;
   email: string | null;
   memberships: ServantMembership[];
 }

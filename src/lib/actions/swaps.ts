@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { publicUser } from "@/lib/scope";
+import { publicUser, getSectorIdForDateId } from "@/lib/scope";
 import type { PendingSwapRequest } from "@/types/domain";
 
 export async function createSwapRequest(dateId: number, targetServantId: number, requesterServantId: number) {
@@ -21,6 +21,20 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
   if (requesterServantId === targetServantId) {
     throw new Error("Não é possível negociar com você mesmo");
   }
+
+  // `targetServantId` chega do cliente sem nenhuma checagem. Exigir que os dois
+  // sirvam no setor da escala daquela data cobre de uma vez o caso absurdo
+  // (trocar com alguém de outro setor) e o caso perigoso (trocar com alguém de
+  // outra igreja) — mesmo setor implica, necessariamente, mesma igreja.
+  const sectorId = await getSectorIdForDateId(dateId);
+  if (requester.sectorId !== sectorId) {
+    throw new Error("Você não serve no setor desta escala");
+  }
+
+  const [target] = await db.select().from(servants).where(
+    and(eq(servants.id, targetServantId), eq(servants.sectorId, sectorId))
+  );
+  if (!target) throw new Error("O servo escolhido não serve no setor desta escala");
 
   const [existing] = await db.select().from(swapRequests).where(
     and(

@@ -3,17 +3,28 @@
 import { db } from "@/db";
 import { ministries, sectors, users, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq, and } from "drizzle-orm";
+import { eq, and, exists } from "drizzle-orm";
+import type { Scope } from "@/types/scope";
 import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, getScope, requireSectorAccess, requireServantAccess, getOrCreateUser } from "@/lib/scope";
 import type { ServantMembership, ServantSummary } from "@/types/domain";
 
-export async function createServant(name: string, username: string, email: string | null, sectorId: number) {
+export async function createServant(
+  name: string,
+  username: string,
+  email: string | null,
+  sectorId: number,
+  phone: string | null = null,
+) {
+  // `requireSectorAccess` já garantiu que o setor é desta igreja, então o
+  // `churchId` do escopo é o do setor — não há como criar o servo num lugar
+  // e vinculá-lo em outro.
+  const scope = await getScope();
   await requireSectorAccess(sectorId);
 
-  const { user, generatedPassword } = await getOrCreateUser(name, "servant", { username, email });
+  const { user, generatedPassword } = await getOrCreateUser(name, "servant", { username, email, phone }, scope.churchId);
 
   // Verifica se o usuário já é um servo neste setor para evitar duplicidade
   const [existingServant] = await db.select().from(servants).where(
@@ -37,36 +48,40 @@ export async function createServant(name: string, username: string, email: strin
   return { password: generatedPassword };
 }
 
+/**
+ * Vínculos de servo que o escopo atual alcança: o setor precisa pertencer a um
+ * ministério da igreja e, quando não for admin, liderado por quem consulta.
+ *
+ * Predicado único pelo mesmo motivo de `schedulesVisibleTo` em schedules.ts:
+ * o ramo de admin era um `findMany()` cru, e ramo sem filtro é o que vaza.
+ */
+function servantsVisibleTo(scope: Scope) {
+  const ministryConditions = [
+    eq(ministries.id, sectors.ministryId),
+    eq(ministries.churchId, scope.churchId),
+  ];
+  if (scope.role !== "admin") {
+    ministryConditions.push(eq(ministries.leaderId, scope.userId));
+  }
+  return exists(
+    db.select().from(sectors).where(
+      and(
+        eq(sectors.id, servants.sectorId),
+        exists(db.select().from(ministries).where(and(...ministryConditions)))
+      )
+    )
+  );
+}
+
 export async function getServants(): Promise<ServantSummary[]> {
   const scope = await getScope();
-  const rows = scope.role !== "admin"
-    ? await db.query.servants.findMany({
-        where: (servants, { exists }) => exists(
-          db.select().from(sectors).where(
-            and(
-              eq(sectors.id, servants.sectorId),
-              exists(
-                db.select().from(ministries).where(
-                  and(
-                    eq(ministries.id, sectors.ministryId),
-                    eq(ministries.leaderId, scope.userId)
-                  )
-                )
-              )
-            )
-          )
-        ),
-        with: {
-          user: publicUser,
-          sector: { with: { ministry: true } }
-        }
-      })
-    : await db.query.servants.findMany({
-        with: {
-          user: publicUser,
-          sector: { with: { ministry: true } }
-        }
-      });
+  const rows = await db.query.servants.findMany({
+    where: servantsVisibleTo(scope),
+    with: {
+      user: publicUser,
+      sector: { with: { ministry: true } }
+    }
+  });
 
   const byUser = new Map<string, ServantSummary>();
   for (const row of rows) {
@@ -87,6 +102,7 @@ export async function getServants(): Promise<ServantSummary[]> {
         name: row.user.name,
         username: row.user.username,
         email: row.user.email,
+        phone: row.user.phone,
         memberships: [membership],
       });
     }
@@ -111,6 +127,7 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
     name: rows[0].user.name,
     username: rows[0].user.username,
     email: rows[0].user.email,
+    phone: rows[0].user.phone,
     memberships: rows.map((row) => ({
       servantId: row.id,
       sectorId: row.sector.id,

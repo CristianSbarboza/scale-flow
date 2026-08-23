@@ -7,6 +7,13 @@ import { cn } from "@/lib/cn";
 export interface SelectItem {
   value: string;
   label: string;
+  /**
+   * Texto curto para o gatilho, quando o rótulo completo não cabe.
+   * Ex.: a lista mostra "🇧🇷 +55 Brasil" e o gatilho, só "🇧🇷 +55".
+   * Sem isto, seletor estreito trunca o rótulo e some justamente com a parte
+   * que identifica a opção.
+   */
+  short?: string;
 }
 
 /**
@@ -28,6 +35,7 @@ export default function Select({
   label,
   leading,
   className,
+  listClassName,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -37,6 +45,12 @@ export default function Select({
   /** Ícone à esquerda, dentro do gatilho. */
   leading?: React.ReactNode;
   className?: string;
+  /**
+   * Classes da lista aberta. Serve para soltar a largura quando o gatilho é
+   * estreito: por padrão a lista acompanha o gatilho, e num seletor de 116px
+   * isso truncaria justamente o texto que diferencia as opções.
+   */
+  listClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -137,7 +151,7 @@ export default function Select({
         )}
       >
         {leading}
-        <span className="flex-1 truncate">{selected?.label}</span>
+        <span className="flex-1 truncate">{selected?.short ?? selected?.label}</span>
         <ChevronDown
           size={16}
           className={cn("shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
@@ -151,7 +165,10 @@ export default function Select({
           role="listbox"
           aria-label={label}
           tabIndex={-1}
-          className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+          className={cn(
+            "absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg",
+            listClassName,
+          )}
         >
           {options.map((o, i) => {
             const isSelected = o.value === value;

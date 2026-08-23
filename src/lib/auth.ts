@@ -1,8 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, churches } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { compare } from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -11,15 +11,49 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
+        church: { label: "Igreja", type: "text" },
         username: { label: "Usuário", type: "text" },
         password: { label: "Password", type: "password" }
       },
+      /**
+       * Dois caminhos de identificação, por desenho:
+       *
+       * - **E-mail** (admin/líder): único no mundo, então basta ele.
+       * - **Igreja + usuário** (servo): `maria` só é única dentro da igreja.
+       *   Sem o username da igreja não dá para saber de qual `maria` se trata,
+       *   e aceitar a primeira que aparecer deixaria o login virar loteria
+       *   entre igrejas.
+       *
+       * Todos os fracassos retornam `null` sem distinguir o motivo. Dizer
+       * "igreja não encontrada" transformaria a tela de login num jeito de
+       * descobrir quais igrejas existem.
+       */
       async authorize(credentials) {
-        if (!credentials?.password || (!credentials?.email && !credentials?.username)) return null;
+        if (!credentials?.password) return null;
 
-        const user = credentials.username
-          ? await db.query.users.findFirst({ where: eq(users.username, credentials.username) })
-          : await db.query.users.findFirst({ where: eq(users.email, credentials.email!) });
+        let user;
+
+        if (credentials.username) {
+          if (!credentials.church) return null;
+
+          const church = await db.query.churches.findFirst({
+            where: eq(churches.username, credentials.church.trim().toLowerCase()),
+          });
+          if (!church) return null;
+
+          user = await db.query.users.findFirst({
+            where: and(
+              eq(users.username, credentials.username),
+              eq(users.churchId, church.id)
+            ),
+          });
+        } else if (credentials.email) {
+          user = await db.query.users.findFirst({
+            where: eq(users.email, credentials.email),
+          });
+        } else {
+          return null;
+        }
 
         if (!user) return null;
 
@@ -31,6 +65,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          churchId: user.churchId,
         };
       }
     })
@@ -40,6 +75,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.churchId = user.churchId;
       }
       return token;
     },
@@ -47,6 +83,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
+        session.user.churchId = token.churchId;
       }
       return session;
     }

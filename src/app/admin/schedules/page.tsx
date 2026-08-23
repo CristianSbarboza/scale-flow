@@ -133,18 +133,23 @@ export default function SchedulesPage() {
     if (dates.length === 0) { showToast("Adicione ao menos uma data", "error"); return; }
 
     setLoading(true);
-    const result = await createSchedule(name, parseInt(ministryId), parseInt(sectorId), dates, visibility);
-    setLastLink(`${window.location.origin}/escala/${result.shareLink}`);
+    try {
+      const result = await createSchedule(name, parseInt(ministryId), parseInt(sectorId), dates, visibility);
+      setLastLink(`${window.location.origin}/escala/${result.shareLink}`);
 
-    setName("");
-    setMinistryId("");
-    setSectorId("");
-    setVisibility("public");
-    setDates([]);
+      setName("");
+      setMinistryId("");
+      setSectorId("");
+      setVisibility("public");
+      setDates([]);
 
-    const sch = await getSchedules();
-    setSchedules(sch as unknown as Schedule[]);
-    setLoading(false);
+      const sch = await getSchedules();
+      setSchedules(sch as unknown as Schedule[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao criar escala.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (s: Schedule) => {

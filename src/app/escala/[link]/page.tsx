@@ -37,7 +37,10 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
   const schedule = await db.query.schedules.findFirst({
     where: eq(schedules.shareLink, link),
     with: {
-      ministry: true,
+      // A igreja vem pelo ministério: é lá que `churchId` mora. Só a dona
+      // desta escala chega ao cliente — a página é pública, mas não expõe
+      // nada de igreja nenhuma além da que já é dona do link.
+      ministry: { with: { church: { columns: { name: true } } } },
       sector: true,
       dates: true,
     }
@@ -126,7 +129,7 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
 }
 
 interface SchedulePageProps {
-  schedule: { name: string; ministry: { name: string }; sector: { name: string } };
+  schedule: { name: string; ministry: { name: string; church: { name: string } }; sector: { name: string } };
   dates: Array<{ id: number; date: string; startTime: string }>;
   servants: Array<{ id: number; user: { name: string } }>;
   initialServantId?: string;
@@ -139,6 +142,17 @@ function SchedulePage({ schedule, dates, servants, initialServantId, lockedServa
     <div className="min-h-screen px-4 py-8">
       <div className="w-full max-w-[600px] mx-auto px-6">
         <div className="card glass animate-fade-in" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          {/* Sobrelinha: quem chega por link compartilhado precisa saber de
+              qual igreja é a escala antes de marcar disponibilidade. */}
+          <p style={{
+            fontSize: '0.75rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--muted-foreground)',
+            marginBottom: '0.375rem',
+          }}>
+            {schedule.ministry.church.name}
+          </p>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{schedule.name}</h1>
           <p style={{ color: 'var(--primary)', fontWeight: 600 }}>{schedule.ministry.name} - {schedule.sector.name}</p>
           <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>

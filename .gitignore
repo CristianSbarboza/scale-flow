@@ -43,3 +43,6 @@ next-env.d.ts
 
 # git worktrees
 .worktrees/
+
+# Dumps de banco: contêm hashes de senha e e-mails reais.
+backups/

@@ -16,6 +16,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import { useToast } from "@/components/Toast";
 
 interface Sector {
   id: number;
@@ -35,6 +36,7 @@ interface Ministry {
 export default function SectorsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { showToast } = useToast();
   const isLeader = session?.user.role === "leader";
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
@@ -84,15 +86,19 @@ export default function SectorsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await createSector(name, parseInt(ministryId));
-    setName("");
-    setMinistryId("");
-    
-    // Refresh list
-    const sec = await getSectors();
-    setSectors(sec as unknown as Sector[]);
-    
-    setLoading(false);
+    try {
+      await createSector(name, parseInt(ministryId));
+      setName("");
+      setMinistryId("");
+
+      // Refresh list
+      const sec = await getSectors();
+      setSectors(sec as unknown as Sector[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao criar setor.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredSectors = sectors.filter(s => {

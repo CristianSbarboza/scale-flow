@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star } from "lucide-react";
+import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star, Phone } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import Select from "@/components/ui/Select";
@@ -164,6 +165,17 @@ export default function ServantMemberPage() {
           <p style={{ color: "var(--muted-foreground)" }}>
             {member.username ? `usuário: ${member.username}` : (member.email || "-")}
           </p>
+          {/* Só aparece quando existe. Rótulo sem valor ao lado é pior que a
+              ausência: ocupa espaço para dizer que não há informação. */}
+          {member.phone && (
+            <a
+              href={`tel:+${member.phone}`}
+              className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              <Phone size={14} />
+              {formatPhone(member.phone)}
+            </a>
+          )}
         </div>
       </header>
 

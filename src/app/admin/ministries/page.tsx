@@ -10,12 +10,15 @@ import FormPanel from "@/components/ui/FormPanel";
 import Button from "@/components/ui/Button";
 import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
+import PhoneField from "@/components/ui/PhoneField";
 import TextareaField from "@/components/ui/TextareaField";
 import SectionLabel from "@/components/ui/SectionLabel";
 import PageHeader from "@/components/ui/PageHeader";
+import { useChurch } from "@/components/ChurchContext";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import { useToast } from "@/components/Toast";
 
 interface Ministry {
   id: number;
@@ -38,11 +41,14 @@ interface Ministry {
 export default function MinistriesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const church = useChurch();
+  const { showToast } = useToast();
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [leaderName, setLeaderName] = useState("");
   const [leaderEmail, setLeaderEmail] = useState("");
+  const [leaderPhone, setLeaderPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -91,22 +97,24 @@ export default function MinistriesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = await createMinistry(name, description, leaderName, leaderEmail);
-    
-    if (result.password) {
-      setGeneratedPassword(result.password);
-    } else {
-      setGeneratedPassword("");
-    }
+    try {
+      const result = await createMinistry(name, description, leaderName, leaderEmail, leaderPhone);
 
-    setName("");
-    setDescription("");
-    setLeaderName("");
-    setLeaderEmail("");
-    
-    const min = await getMinistries();
-    setMinistries(min as unknown as Ministry[]);
-    setLoading(false);
+      setGeneratedPassword(result.password ?? "");
+
+      setName("");
+      setDescription("");
+      setLeaderName("");
+      setLeaderEmail("");
+      setLeaderPhone(null);
+
+      const min = await getMinistries();
+      setMinistries(min as unknown as Ministry[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao criar ministério.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -151,6 +159,11 @@ export default function MinistriesPage() {
               onChange={e => setLeaderEmail(e.target.value)}
               required
             />
+            <PhoneField
+              label="Telefone do Líder (opcional)"
+              value={leaderPhone}
+              onChange={setLeaderPhone}
+            />
           </div>
         </div>
         <Button type="submit" disabled={loading} className="w-full">
@@ -171,7 +184,7 @@ export default function MinistriesPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Ministérios" subtitle="Gerencie os ministérios da sua igreja." />
+      <PageHeader title="Ministérios" subtitle={`Gerencie os ministérios de ${church.name}.`} />
 
       <div className="admin-panel-layout">
         <FormPanel title="Novo Ministério">{formContent}</FormPanel>

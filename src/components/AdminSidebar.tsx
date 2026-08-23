@@ -15,6 +15,7 @@ import {
   Settings
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import { useChurch } from "@/components/ChurchContext";
 import NavLink from "@/components/ui/NavLink";
 import MenuToggle from "@/components/ui/MenuToggle";
 
@@ -34,6 +35,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ role }: AdminSidebarProps) {
   const pathname = usePathname();
   const { action } = useAdminTopbar();
+  const church = useChurch();
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -82,7 +84,7 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         <div className="flex items-center gap-4" style={{
-          marginBottom: '2.5rem',
+          marginBottom: isCollapsed ? '2.5rem' : '0.75rem',
           padding: '0 0.5rem',
           justifyContent: isCollapsed ? 'center' : 'space-between',
           alignItems: 'center',
@@ -129,6 +131,19 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
         >
           {isCollapsed ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
         </button>
+
+        {/* Qual igreja está aberta. Discreto de propósito: com uma igreja só
+            por conta, isto é confirmação, não navegação. Some ao recolher a
+            barra — não cabe, e abreviar um nome próprio confunde mais que ajuda. */}
+        {!isCollapsed && (
+          <p
+            className="truncate text-[0.8125rem] text-muted-foreground"
+            style={{ padding: '0 0.5rem', marginBottom: '2rem' }}
+            title={church.name}
+          >
+            {church.name}
+          </p>
+        )}
 
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {visibleMenuItems.map((item) => {
