@@ -22,6 +22,54 @@ Processo Node separado, sempre ligado — VPS, Railway, Fly ou Render **com disc
 
 Sugestão: pasta `services/whatsapp/` neste mesmo repositório, reaproveitando `src/db/schema.ts`. Deploy é separado do Next; o que se ganha é uma definição de schema só.
 
+### Orientação a objetos
+
+O serviço é escrito em **POO**: classes com dependências entrando pelo construtor, não módulos de funções soltas.
+
+A razão aqui é concreta. As duas partes que mais vão errar nesta spec são o **cálculo de fuso** e a decisão de **"este lembrete está vencido?"** — e nenhuma das duas deveria precisar de WhatsApp conectado nem de esperar o relógio para ser verificada. Com injeção por construtor, o `ReminderScheduler` recebe um `Clock` falso e um `Sender` falso, e o teste vira aritmética.
+
+Por isso o agendador depende de **interfaces**, nunca de Baileys ou de `pg` direto:
+
+```ts
+interface Sender    { send(jid: string, text: string): Promise<void>; }
+interface Clock     { now(): Date; }
+interface ReminderStore {
+  findDue(kind: ReminderKind, window: TimeWindow): Promise<DueReminder[]>;
+  markSent(r: DueReminder, status: SendStatus, detail?: string): Promise<void>;
+}
+```
+
+### Classes
+
+```text
+src/
+  index.ts                    Composition root: instancia tudo e liga. O ÚNICO
+                              arquivo que conhece as implementações concretas.
+  config/Env.ts               Env — lê e valida as variáveis na subida, não no
+                              primeiro uso. Faltando DATABASE_URL, o processo
+                              não deve subir e só descobrir às 09h.
+  time/ServiceClock.ts        ServiceClock — date + start_time + America/Sao_Paulo
+                              → instante. Implementa Clock. Nenhuma outra classe
+                              faz aritmética de data.
+  reminders/
+    ReminderKind.ts           "day_before" | "two_hours" e a regra de quando cada
+                              um vence.
+    ReminderScheduler.ts      ReminderScheduler — o laço. Recebe store, sender e
+                              clock. Não sabe o que é Baileys nem o que é SQL.
+    ReminderRepository.ts     ReminderRepository implements ReminderStore — as
+                              consultas e o notification_log.
+    ReminderMessage.ts        ReminderMessage — monta o texto. Pura.
+  whatsapp/
+    WhatsAppSession.ts        WhatsAppSession — conexão Baileys, QR, reconexão,
+                              estado. Emite quando cai.
+    BaileysSender.ts          BaileysSender implements Sender — envia com
+                              intervalo entre mensagens. Rajada é o sinal mais
+                              forte de automação.
+  http/ControlServer.ts       ControlServer — Express com /qr e /health.
+```
+
+**`index.ts` é o único lugar que conhece as classes concretas.** Todo o resto recebe o que precisa pelo construtor — é o que permite trocar `BaileysSender` por um dublê no teste sem tocar no agendador.
+
 ### Tabela nova
 
 ```ts

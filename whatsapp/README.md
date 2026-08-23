@@ -24,6 +24,22 @@ O `web/` **não chama** este serviço. Os dois compartilham o banco e nada mais.
 Assim não há autenticação entre serviços, e os lembretes continuam funcionando
 com a Vercel fora do ar.
 
+## Orientação a objetos
+
+Este serviço é escrito em **POO**: classes, com dependências entrando pelo
+construtor. O `ReminderScheduler` depende das interfaces `Sender`, `Clock` e
+`ReminderStore` — nunca de Baileys ou de `pg` direto.
+
+Não é preferência de estilo. As duas partes que mais vão errar aqui são o
+cálculo de fuso e a decisão de "este lembrete está vencido?", e nenhuma das
+duas deveria precisar de WhatsApp conectado nem de esperar o relógio para ser
+verificada. Com injeção por construtor, o teste vira aritmética.
+
+`src/index.ts` é o **único** arquivo que conhece as implementações concretas.
+
+Ver o desenho das classes em
+[`tasks.md`](../specs/05-spec-whatsapp-lembretes/tasks.md).
+
 ## Ambiente
 
 Precisa do próprio `.env` com o mesmo `DATABASE_URL` do `web/` — cada processo

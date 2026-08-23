@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 scale-flow/
   web/        Next 16 app. Run every npm/npx command from HERE, not from the root.
   whatsapp/   Express + Baileys worker (spec 05). Own package.json, own deps. Skeleton.
+              Written in OOP — classes with constructor injection, unlike web/,
+              which follows Next conventions. See whatsapp/README.md.
   specs/      Spec-Driven Development, shared by both.
   docs/
   backups/    Database dumps. Gitignored — they contain password hashes.
