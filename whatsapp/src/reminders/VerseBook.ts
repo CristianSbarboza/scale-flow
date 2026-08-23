@@ -6,9 +6,9 @@ export interface Verse {
 /**
  * Acervo de versículos que fecham a mensagem.
  *
- * Lista definida pelo dono do produto, toda em torno de servir. Dois itens
- * chegaram com erro de transcrição e estão corrigidos com nota no próprio
- * item — o resto está como veio, inclusive a escolha de tradução.
+ * Lista definida pelo dono do produto, toda em torno de servir, na **NVI**.
+ * Um item chegou com erro de transcrição e está corrigido com nota no próprio
+ * item; o resto está exatamente como veio.
  *
  * Para trocar ou acrescentar, mexa só aqui: `VerseBook` não conhece o
  * conteúdo, e o resto do serviço não conhece a lista.
@@ -27,19 +27,18 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Colossenses 3:23-24",
   },
   {
-    // A lista original chegou com "todo o qual quiser a\nntre vós ser grande",
-    // quebra de colagem. Reposto conforme a ACF, mantendo a mesma tradução.
-    text: "Não será assim entre vós; mas todo aquele que quiser entre vós fazer-se grande, seja vosso serviçal; e qualquer que entre vós quiser ser o primeiro, seja vosso servo; bem como o Filho do Homem não veio para ser servido, mas para servir, e para dar a sua vida em resgate de muitos.",
+    text: "Não será assim entre vós. Pelo contrário, quem quiser tornar-se importante entre vós deverá ser servo, e quem quiser ser o primeiro deverá ser escravo; como o Filho do homem não veio para ser servido, mas para servir e dar a sua vida em resgate por muitos.",
     reference: "Mateus 20:26-28",
   },
   {
-    text: "Porém, se vos parece mal aos vossos olhos servir ao Senhor, escolhei hoje a quem sirvais... porém eu e a minha casa serviremos ao Senhor.",
+    text: "Se, porém, não lhes agrada servir ao Senhor, escolham hoje a quem irão servir... Mas eu e a minha família serviremos ao Senhor.",
     reference: "Josué 24:15",
   },
   {
-    // Original: "os doze chamaram e disseram-lhes" — invertia quem fala.
-    // Quem chama e fala é Jesus.
-    text: "E ele, assentando-se, chamou os doze e disse-lhes: Se alguém quiser ser o primeiro, seja o derradeiro de todos e o servo de todos.",
+    // A lista chegou DUAS VEZES com "os Doze chamaram e disseram-lhes", que
+    // inverte quem fala — não há a quem o "lhes" se refira. Quem chama os
+    // Doze é Jesus. Texto reposto conforme a NVI, que foi a versão pedida.
+    text: "Sentando-se, Jesus chamou os Doze e disse: Se alguém quiser ser o primeiro, será o último e o servo de todos.",
     reference: "Marcos 9:35",
   },
   {
@@ -47,15 +46,15 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Efésios 6:7",
   },
   {
-    text: "Se alguém me serve, siga-me, e onde eu estiver, ali estará também o meu servo. E, se alguém me servir, meu Pai o honrará.",
+    text: "Se alguém me serve, siga-me; e onde estou, ali estará também o meu servo. Aquele que me serve, meu Pai o honrará.",
     reference: "João 12:26",
   },
   {
-    text: "E não nos cansemos de fazer o bem, a seu tempo ceifaremos, se não houvermos desfalecido. Portanto, enquanto temos tempo, façamos o bem a todos, mas principalmente aos domésticos da fé.",
+    text: "E não nos cansemos de fazer o bem, pois no tempo próprio colheremos, se não desanimarmos. Portanto, enquanto temos oportunidade, façamos o bem a todos, especialmente aos da família da fé.",
     reference: "Gálatas 6:9-10",
   },
   {
-    text: "Tão-somente temei ao Senhor, e servi-o com fidelidade de todo o vosso coração; porque vede quão grandes coisas tem feito por vós.",
+    text: "Mas, acima de tudo, temam o Senhor e o sirvam com fidelidade e de todo o coração; considerem quão grandes coisas ele fez por vocês.",
     reference: "1 Samuel 12:24",
   },
 ];
