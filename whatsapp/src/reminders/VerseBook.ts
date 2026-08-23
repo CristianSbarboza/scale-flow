@@ -27,7 +27,7 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Colossenses 3:23-24",
   },
   {
-    text: "Não será assim entre vós. Pelo contrário, quem quiser tornar-se importante entre vós deverá ser servo, e quem quiser ser o primeiro deverá ser escravo; como o Filho do homem não veio para ser servido, mas para servir e dar a sua vida em resgate por muitos.",
+    text: "Ao contrário, quem quiser tornar-se importante entre vocês deverá ser servo, e quem quiser ser o primeiro deverá ser servo dos demais, tal como o Filho do homem",
     reference: "Mateus 20:26-28",
   },
   {
