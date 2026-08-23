@@ -1,8 +1,10 @@
 import express, { type Express } from "express";
 import QRCode from "qrcode";
 import type { WhatsAppSession } from "../whatsapp/WhatsAppSession.js";
-import type { ReminderStore } from "../reminders/types.js";
+import type { ReminderKind, ReminderStore, Sender } from "../reminders/types.js";
 import type { TickResult } from "../reminders/ReminderScheduler.js";
+import type { ReminderMessage } from "../reminders/ReminderMessage.js";
+import type { ServiceClock } from "../time/ServiceClock.js";
 
 /**
  * O Express **não** é o caminho da mensagem — quem envia é o cron. Aqui só
@@ -24,9 +26,17 @@ export class ControlServer {
     private readonly store: ReminderStore,
     private readonly port: number,
     private readonly log: (line: string) => void = console.log,
+    /** Ausente = a rota de teste nem existe. Ver `registerTestRoute`. */
+    private readonly test?: {
+      sender: Sender;
+      message: ReminderMessage;
+      clock: ServiceClock;
+      token: string;
+    },
   ) {
     this.app = express();
     this.registerRoutes();
+    this.registerTestRoute();
   }
 
   /** Chamado pelo laço a cada ciclo, para o /health mostrar sinal de vida. */
@@ -83,7 +93,80 @@ export class ControlServer {
         session,
         lastTick: this.lastTick,
         notificationLog: counts,
+        testRoute: this.test ? "habilitada" : "desabilitada (defina CONTROL_TOKEN)",
       });
+    });
+  }
+
+  /**
+   * Envia uma mensagem avulsa, para conferir como ela chega antes de confiar
+   * no cron.
+   *
+   * **Só existe com `CONTROL_TOKEN` definido.** Um endpoint que dispara
+   * WhatsApp para qualquer número é um relay aberto: quem achasse a URL
+   * mandaria mensagem a partir de um número pessoal. Sem token, a rota nem é
+   * registrada — responder 401 já confirmaria que ela existe.
+   *
+   * Não grava em `notification_log`: é teste, não lembrete. Se gravasse,
+   * consumiria a reserva e a pessoa não receberia o aviso de verdade depois.
+   */
+  private registerTestRoute(): void {
+    if (!this.test) return;
+    const { sender, message, clock, token } = this.test;
+
+    this.app.post("/test-send", async (req, res) => {
+      if (req.get("x-control-token") !== token) {
+        res.status(404).end();
+        return;
+      }
+
+      const phone = String(req.query.phone ?? "").replace(/\D/g, "");
+      const username = req.query.username ? String(req.query.username) : null;
+      const kind = (req.query.kind === "day_before" ? "day_before" : "two_hours") as ReminderKind;
+
+      if (!phone) {
+        res.status(400).json({ erro: "informe ?phone= em E.164 sem o +, ex.: 5511987654321" });
+        return;
+      }
+
+      const contexto = username ? await this.store.findContextByUsername(username) : null;
+      if (username && !contexto) {
+        res.status(404).json({ erro: `usuário "${username}" não encontrado` });
+        return;
+      }
+
+      // O culto é fabricado a partir de agora, para o texto sair coerente com
+      // o tipo de aviso: em 2 horas se for o de 2 horas, amanhã se for a
+      // véspera.
+      const agora = clock.now();
+      const alvo = new Date(agora.getTime() + (kind === "two_hours" ? 2 : 26) * 60 * 60 * 1000);
+      const service = {
+        date: new Intl.DateTimeFormat("en-CA", { timeZone: clock.timeZoneName }).format(alvo),
+        time: new Intl.DateTimeFormat("pt-BR", {
+          timeZone: clock.timeZoneName, hour: "2-digit", minute: "2-digit", hour12: false,
+        }).format(alvo),
+      };
+
+      const texto = message.build({
+        dateId: 0,
+        servantId: 0,
+        phone,
+        scheduleName: "Teste",
+        servantName: contexto?.servantName ?? "Amigo(a)",
+        churchName: contexto?.churchName ?? "ScaleFlow",
+        ministryName: contexto?.ministryName ?? "—",
+        sectorName: contexto?.sectorName ?? "—",
+        service,
+      }, kind);
+
+      try {
+        await sender.send(phone, texto);
+        this.log(`teste enviado para +${phone}`);
+        res.json({ enviado: true, para: `+${phone}`, kind, texto });
+      } catch (erro) {
+        const motivo = erro instanceof Error ? erro.message : String(erro);
+        res.status(502).json({ enviado: false, erro: motivo });
+      }
     });
   }
 }

@@ -31,6 +31,11 @@ export class ServiceClock implements Clock {
     return new Date();
   }
 
+  /** O fuso configurado. Quem formata data fora daqui precisa dele. */
+  get timeZoneName(): string {
+    return this.timeZone;
+  }
+
   /**
    * Hora de parede no fuso da igreja → instante real.
    *
@@ -97,7 +102,29 @@ export class ServiceClock implements Clock {
     return wallAsUtc - instant.getTime();
   }
 
-  /** Hora de parede legível, para a mensagem. Ex.: `24/08 (domingo) às 19:00`. */
+  /**
+   * Hora e data separadas, para a mensagem poder pôr cada uma em negrito.
+   * Ex.: `{ hora: "19:00", data: "24/08 (domingo)" }`.
+   */
+  describeParts(wall: WallTime): { hora: string; data: string } {
+    const instant = this.toInstant(wall);
+    const fmt = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: this.timeZone,
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(instant);
+    const get = (type: string) => fmt.find((p) => p.type === type)?.value ?? "";
+    return {
+      hora: `${get("hour")}:${get("minute")}`,
+      data: `${get("day")}/${get("month")} (${get("weekday")})`,
+    };
+  }
+
+  /** Hora de parede legível, numa linha só. Ex.: `24/08 (domingo) às 19:00`. */
   describe({ date, time }: WallTime): string {
     const instant = this.toInstant({ date, time });
     const fmt = new Intl.DateTimeFormat("pt-BR", {

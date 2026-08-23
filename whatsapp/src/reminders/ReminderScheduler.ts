@@ -11,6 +11,8 @@ export interface SchedulerOptions {
   sendDelayMaxMs: number;
   /** Verdadeiro: decide tudo e registra, mas não envia. Para ensaiar em produção. */
   dryRun: boolean;
+  /** Endereço público do app, para o link no fim da mensagem. */
+  appUrl?: string | null;
 }
 
 export interface TickResult {
@@ -38,7 +40,7 @@ export class ReminderScheduler {
     private readonly options: SchedulerOptions,
     private readonly log: (line: string) => void = console.log,
   ) {
-    this.message = new ReminderMessage(clock);
+    this.message = new ReminderMessage(clock, undefined, options.appUrl ?? null);
   }
 
   async tick(): Promise<TickResult> {

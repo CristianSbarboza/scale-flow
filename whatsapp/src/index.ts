@@ -16,6 +16,7 @@ import { ReminderScheduler } from "./reminders/ReminderScheduler.js";
 import { WhatsAppSession } from "./whatsapp/WhatsAppSession.js";
 import { BaileysSender } from "./whatsapp/BaileysSender.js";
 import { ControlServer } from "./http/ControlServer.js";
+import { ReminderMessage } from "./reminders/ReminderMessage.js";
 
 const TICK_MS = 60_000;
 
@@ -37,6 +38,10 @@ async function main(): Promise<void> {
   const session = new WhatsAppSession(env.sessionDir);
   const sender = new BaileysSender(session);
 
+  if (!env.appUrl) {
+    console.warn(`  ⚠ APP_URL não definido — a mensagem sai sem o link da conta.`);
+  }
+
   const scheduler = new ReminderScheduler(store, sender, clock, {
     toleranceMinutes: env.toleranceMinutes,
     lookbackHours: env.lookbackHours,
@@ -44,9 +49,16 @@ async function main(): Promise<void> {
     sendDelayMinMs: env.sendDelayMinMs,
     sendDelayMaxMs: env.sendDelayMaxMs,
     dryRun: env.dryRun,
+    appUrl: env.appUrl,
   });
 
-  const control = new ControlServer(session, store, env.port);
+  const control = new ControlServer(
+    session, store, env.port, console.log,
+    env.controlToken
+      ? { sender, message: new ReminderMessage(clock, undefined, env.appUrl), clock, token: env.controlToken }
+      : undefined,
+  );
+  if (env.controlToken) console.log(`  POST /test-send habilitado (header x-control-token)`);
   control.listen();
   await session.start();
 

@@ -20,6 +20,12 @@ export interface DueReminder {
   service: WallTime;
 }
 
+/** Dados de uma pessoa para montar uma mensagem de teste. */
+export type PreviewContext = Pick<
+  DueReminder,
+  "servantName" | "churchName" | "ministryName" | "sectorName"
+>;
+
 /**
  * Persistência dos lembretes. O agendador depende disto, não de SQL.
  *
@@ -28,6 +34,8 @@ export interface DueReminder {
  */
 export interface ReminderStore {
   findCandidates(kind: ReminderKind, fromDate: string, toDate: string): Promise<DueReminder[]>;
+  /** Nome, igreja, ministério e setor de um servo, para a mensagem de teste. */
+  findContextByUsername(username: string): Promise<PreviewContext | null>;
   claim(reminder: DueReminder, kind: ReminderKind): Promise<number | null>;
   finish(claimId: number, status: SendStatus, detail?: string): Promise<void>;
   countByStatus(): Promise<Record<string, number>>;

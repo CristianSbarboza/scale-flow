@@ -52,6 +52,9 @@ class FakeStore implements ReminderStore {
   async findCandidates(kind: ReminderKind): Promise<DueReminder[]> {
     return this.candidatos.filter((c) => !this.log.has(this.key(c, kind)));
   }
+  async findContextByUsername() {
+    return null;
+  }
   async claim(r: DueReminder, kind: ReminderKind): Promise<number | null> {
     const k = this.key(r, kind);
     if (this.log.has(k)) return null;
@@ -221,7 +224,15 @@ async function main() {
     const texto = new ReminderMessage(new ServiceClock(TZ)).build(servo(), "day_before");
     eq("saudação usa só o primeiro nome", texto.includes("Olá, Maria!"), true);
     eq("identifica a igreja (um número atende todas)", texto.includes("Igreja Somos Um"), true);
-    eq("traz data e hora do culto", texto.includes("23/08 (domingo) às 19:00"), true);
+    eq("hora antes da data, as duas em negrito", texto.includes("às *19:00* — *23/08 (domingo)*"), true);
+    eq("não repete o nome da escala", texto.includes("*Escala:*"), false);
+    eq("sem APP_URL, não sai linha de link", texto.includes("acesse sua conta"), false);
+
+    const comLink = new ReminderMessage(new ServiceClock(TZ), undefined, "https://app.exemplo.com/");
+    const t2 = comLink.build(servo(), "two_hours");
+    eq("com APP_URL, link no fim", t2.includes("Para mais detalhes, acesse sua conta:"), true);
+    eq("barra final da URL não duplica", t2.includes("https://app.exemplo.com//"), false);
+    eq("o link aponta para a área do servo", t2.includes("https://app.exemplo.com/servant"), true);
   }
 
   console.log("\n--- versículos ---");

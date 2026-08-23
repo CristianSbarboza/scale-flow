@@ -20,6 +20,20 @@ export class Env {
     readonly lookbackHours: number,
     readonly lookaheadHours: number,
     readonly dryRun: boolean,
+    /**
+     * Habilita `POST /test-send`. Vazio = a rota nem é registrada.
+     *
+     * Um endpoint que dispara WhatsApp para qualquer número é relay aberto, e
+     * o número aqui é pessoal. Sem segredo, a rota não existe.
+     */
+    readonly controlToken: string | null,
+    /**
+     * Endereço público do app, para o link no fim da mensagem.
+     *
+     * Sem ele a linha do link simplesmente não sai — mandar um link quebrado
+     * é pior que não mandar link.
+     */
+    readonly appUrl: string | null,
   ) {}
 
   static load(source: NodeJS.ProcessEnv = process.env): Env {
@@ -36,6 +50,8 @@ export class Env {
       number(source, "LOOKBACK_HOURS", 48),
       number(source, "LOOKAHEAD_HOURS", 48),
       source.DRY_RUN === "true",
+      source.CONTROL_TOKEN?.trim() || null,
+      source.APP_URL?.trim().replace(/\/+$/, "") || null,
     );
 
     if (env.sendDelayMinMs > env.sendDelayMaxMs) {

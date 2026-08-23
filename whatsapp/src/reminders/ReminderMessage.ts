@@ -13,13 +13,23 @@ export class ReminderMessage {
   constructor(
     private readonly clock: ServiceClock,
     private readonly verses: VerseBook = new VerseBook(),
-  ) {}
+    appUrl: string | null = null,
+  ) {
+    // Tira a barra final aqui, e não em quem chama: o Env normaliza, mas esta
+    // classe também é construída direto (rota de teste, verificações), e uma
+    // barra sobrando vira `https://app//servant`.
+    this.appUrl = appUrl?.replace(/\/+$/, "") || null;
+  }
+
+  /** Endereço público do app, já sem barra final. */
+  private readonly appUrl: string | null;
 
   build(reminder: DueReminder, kind: ReminderKind): string {
-    const quando = this.clock.describe(reminder.service);
-    const abertura = kind === "day_before"
-      ? `Você está escalado(a) *amanhã*, ${quando}.`
-      : `Você está escalado(a) *hoje*, ${quando} — daqui a pouco mais de 2 horas.`;
+    // Hora antes da data, as duas em negrito: o horário é o que a pessoa
+    // precisa saber de relance; a data confirma.
+    const { hora, data } = this.clock.describeParts(reminder.service);
+    const dia = kind === "day_before" ? "*amanhã*" : "*hoje*";
+    const abertura = `Você está escalado(a) ${dia}, às *${hora}* — *${data}*.`;
 
     // A semente é a própria mensagem: mesmo lembrete, mesmo versículo. Ver
     // VerseBook para por que não é sorteio de verdade.
@@ -40,12 +50,14 @@ export class ReminderMessage {
       ``,
       `*Ministério:* ${reminder.ministryName}`,
       `*Setor:* ${reminder.sectorName}`,
-      `*Escala:* ${reminder.scheduleName}`,
       ``,
-      // O versículo fecha a mensagem, depois da informação prática. Vindo
-      // antes, a pessoa teria que passar por ele para achar o horário.
+      // O versículo vem depois da informação prática. Antes, a pessoa teria
+      // que passar por ele para achar o horário.
       `_"${versiculo.text}"_`,
       `— *${versiculo.reference}*`,
+      // A linha do link só existe se houver endereço configurado: link
+      // quebrado é pior que link nenhum.
+      ...(this.appUrl ? [``, `Para mais detalhes, acesse sua conta:`, `${this.appUrl}/servant`] : []),
       ``,
       `_Mensagem automática do ScaleFlow._`,
     ].join("\n");

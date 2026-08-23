@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { DueReminder, ReminderKind, ReminderStore, SendStatus } from "./types.js";
+import type { DueReminder, PreviewContext, ReminderKind, ReminderStore, SendStatus } from "./types.js";
 
 /**
  * As consultas do serviço. SQL cru, de propósito.
@@ -62,6 +62,36 @@ export class ReminderRepository implements ReminderStore {
       scheduleName: r.schedule_name,
       service: { date: r.service_date, time: r.service_time },
     }));
+  }
+
+  /**
+   * Contexto de um servo pelo usuário, para a mensagem de teste sair com a
+   * igreja e o setor de verdade em vez de texto de exemplo.
+   *
+   * Pega o primeiro vínculo. Quem serve em mais de um setor vai receber o
+   * teste com um deles — é teste, não precisa escolher.
+   */
+  async findContextByUsername(username: string): Promise<PreviewContext | null> {
+    const { rows } = await this.pool.query(
+      `select u.name as servant_name, c.name as church_name,
+              m.name as ministry_name, s.name as sector_name
+         from users u
+         join churches c   on c.id = u.church_id
+         left join servants sv on sv.user_id = u.id
+         left join sectors s   on s.id = sv.sector_id
+         left join ministries m on m.id = s.ministry_id
+        where u.username = $1
+        limit 1`,
+      [username],
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      servantName: r.servant_name,
+      churchName: r.church_name,
+      ministryName: r.ministry_name ?? "—",
+      sectorName: r.sector_name ?? "—",
+    };
   }
 
   /**
