@@ -28,7 +28,10 @@ Verificados com dublês (relógio, banco e remetente falsos) e com o SQL real:
 - [x] Passada a tolerância de 15 min, nada é enviado e fica `skipped` com o motivo (critério 7).
 - [x] Servo sem telefone não entra na fila e os outros da mesma data recebem (critérios 4 e 6).
 - [x] Falha de envio registra `failed` com o motivo e **não** interrompe a fila.
-- [ ] Derrubar o processo **no instante do envio**, com Baileys real, e subir de novo. Resultado: `[preencher]`
+- [x] **Envio real confirmado com WhatsApp conectado**, três mensagens para um telefone de verdade, disparadas pelo cron (não por atalho). O log ficou com `two_hours: sent` e `day_before: skipped` — este último venceria no dia anterior às 09h, então o RF05 foi exercitado sem ser encenado.
+- [x] Um ciclo intermediário mostrou `pending: 1` antes de virar `sent`: a reserva-antes-do-envio observada acontecendo, não deduzida.
+- [x] **A sessão sobreviveu ao restart.** O `tsx watch` reiniciou o processo e o Baileys reconectou direto do volume, sem pedir QR.
+- [ ] Derrubar o processo **no instante do envio** e subir de novo. Resultado: `[preencher]`
 
 ## 💬 Conteúdo
 
@@ -44,8 +47,8 @@ Verificados com dublês (relógio, banco e remetente falsos) e com o SQL real:
 - [x] `/qr` se atualiza sozinha e `/qr.png` devolve o código atual sem cache — verificado contra um servidor de verdade, com sessão falsa.
 - [x] **Defeito encontrado na primeira tentativa real de parear:** o `/qr` servia um PNG estático, mas o Baileys rotaciona o código a cada poucos segundos. Quem abria a página apontava o celular para um QR já vencido, e a única pista era `QR refs attempts ended` no log. Virou página que recarrega sozinha a cada 5s e avisa quando conecta. Nenhum teste pegava isso porque não havia teste de rota — agora há.
 - [x] O log do Baileys (pino em `info`) despejava um JSON por handshake e enterrava as mensagens do próprio serviço. Trocado por um logger que só passa `warn` e `error`.
-- [ ] `GET /qr` **conclui o pareamento** com um telefone real. Resultado: `[preencher]`
-- [ ] Reiniciar o processo **não** pede QR de novo (estado persistiu no volume). Resultado: `[preencher]`
+- [x] `GET /qr` concluiu o pareamento com um telefone real.
+- [x] Reiniciar o processo **não** pede QR de novo — verificado com restart real do `tsx watch`.
 - [ ] Apagar o volume força o QR — confirmando que é ali que o estado mora. Resultado: `[preencher]`
 - [ ] Desconectar o aparelho pelo WhatsApp: `GET /health` acusa a queda **antes** de a próxima escala passar em branco. Resultado: `[preencher]`
 - [ ] Intervalo entre mensagens: conferir nos logs que não saem em rajada. Resultado: `[preencher]`
