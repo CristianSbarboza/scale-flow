@@ -9,6 +9,7 @@ import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, getScope, requireSectorAccess, requireServantAccess, getOrCreateUser } from "@/lib/scope";
+import { normalizeStoredPhone } from "@/lib/phone";
 import type { ServantMembership, ServantSummary } from "@/types/domain";
 
 export async function createServant(
@@ -137,6 +138,32 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
       isCoordinator: row.isCoordinator,
     })),
   };
+}
+
+/**
+ * Nome e telefone de um membro, editados pelo admin ou pelo líder.
+ *
+ * `requireServantAccess` é a mesma guarda de `resetServantPassword` e
+ * `deleteServantAccount`: confere a igreja antes de qualquer papel, então nem
+ * admin alcança membro de outra igreja.
+ *
+ * Não mexe em `username` nem em `email`. Os dois são identificadores de login:
+ * trocá-los por esta tela derrubaria o acesso da pessoa sem ela saber por quê.
+ */
+export async function updateServantProfile(userId: string, name: string, phone: string | null) {
+  await requireServantAccess(userId);
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("O nome não pode ficar vazio");
+  if (trimmed.length > 120) throw new Error("Nome muito longo (máximo 120 caracteres)");
+
+  await db.update(users)
+    .set({ name: trimmed, phone: normalizeStoredPhone(phone) })
+    .where(eq(users.id, userId));
+
+  revalidatePath("/admin/servants");
+  revalidatePath(`/admin/servants/${userId}`);
+  revalidatePath("/servant");
 }
 
 export async function addServantToSector(userId: string, sectorId: number) {

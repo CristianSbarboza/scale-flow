@@ -22,6 +22,7 @@ O risco desta feature não é segurança, é formato: o mesmo número gravado de
 - [x] Fixo de 10 dígitos: máscara `(11) 3456-7890` (corte 4+4) contra celular `(11) 98765-4321` (5+4). Verificado.
 - [x] Campo vazio grava `NULL`, não string vazia. Verificado no banco.
 - [x] `1198` é recusado nos dois níveis: `validatePhone` na tela e `normalizeStoredPhone` na action. A action é um endpoint POST — validar só na tela não valida nada.
+- [x] **Defeito encontrado depois, ao adicionar a edição pelo admin:** `normalizeStoredPhone` só contava dígitos (8 a 15), e um número nacional brasileiro cabe nessa faixa — gravava `11987654321` como se fosse E.164, e o serviço de WhatsApp mandaria mensagem para outra pessoa. Agora exige código de país conhecido com comprimento nacional compatível, mais a regra do NANP (código de área dos EUA nunca começa com 0 ou 1), que é o que barra o DDD 11 de São Paulo. Verificado: recusa `11987654321` e `21987654321`, aceita `5511987654321`, `351912345678` e `14155551234`.
 - [x] Todos os caminhos de escrita passam por `normalizeStoredPhone`: `getOrCreateUser` (cadastro de servo e de líder) e `updateOwnPhone` (configurações).
 
 ## 🗃️ Migração

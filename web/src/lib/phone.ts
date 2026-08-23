@@ -150,12 +150,43 @@ export function formatPhone(e164: string | null | undefined): string {
 export function normalizeStoredPhone(input: string | null | undefined): string | null {
   const digits = onlyDigits(input ?? "");
   if (!digits) return null;
-  // Faixa do próprio E.164: nunca menos de 8, nunca mais de 15 dígitos
-  // contando o país. Não valida por país aqui — a tela já faz isso, e a
-  // action não deve recusar um número estrangeiro legítimo que a lista de
-  // países ainda não conhece.
-  if (digits.length < 8 || digits.length > 15) {
-    throw new Error("Número de telefone inválido.");
+
+  // Faixa do próprio E.164: nunca mais de 15 dígitos contando o país.
+  if (digits.length > 15) throw new Error("Número de telefone inválido.");
+
+  // Precisa começar com um código de país conhecido e ter comprimento
+  // nacional compatível com ele. A primeira versão só contava dígitos (8 a
+  // 15) — e um número nacional brasileiro sem o `55` cabia nessa faixa, então
+  // gravava algo que não era E.164 e o serviço de WhatsApp mandaria mensagem
+  // para outra pessoa.
+  const { country, national } = splitPhone(digits);
+  const { minDigits, maxDigits } = getCountry(country);
+  let casa = digits.startsWith(country)
+    && national.length >= minDigits
+    && national.length <= maxDigits;
+
+  // Regra do NANP (+1): código de área e prefixo nunca começam com 0 ou 1.
+  // Está aqui por um motivo específico — um celular de São Paulo sem o `55`
+  // (`11987654321`) casa com "+1" e um nacional de 10 dígitos. Esta linha o
+  // rejeita, e São Paulo é o DDD mais provável de aparecer.
+  if (casa && country === "1" && !/^[2-9]\d{2}[2-9]\d{6}$/.test(national)) {
+    casa = false;
+  }
+
+  if (!casa) {
+    throw new Error(
+      "Número de telefone inválido. Informe com o código do país (ex.: 55 para o Brasil)."
+    );
   }
   return digits;
 }
+
+/**
+ * LIMITE CONHECIDO: a validação não consegue, em geral, distinguir um número
+ * nacional que por acaso seja válido sob o código de outro país. Os casos
+ * brasileiros estão cobertos — DDDs que começam com 2 a 9 não casam com código
+ * nenhum da lista, e o DDD 11 é barrado pela regra do NANP —, mas a garantia
+ * de verdade é de origem: `PhoneField` é o único produtor de telefone na
+ * interface, e ele sempre monta o E.164 completo. Quem escrever uma action que
+ * receba telefone de outro lugar precisa saber disto.
+ */

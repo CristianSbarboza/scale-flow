@@ -3,11 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star, Phone } from "lucide-react";
+import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star, Phone, Save } from "lucide-react";
 import { formatPhone } from "@/lib/phone";
-import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount } from "@/lib/actions/servants";
+import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import Select from "@/components/ui/Select";
+import Field from "@/components/ui/Field";
+import PhoneField from "@/components/ui/PhoneField";
+import Button from "@/components/ui/Button";
 import type { ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -50,6 +53,9 @@ export default function ServantMemberPage() {
   const [confirmingPassword, setConfirmingPassword] = useState("");
   const [addingLoading, setAddingLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const load = useCallback(async () => {
     const [m, sec] = await Promise.all([getServantMember(userId), getSectors()]);
@@ -58,6 +64,8 @@ export default function ServantMemberPage() {
       return;
     }
     setMember(m);
+    setEditName(m.name);
+    setEditPhone(m.phone);
     setSectors(sec as unknown as SectorOption[]);
     setLoading(false);
   }, [userId, router]);
@@ -70,6 +78,20 @@ export default function ServantMemberPage() {
   if (loading || !member) return null;
 
   const availableSectors = sectors.filter((s) => !member.memberships.some((m) => m.sectorId === s.id));
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileLoading(true);
+    try {
+      await updateServantProfile(userId, editName, editPhone);
+      showToast("Dados atualizados.", "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao salvar os dados.", "error");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const handleAddSector = async () => {
     if (!selectedSectorId) return;
@@ -180,10 +202,49 @@ export default function ServantMemberPage() {
       </header>
 
       <div style={{ display: "flex", gap: "1.25rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
-        <div className="card" style={{ flex: "1 1 160px", borderLeft: "3px solid var(--primary)" }}>
+        {/* `flex-none` no contador e `1 1 320px` no formulário: com os dois
+            crescendo, o número de setores ficava com meia tela vazia ao lado.
+            No celular o formulário quebra para baixo sozinho. */}
+        <div className="card" style={{ flex: "0 0 auto", minWidth: "160px", borderLeft: "3px solid var(--primary)" }}>
           <p style={{ ...sectionLabelStyle, marginBottom: "0.25rem" }}>Setores Vinculados</p>
           <p style={{ fontSize: "2rem", fontWeight: 700 }}>{member.memberships.length}</p>
         </div>
+
+        <form onSubmit={handleSaveProfile} className="card" style={{ flex: "1 1 320px" }}>
+          <p style={{ ...sectionLabelStyle, marginBottom: "1rem" }}>Dados do Membro</p>
+          <div className="grid gap-4">
+            <Field
+              label="Nome"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              maxLength={120}
+              required
+            />
+            {/* `key` amarrada ao valor salvo: o PhoneField deriva país e
+                máscara no mount, então sem remontar ele mostraria o número
+                antigo depois de salvar. Durante a digitação `member.phone`
+                não muda, então a key é estável e não interrompe ninguém. */}
+            <PhoneField
+              key={member.phone ?? "sem-telefone"}
+              label="Telefone (opcional)"
+              value={editPhone}
+              onChange={setEditPhone}
+            />
+            <Button
+              type="submit"
+              disabled={profileLoading || (editName.trim() === member.name && editPhone === member.phone)}
+              className="justify-self-start"
+            >
+              <Save size={16} />
+              {profileLoading ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {member.username
+              ? `O usuário de login (${member.username}) não muda por aqui.`
+              : "O e-mail de login não muda por aqui."}
+          </p>
+        </form>
       </div>
 
       <div style={{ display: "grid", gap: "2.5rem" }}>
