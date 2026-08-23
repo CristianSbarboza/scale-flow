@@ -27,8 +27,11 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Colossenses 3:23-24",
   },
   {
-    text: "Ao contrário, quem quiser tornar-se importante entre vocês deverá ser servo, e quem quiser ser o primeiro deverá ser servo dos demais, tal como o Filho do homem",
-    reference: "Mateus 20:26-28",
+    // Aparado no ponto onde a frase fecha. O trecho seguinte ("tal como o
+    // Filho do homem...") deixaria a citação pendurada no meio, e no celular
+    // isso parece mensagem cortada por erro.
+    text: "Ao contrário, quem quiser tornar-se importante entre vocês deverá ser servo, e quem quiser ser o primeiro deverá ser servo dos demais.",
+    reference: "Mateus 20:26-27",
   },
   {
     text: "Se, porém, não lhes agrada servir ao Senhor, escolham hoje a quem irão servir... Mas eu e a minha família serviremos ao Senhor.",
