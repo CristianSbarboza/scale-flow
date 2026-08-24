@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createSchedule, getSchedules, deleteSchedule, publishSchedule, unpublishSchedule } from "@/lib/actions/schedules";
+import { createSchedule, getSchedules, deleteSchedule, publishSchedule, unpublishSchedule, duplicateSchedule } from "@/lib/actions/schedules";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
@@ -72,6 +72,7 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
   const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -177,6 +178,22 @@ export default function SchedulesPage() {
       showToast(error instanceof Error ? error.message : "Erro ao mudar a situação.", "error");
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  // Sem confirmação, ao contrário de publicar e excluir: duplicar não avisa
+  // ninguém e não apaga nada — o desfazer é excluir a cópia.
+  const handleDuplicate = async (s: Schedule) => {
+    setDuplicatingId(s.id);
+    try {
+      await duplicateSchedule(s.id);
+      showToast("Escala duplicada como rascunho.", "success");
+      const sch = await getSchedules();
+      setSchedules(sch as unknown as Schedule[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao duplicar escala.", "error");
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -361,6 +378,14 @@ export default function SchedulesPage() {
                       navigator.clipboard.writeText(`${window.location.origin}/escala/${s.shareLink}`);
                       showToast("Link copiado!", "success");
                     }}
+                  >
+                    <LinkIcon size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Duplicar"
+                    tone="muted"
+                    onClick={() => handleDuplicate(s)}
+                    disabled={duplicatingId === s.id}
                   >
                     <Copy size={16} />
                   </IconButton>

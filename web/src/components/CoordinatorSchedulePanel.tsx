@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Copy, Edit3, Eye, Trash2, Plus, Lock, Link as LinkIcon } from "lucide-react";
+import { Edit3, Eye, Trash2, Plus, Lock, Link as LinkIcon } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
@@ -222,7 +222,7 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
                       showToast("Link copiado!", "success");
                     }}
                   >
-                    <Copy size={16} />
+                    <LinkIcon size={16} />
                   </IconButton>
                   <IconButton label="Excluir" tone="destructive" onClick={() => handleDelete(s.id)}>
                     <Trash2 size={16} />

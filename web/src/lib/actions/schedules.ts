@@ -68,6 +68,70 @@ export async function createSchedule(
   return { shareLink };
 }
 
+/**
+ * Cria uma cópia da escala: mesmo ministério, mesmo setor, mesmas datas.
+ *
+ * A cópia nasce **rascunho**, mesmo quando a original está publicada. Publicar
+ * dispara o aviso de WhatsApp para o setor inteiro (ver `publishSchedule`), e
+ * duplicar é justamente o passo em que ainda se vai mexer nas datas — publicar
+ * junto mandaria todo mundo responder uma escala que vai mudar.
+ *
+ * Não copia disponibilidades nem escalados: as respostas são de quem podia
+ * naquelas datas, e a cópia existe para receber respostas novas. `shareLink` é
+ * outro pelo mesmo motivo — dois links para a mesma escala não são a mesma
+ * escala.
+ *
+ * O único id que chega do cliente é o da original, e ele é validado antes de
+ * qualquer leitura; ministério e setor da cópia saem da linha já validada, não
+ * da requisição.
+ */
+export async function duplicateSchedule(id: number) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+
+  const original = await db.query.schedules.findFirst({
+    where: eq(schedules.id, id),
+    with: { dates: true },
+  });
+  if (!original) throw new Error("Escala não encontrada");
+
+  // "(copy)", depois "(copy 2)", "(copy 3)"... Duplicar duas vezes deixaria
+  // duas linhas de nome idêntico numa lista onde o nome é a única coluna que
+  // as distingue.
+  const usados = new Set(
+    (await db.select({ name: schedules.name }).from(schedules)
+      .where(eq(schedules.sectorId, original.sectorId))).map((s) => s.name),
+  );
+  let name = `${original.name} (copy)`;
+  for (let n = 2; usados.has(name); n++) name = `${original.name} (copy ${n})`;
+
+  const [copia] = await db.insert(schedules).values({
+    name,
+    ministryId: original.ministryId,
+    sectorId: original.sectorId,
+    visibility: original.visibility,
+    // Explícito, e não pelo default da coluna: nascer rascunho é requisito
+    // desta ação, não detalhe de schema que pode mudar sem ninguém olhar aqui.
+    status: "draft",
+    shareLink: nanoid(10),
+  }).returning();
+
+  // Um insert só, e não um por data como no `createSchedule`: sem transação,
+  // é o que impede a cópia de ficar com metade do calendário se algo falhar.
+  if (original.dates.length > 0) {
+    await db.insert(scheduleDates).values(
+      original.dates.map((d) => ({
+        scheduleId: copia.id,
+        date: d.date,
+        startTime: d.startTime,
+      })),
+    );
+  }
+
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+  return { id: copia.id, shareLink: copia.shareLink };
+}
+
 export async function deleteSchedule(id: number) {
   await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
 
