@@ -122,6 +122,7 @@ export const notificationLog = pgTable("notification_log", {
 
 - [x] Preencher [validation.md](./validation.md).
 - [x] `npx tsc --noEmit` e `npm run lint` limpos nos dois projetos.
+- [x] Migração 004 (publicação e aviso de escala aberta) aplicada na produção em 24/08/2026: `schedules.published_at`, `notification_log.schedule_id`, `date_id` anulável e o índice único parcial. Contagens preservadas.
 - [x] Migração aplicada na produção em 23/08/2026: `notification_log` com 7 colunas, índice único `(date_id, servant_id, kind)`, FKs em cascade e o índice de `sent_at`. Contagens preservadas.
 
 ## ✍️ O que mudou em relação ao plano
