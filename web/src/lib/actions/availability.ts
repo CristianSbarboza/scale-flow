@@ -23,8 +23,10 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
 
   const results: ServantOverviewSchedule[] = [];
   for (const servant of memberships) {
+    // Rascunho não aparece: é escala ainda sendo montada, e o servo que
+    // preenchesse disponibilidade nela responderia a algo que pode mudar.
     const sectorSchedules = await db.query.schedules.findMany({
-      where: eq(schedules.sectorId, servant.sectorId),
+      where: and(eq(schedules.sectorId, servant.sectorId), eq(schedules.status, "published")),
       with: {
         ministry: true,
         sector: true,
@@ -106,6 +108,7 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
     scheduleId: schedules.id,
     sectorId: schedules.sectorId,
     visibility: schedules.visibility,
+    status: schedules.status,
   })
     .from(scheduleDates)
     .innerJoin(schedules, eq(scheduleDates.scheduleId, schedules.id))
@@ -119,6 +122,12 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
   }
   if (schedule.sectorId !== servant.sectorId) {
     throw new Error("Este servo não pertence ao setor desta escala");
+  }
+  // A tela já esconde rascunho, mas esta action é um endpoint POST: quem
+  // guardou o link de quando a escala estava aberta não pode gravar nela
+  // depois de ela voltar para rascunho.
+  if (schedule.status !== "published") {
+    throw new Error("Esta escala ainda não está aberta para respostas");
   }
 
   // Escala privada: exige login e que o servo informado seja o próprio usuário.

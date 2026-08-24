@@ -57,6 +57,18 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
     return a.startTime.localeCompare(b.startTime);
   });
 
+  // Rascunho: o link existe, mas a escala ainda está sendo montada. Mostra o
+  // porquê em vez de um formulário que `saveAvailability` vai recusar — a
+  // mesma regra dos dois lados, como manda o fluxo desta página.
+  if (schedule.status !== "published") {
+    return (
+      <BlockedNotice
+        title="Escala ainda não aberta"
+        message={`A escala ${schedule.name} está em rascunho. Quando o líder abrir para respostas, você poderá informar sua disponibilidade por este mesmo link.`}
+      />
+    );
+  }
+
   const session = await getServerSession(authOptions);
 
   // Escala privada: só servos do setor, logados, respondem — e só por si mesmos.

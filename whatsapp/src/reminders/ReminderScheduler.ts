@@ -188,13 +188,20 @@ export class ReminderScheduler {
   }
 
   /**
-   * Espaço entre mensagens. Rajada é o sinal mais forte de automação que
-   * existe, e o número aqui é pessoal — um ban leva junto a conta de verdade.
+   * Espaço entre mensagens — a fila.
+   *
+   * Os envios já eram em série; isto é o intervalo entre um e o próximo.
+   * Rajada é o sinal mais forte de automação que existe, e o número usado é
+   * pessoal: um ban leva junto a conta de verdade.
+   *
+   * Quando min e max são iguais, o intervalo é fixo. Vale saber que um
+   * intervalo *exato* é, em si, um padrão reconhecível — uma variação de
+   * poucos segundos parece mais gente. Fica configurável para isso.
    */
   private pace(): Promise<void> {
     if (this.options.dryRun) return Promise.resolve();
     const { sendDelayMinMs: min, sendDelayMaxMs: max } = this.options;
-    const espera = min + Math.random() * (max - min);
+    const espera = max > min ? min + Math.random() * (max - min) : min;
     return new Promise((resolve) => setTimeout(resolve, espera));
   }
 }
