@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { ministries, sectors, users, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
-import { eq, and, exists } from "drizzle-orm";
+import { eq, and, exists, inArray } from "drizzle-orm";
 import type { Scope } from "@/types/scope";
 import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
@@ -190,6 +190,41 @@ export async function removeServantFromSector(servantId: number) {
 
   revalidatePath("/admin/servants");
   revalidatePath("/servant");
+}
+
+/**
+ * Desliga o servo de um ministério inteiro, apagando todos os vínculos de
+ * setor dele naquele ministério.
+ *
+ * Ninguém "pertence" a um ministério direto no banco — a ligação existe pelos
+ * setores. Então isto é um `delete` em N linhas, e por isso devolve quantas
+ * foram: a tela precisa poder dizer o que aconteceu, e a confirmação precisa
+ * poder listar antes.
+ */
+export async function removeServantFromMinistry(userId: string, ministryId: number) {
+  const scope = await getScope();
+  await requireServantAccess(userId);
+
+  // O ministério tem que ser desta igreja. `requireServantAccess` garante o
+  // usuário, não o ministério — os dois ids chegam do cliente, e validar um
+  // não valida o outro.
+  const [ministry] = await db.select({ id: ministries.id }).from(ministries)
+    .where(and(eq(ministries.id, ministryId), eq(ministries.churchId, scope.churchId)));
+  if (!ministry) throw new Error("Ministério não encontrado");
+
+  const alvos = await db.select({ id: servants.id })
+    .from(servants)
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .where(and(eq(servants.userId, userId), eq(sectors.ministryId, ministryId)));
+
+  if (alvos.length === 0) return { removed: 0 };
+
+  await db.delete(servants).where(inArray(servants.id, alvos.map((a) => a.id)));
+
+  revalidatePath("/admin/servants");
+  revalidatePath(`/admin/servants/${userId}`);
+  revalidatePath("/servant");
+  return { removed: alvos.length };
 }
 
 export async function setServantCoordinator(servantId: number, isCoordinator: boolean) {

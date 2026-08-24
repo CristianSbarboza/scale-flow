@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Phone, Save } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Church, KeyRound, Trash2, User, Phone, Save } from "lucide-react";
 import { formatPhone, validateStoredPhone } from "@/lib/phone";
-import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile } from "@/lib/actions/servants";
+import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile, removeServantFromMinistry } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import Select from "@/components/ui/Select";
 import StatsRule from "@/components/ui/StatsRule";
@@ -99,6 +99,43 @@ export default function ServantMemberPage() {
    * exigiria atenção nenhuma.
    */
   const deleteToken = member.username ?? member.email ?? member.name;
+
+  /**
+   * Os ministérios saem dos próprios vínculos de setor — no banco não existe
+   * "servo do ministério", a ligação é sempre por setor. Guardamos os nomes
+   * dos setores junto porque a confirmação precisa dizer o que será apagado.
+   */
+  const ministerios = Array.from(
+    member.memberships.reduce((acc, m) => {
+      const atual = acc.get(m.ministryId);
+      if (atual) atual.setores.push(m.sectorName);
+      else acc.set(m.ministryId, { id: m.ministryId, nome: m.ministryName, setores: [m.sectorName] });
+      return acc;
+    }, new Map<number, { id: number; nome: string; setores: string[] }>()).values(),
+  );
+
+  const handleRemoveMinistry = async (ministryId: number, nome: string, setores: string[]) => {
+    const ok = await askConfirm({
+      title: "Remover do ministério",
+      // Lista os setores: "remover do ministério" apaga N vínculos, e quem
+      // clica precisa ver quais antes, não depois.
+      message:
+        `Remover ${member.name} de ${nome}? ` +
+        `${setores.length === 1 ? "O vínculo com o setor" : "Os vínculos com os setores"} ` +
+        `${setores.join(", ")} ${setores.length === 1 ? "será apagado" : "serão apagados"}, ` +
+        `junto da disponibilidade e das confirmações.`,
+      confirmLabel: "Remover",
+    });
+    if (!ok) return;
+
+    try {
+      const { removed } = await removeServantFromMinistry(userId, ministryId);
+      showToast(`Removido de ${nome} (${removed} ${removed === 1 ? "setor" : "setores"}).`, "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao remover do ministério.", "error");
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,7 +269,10 @@ export default function ServantMemberPage() {
           exibir um número. O contador é referência, não o assunto da tela. */}
       <StatsRule
         className="mb-8"
-        items={[{ icon: LayoutGrid, label: "Setores Vinculados", value: member.memberships.length }]}
+        items={[
+          { icon: Church, label: "Ministérios", value: ministerios.length },
+          { icon: LayoutGrid, label: "Setores", value: member.memberships.length },
+        ]}
       />
 
       {/* Coluna única de 640px, a mesma medida de /admin/settings. Sem limite,
@@ -278,6 +318,40 @@ export default function ServantMemberPage() {
               : "O e-mail de login não muda por aqui."}
           </p>
         </form>
+
+        {/* Ministérios acima de Setores porque é o nível mais amplo: primeiro
+            onde a pessoa serve, depois em quais setores dentro disso. */}
+        <DataPanel<{ id: number; nome: string; setores: string[] }>
+          title="Ministérios"
+          columns={[
+            {
+              header: "Nome",
+              primary: true,
+              cell: (m) => (
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{m.nome}</p>
+                  <p className="truncate text-xs text-muted-foreground">{m.setores.join(", ")}</p>
+                </div>
+              ),
+            },
+            {
+              header: "Excluir",
+              mobileRow: 1,
+              cell: (m) => (
+                <IconButton
+                  label={`Remover de ${m.nome}`}
+                  tone="destructive"
+                  onClick={() => handleRemoveMinistry(m.id, m.nome, m.setores)}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              ),
+            },
+          ]}
+          rows={ministerios}
+          rowKey={(m) => m.id}
+          empty="Sem ministérios vinculados."
+        />
 
         {/* DataPanel em vez de lista à mão: ele dá os cabeçalhos de coluna no
             desktop e vira cards rotulados no celular, a partir da mesma
