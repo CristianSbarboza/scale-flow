@@ -21,6 +21,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
+import Button from "@/components/ui/Button";
 
 interface ScheduleDate {
   id: number;
@@ -93,13 +94,10 @@ export default function SchedulesPage() {
 
   useEffect(() => {
     setAction(
-      <button
-        type="button"
-        onClick={() => setShowCreateModal(true)}
-        className="btn btn-primary"
-      >
+      <Button variant="primary" type="button"
+        onClick={() => setShowCreateModal(true)}>
         <Plus size={16} /> Cadastrar
-      </button>
+      </Button>
     );
     return () => setAction(null);
   }, [setAction]);
@@ -204,10 +202,10 @@ export default function SchedulesPage() {
 
         <ScheduleDatesField value={dates} onChange={setDates} />
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
+        <Button variant="primary" type="submit"  disabled={loading}>
           <LinkIcon size={18} />
           {loading ? "Gerando..." : "Gerar Link de Escala"}
-        </button>
+        </Button>
       </form>
 
       {lastLink && (

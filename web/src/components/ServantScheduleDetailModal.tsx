@@ -1,7 +1,8 @@
 "use client";
 
-import { X, Clock, CalendarDays } from "lucide-react";
+import { Clock, CalendarDays } from "lucide-react";
 import type { ServantOverviewSchedule } from "@/types/domain";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface ServantScheduleDetailModalProps {
   schedule: ServantOverviewSchedule;
@@ -40,9 +41,7 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
             <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>{schedule.ministryName}</p>
             <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{schedule.sectorName}</p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost" style={{ borderRadius: "50%", padding: "0.5rem" }}>
-            <X size={20} />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         <div style={{ padding: "1.5rem", overflowY: "auto", display: "grid", gap: "0.75rem" }}>

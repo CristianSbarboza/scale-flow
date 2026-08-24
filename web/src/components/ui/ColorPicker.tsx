@@ -63,9 +63,9 @@ export default function ColorPicker({
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base">Escolher cor</h3>
-          <button type="button" onClick={onClose} aria-label="Fechar" className="btn btn-ghost rounded-full p-1.5">
+          <Button variant="ghost" className="rounded-full p-1.5" type="button" onClick={onClose} aria-label="Fechar">
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         {/* Saturação (eixo x) e brilho (eixo y) */}

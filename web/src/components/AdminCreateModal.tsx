@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface Props {
   title: string;
@@ -36,9 +36,7 @@ export default function AdminCreateModal({ title, onClose, children }: Props) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexShrink: 0 }}>
           <h3 style={{ margin: 0 }}>{title}</h3>
-          <button onClick={onClose} className="btn btn-ghost" style={{ borderRadius: "50%", padding: "0.5rem" }}>
-            <X size={18} />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="-mr-3 min-h-0 flex-[1_1_auto] overflow-y-auto pr-3">
           {children}

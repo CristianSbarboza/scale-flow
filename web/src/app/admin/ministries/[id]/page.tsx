@@ -224,13 +224,11 @@ export default function MinistryDetailPage() {
               {copied ? <Check size={18} /> : <Copy size={18} />}
             </button>
           </div>
-          <button
-            onClick={() => setGeneratedPassword(null)}
-            className="btn btn-primary"
-            style={{ width: "100%", marginTop: "1rem" }}
-          >
+          <Button variant="primary" onClick={() => setGeneratedPassword(null)}
+            
+            style={{ width: "100%", marginTop: "1rem" }}>
             Entendi, pode fechar
-          </button>
+          </Button>
         </div>
       )}
 

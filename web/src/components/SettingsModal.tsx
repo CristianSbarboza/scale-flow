@@ -1,13 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { X, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import ProfileSection from "@/components/settings/ProfileSection";
 import PersonalDataSection from "@/components/settings/PersonalDataSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PanelStyleSection from "@/components/settings/PanelStyleSection";
 import PasswordSection from "@/components/settings/PasswordSection";
 import SessionSection from "@/components/settings/SessionSection";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface Props {
   name: string;
@@ -41,9 +42,7 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
             <Settings size={18} className="text-primary" />
             <h3 className="text-lg">Configurações</h3>
           </div>
-          <button onClick={onClose} aria-label="Fechar" className="btn btn-ghost rounded-full p-2">
-            <X size={18} />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* -mr-3 pr-3 devolve a faixa da barra de rolagem: sem isso ela fica

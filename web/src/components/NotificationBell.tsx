@@ -6,6 +6,7 @@ import { getPendingSwapRequests, respondToSwapRequest } from "@/lib/actions/swap
 import type { PendingSwapRequest } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { cn } from "@/lib/cn";
+import Button from "@/components/ui/Button";
 
 /**
  * `placement` decide para onde o painel abre. No desktop o sino fica no rodape
@@ -124,22 +125,18 @@ export default function NotificationBell({
                   {r.ministryName} · {r.sectorName}
                 </p>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button
-                    onClick={() => handleRespond(r.id, true)}
+                  <Button variant="primary" onClick={() => handleRespond(r.id, true)}
                     disabled={respondingId === r.id}
-                    className="btn btn-primary"
-                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem" }}
-                  >
+                    
+                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem" }}>
                     <Check size={16} /> Aceitar
-                  </button>
-                  <button
-                    onClick={() => handleRespond(r.id, false)}
+                  </Button>
+                  <Button variant="ghost" onClick={() => handleRespond(r.id, false)}
                     disabled={respondingId === r.id}
-                    className="btn btn-ghost"
-                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem", color: "var(--destructive)" }}
-                  >
+                    
+                    style={{ flex: 1, padding: "0.5rem", fontSize: "0.8125rem", color: "var(--destructive)" }}>
                     <X size={16} /> Recusar
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

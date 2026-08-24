@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Send, Lock } from "lucide-react";
 import { saveAvailability } from "@/lib/actions/availability";
 import SelectField from "@/components/ui/SelectField";
+import Button, { buttonClass } from "@/components/ui/Button";
 
 interface AvailabilityFormProps {
   dates: Array<{
@@ -72,7 +73,7 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
         <h2 style={{ marginBottom: '0.5rem' }}>Obrigado!</h2>
         <p style={{ color: 'var(--muted-foreground)' }}>Sua disponibilidade foi enviada com sucesso ao administrador.</p>
         {returnToServant && (
-          <Link href="/servant" className="btn btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+          <Link href="/servant" className={buttonClass("primary")} style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
             Voltar ao meu painel
           </Link>
         )}
@@ -144,14 +145,14 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
         })}
       </div>
 
-      <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem' }} disabled={loading}>
+      <Button variant="primary" type="submit"  style={{ width: '100%', padding: '1rem' }} disabled={loading}>
         {loading ? "Enviando..." : (
           <>
             <Send size={18} />
             Confirmar Disponibilidade
           </>
         )}
-      </button>
+      </Button>
     </form>
   );
 }

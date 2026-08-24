@@ -4,9 +4,11 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateSchedule } from "@/lib/actions/schedules";
-import { X, CalendarPlus, Save, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarPlus, Save, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
+import Button from "@/components/ui/Button";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface Props {
   schedule: {
@@ -82,9 +84,7 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
             <h3 style={{ marginBottom: '0.25rem' }}>Editar Escala</h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Ajuste o nome e os horários disponíveis.</p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost" style={{ borderRadius: '50%', padding: '0.5rem' }}>
-            <X size={20} />
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         <form onSubmit={handleUpdate} className="grid gap-6" style={{ padding: '1.5rem', gap: '1.5rem', overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
@@ -108,9 +108,9 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
             <div className="grid gap-6" style={{ gap: '0.5rem', gridTemplateColumns: '1.5fr 1fr auto' }}>
               <input type="date" className="input" value={newDate} onChange={e => setNewDate(e.target.value)} />
               <input type="time" className="input" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
-              <button type="button" onClick={addDate} className="btn btn-primary" style={{ padding: '0.5rem' }}>
+              <Button variant="primary" type="button" onClick={addDate}  style={{ padding: '0.5rem' }}>
                 <CalendarPlus size={20} />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -150,11 +150,11 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
           </div>
 
           <div className="flex items-center gap-4" style={{ gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loading}>
+            <Button variant="secondary" type="button" onClick={onClose}  style={{ flex: 1 }}>Cancelar</Button>
+            <Button variant="primary" type="submit"  style={{ flex: 2 }} disabled={loading}>
               <Save size={18} />
               {loading ? "Salvando..." : "Salvar Alterações"}
-            </button>
+            </Button>
           </div>
         </form>
       </motion.div>

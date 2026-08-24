@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { ChevronLeft, ChevronRight, X, Clock, Users, Church } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Users, Church } from "lucide-react";
 import { getCalendarSchedules } from "@/lib/actions/schedules";
 import FilterSelect from "@/components/ui/FilterSelect";
 import DataPanel from "@/components/ui/DataPanel";
@@ -11,6 +11,8 @@ import PageHeader from "@/components/ui/PageHeader";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import type { CalendarSchedule } from "@/types/domain";
+import Button from "@/components/ui/Button";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface Ministry {
   id: number;
@@ -173,13 +175,13 @@ export default function AdminCalendarPage() {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="card glass">
         <div className="mb-6 flex items-center justify-between">
-          <button onClick={() => goToMonth(-1)} className="btn btn-ghost p-2" aria-label="Mês anterior">
+          <Button variant="ghost" className="p-2" onClick={() => goToMonth(-1)}  aria-label="Mês anterior">
             <ChevronLeft size={20} />
-          </button>
+          </Button>
           <h3 className="capitalize">{monthLabel}</h3>
-          <button onClick={() => goToMonth(1)} className="btn btn-ghost p-2" aria-label="Próximo mês">
+          <Button variant="ghost" className="p-2" onClick={() => goToMonth(1)}  aria-label="Próximo mês">
             <ChevronRight size={20} />
-          </button>
+          </Button>
         </div>
 
         {loading ? (
@@ -258,9 +260,7 @@ export default function AdminCalendarPage() {
               <h3>
                 {new Date(`${selectedDay}T00:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}
               </h3>
-              <button onClick={() => setSelectedDay(null)} className="btn btn-ghost" style={{ borderRadius: "50%", padding: "0.5rem" }}>
-                <X size={18} />
-              </button>
+              <CloseButton onClick={() => setSelectedDay(null)} />
             </div>
 
             <div style={{ display: "grid", gap: "1.25rem", overflowY: "auto" }}>

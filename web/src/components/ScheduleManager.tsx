@@ -7,6 +7,7 @@ import { getScheduleResponses } from "@/lib/actions/schedules";
 import LoadingDots from "@/components/ui/LoadingDots";
 import { assignServant, removeAssignment } from "@/lib/actions/availability";
 import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface ScheduleSummary {
   id: number;
@@ -106,13 +107,11 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="btn btn-ghost"
-            style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}
-          >
+          <Button variant="ghost" onClick={onClose}
+            
+            style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -201,13 +200,11 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                                 style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius)', background: 'var(--muted)' }}
                               >
                                 <span style={{ fontSize: '0.875rem' }}>{av.servant.user.name}</span>
-                                <button
-                                  onClick={() => handleAssign(d.id, av.servantId)}
-                                  className="btn btn-primary"
-                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: 'auto' }}
-                                >
+                                <Button variant="primary" onClick={() => handleAssign(d.id, av.servantId)}
+                                  
+                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: 'auto' }}>
                                   <UserPlus size={12} /> Escalar
-                                </button>
+                                </Button>
                               </motion.div>
                             ))}
                           {d.availabilities.length === 0 && d.assignments.length === 0 && (

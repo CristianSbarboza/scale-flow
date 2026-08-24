@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Lock } from "lucide-react";
 import AvailabilityForm from "./AvailabilityForm";
+import { buttonClass } from "@/components/ui/Button";
 
 // Escala privada e o visitante não pode responder: explica o porquê em vez de
 // mostrar um formulário que o servidor vai recusar no envio.
@@ -69,7 +70,7 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
           action={
             <Link
               href={`/login?callbackUrl=${encodeURIComponent(`/escala/${link}`)}`}
-              className="btn btn-primary"
+              className={buttonClass("primary")}
               style={{ marginTop: '1.5rem', display: 'inline-flex' }}
             >
               Fazer login

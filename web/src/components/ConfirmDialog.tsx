@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface ConfirmOptions {
   title?: string;
@@ -74,12 +75,12 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 {pending.options.message}
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button type="button" onClick={() => respond(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                <Button variant="secondary" type="button" onClick={() => respond(false)}  style={{ flex: 1 }}>
                   {pending.options.cancelLabel || "Cancelar"}
-                </button>
-                <button type="button" onClick={() => respond(true)} className="btn btn-danger flex-1">
+                </Button>
+                <Button variant="danger" className="flex-1" type="button" onClick={() => respond(true)}>
                   {pending.options.confirmLabel || "Confirmar"}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

@@ -60,13 +60,10 @@ export default function MinistriesPage() {
 
   useEffect(() => {
     setAction(
-      <button
-        type="button"
-        onClick={() => setShowCreateModal(true)}
-        className="btn btn-primary"
-      >
+      <Button variant="primary" type="button"
+        onClick={() => setShowCreateModal(true)}>
         <Plus size={16} /> Cadastrar
-      </button>
+      </Button>
     );
     return () => setAction(null);
   }, [setAction]);

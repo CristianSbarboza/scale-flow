@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Clock, MapPin, X, Repeat, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, Repeat, Check } from "lucide-react";
 import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/types/domain";
 import { createSwapRequest } from "@/lib/actions/swaps";
 import DataPanel from "@/components/ui/DataPanel";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
+import Button from "@/components/ui/Button";
+import CloseButton from "@/components/ui/CloseButton";
 
 interface ServantCalendarProps {
   schedules: ServantOverviewSchedule[];
@@ -127,13 +129,13 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="card glass">
           <div className="mb-6 flex items-center justify-between">
-            <button onClick={() => goToMonth(-1)} className="btn btn-ghost p-2" aria-label="Mês anterior">
+            <Button variant="ghost" className="p-2" onClick={() => goToMonth(-1)}  aria-label="Mês anterior">
               <ChevronLeft size={20} />
-            </button>
+            </Button>
             <h3 className="capitalize">{monthLabel}</h3>
-            <button onClick={() => goToMonth(1)} className="btn btn-ghost p-2" aria-label="Próximo mês">
+            <Button variant="ghost" className="p-2" onClick={() => goToMonth(1)}  aria-label="Próximo mês">
               <ChevronRight size={20} />
-            </button>
+            </Button>
           </div>
 
           <div className="servant-calendar-grid mx-auto max-w-[560px]">
@@ -221,9 +223,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               <h3>
                 {new Date(`${selectedDay}T00:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}
               </h3>
-              <button onClick={() => setSelectedDay(null)} className="btn btn-ghost" style={{ borderRadius: "50%", padding: "0.5rem" }}>
-                <X size={18} />
-              </button>
+              <CloseButton onClick={() => setSelectedDay(null)} />
             </div>
             <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-3 overflow-y-auto pr-3">
               {selectedEntries.map((entry, i) => (
@@ -271,16 +271,14 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                               <Check size={12} /> Você
                             </span>
                           ) : (
-                            <button
-                              type="button"
+                            <Button variant="secondary" type="button"
                               onClick={() => handleNegotiate(entry, assignee)}
                               disabled={isLoading}
-                              className="btn btn-secondary"
-                              style={{ padding: "0.375rem 0.625rem", fontSize: "0.75rem", flexShrink: 0 }}
-                            >
+                              
+                              style={{ padding: "0.375rem 0.625rem", fontSize: "0.75rem", flexShrink: 0 }}>
                               <Repeat size={13} />
                               {isLoading ? "Enviando..." : "Negociar"}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       );
