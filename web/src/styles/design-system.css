@@ -1,10 +1,11 @@
 /**
  * Design system do ScaleFlow — fonte única de verdade de cor e tema.
  *
- * Três blocos, nesta ordem:
+ * Quatro blocos, nesta ordem:
  *   1. :root            a paleta (tema escuro, o padrão)
  *   2. .light           os overrides do tema claro
- *   3. @theme inline    a ponte que expõe tudo como utilitário Tailwind
+ *   3. .amada           os overrides do tema "Amada do Pai", exclusivo do servo
+ *   4. @theme inline    a ponte que expõe tudo como utilitário Tailwind
  *
  * O `inline` faz o Tailwind gerar `var(--primary)` em vez de copiar o valor,
  * então trocar de tema continua sendo só a troca da classe no <html> — os
@@ -15,6 +16,7 @@
    não por prefers-color-scheme — então `dark:` precisa escutar a classe. */
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant light (&:where(.light, .light *));
+@custom-variant amada (&:where(.amada, .amada *));
 
 :root {
   /* Colors - Orange, Black, White Palette */
@@ -279,6 +281,54 @@
 
 .light body {
   background: radial-gradient(circle at top left, #fff7ed, #ffffff);
+}
+
+/* Tema "Amada do Pai" — rosa e suave, exclusivo da área do servo.
+   Estado escolhido por servo em AppearanceSection; nunca aplicado a
+   admin/líder (ver checagem de role lá). */
+.amada {
+  --primary: #ec4899;
+  --primary-hover: #db2777;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f9a8d4;
+  --secondary-hover: #f472b6;
+  --secondary-foreground: #6b1d3d;
+
+  --accent: #fbcfe8;
+  --accent-foreground: #6b1d3d;
+
+  --success: #34c98f;
+  --success-foreground: #ffffff;
+
+  --destructive: #fb7185;
+  --destructive-foreground: #ffffff;
+
+  --background: #fff0f5;
+  --foreground: #6b2942;
+
+  --card: #fff1f8;
+  --card-foreground: #6b2942;
+  --card-border: #f7cfe1;
+
+  --popover: #fff1f8;
+  --popover-foreground: #6b2942;
+
+  --muted: #fce7f3;
+  --muted-foreground: #b0678a;
+
+  --border: #f7cfe1;
+  --input: #ffffff;
+  --ring: #f472b6;
+}
+
+.amada .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(236, 72, 153, 0.12);
+}
+
+.amada body {
+  background: radial-gradient(circle at top left, #ffe4ef, #fff0f5);
 }
 
 

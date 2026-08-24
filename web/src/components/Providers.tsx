@@ -1,11 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import { ToastProvider } from "@/components/Toast";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
 
-type Theme = "dark" | "light";
+export type Theme = "dark" | "light" | "amada";
 
 interface ThemeContextType {
   theme: Theme;
@@ -39,21 +39,39 @@ export function Providers({ children }: { children: React.ReactNode }) {
     localStorage.setItem("theme", newTheme);
   };
 
-  useEffect(() => {
-    if (!mounted) return;
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    root.style.colorScheme = theme;
-  }, [theme, mounted]);
-
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <SessionProvider>
+        <ThemeSync theme={theme} mounted={mounted} />
         <ToastProvider>
           <ConfirmProvider>{children}</ConfirmProvider>
         </ToastProvider>
       </SessionProvider>
     </ThemeContext.Provider>
   );
+}
+
+/**
+ * Aplica o tema no <html> e garante que "amada" (exclusivo do servo) nunca
+ * fique de pé para outro papel — o mesmo navegador pode logar como servo e
+ * depois como admin/líder, e o valor salvo em localStorage não sabe disso.
+ * Fica dentro do SessionProvider por precisar de useSession.
+ */
+function ThemeSync({ theme, mounted }: { theme: Theme; mounted: boolean }) {
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (!mounted) return;
+    const isServant = session?.user.role === "servant";
+    const effective: Theme = theme === "amada" && status === "authenticated" && !isServant ? "dark" : theme;
+
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark", "amada");
+    root.classList.add(effective);
+    // colorScheme só entende light/dark — "amada" é um tema claro para
+    // efeito de scrollbar e controles nativos do navegador.
+    root.style.colorScheme = effective === "dark" ? "dark" : "light";
+  }, [theme, mounted, session, status]);
+
+  return null;
 }
