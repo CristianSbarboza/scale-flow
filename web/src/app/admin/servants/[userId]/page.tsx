@@ -63,6 +63,7 @@ export default function ServantMemberPage() {
   // Qual interruptor está salvando. Sem isso ele volta sozinho enquanto o
   // servidor responde, e parece que o clique não pegou.
   const [coordinatorLoading, setCoordinatorLoading] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const load = useCallback(async () => {
     const [m, sec] = await Promise.all([getServantMember(userId), getSectors()]);
@@ -88,6 +89,16 @@ export default function ServantMemberPage() {
   // Bloqueia o envio com telefone inválido. Sem isto a pessoa corrige o nome,
   // o telefone está errado, e a recusa da action leva as duas coisas junto.
   const phoneError = validateStoredPhone(editPhone);
+
+  /**
+   * O que precisa ser digitado para liberar a exclusão.
+   *
+   * Usa o `username`, que é o identificador de login do servo. Admin e líder
+   * não têm username — para esses, o e-mail. O nome fica de fora de
+   * propósito: é o texto que já está na tela logo acima, então copiá-lo não
+   * exigiria atenção nenhuma.
+   */
+  const deleteToken = member.username ?? member.email ?? member.name;
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +184,10 @@ export default function ServantMemberPage() {
       message: `Excluir ${member.name} definitivamente? A conta, todos os vínculos e o histórico de disponibilidade/confirmação serão apagados. Essa ação não pode ser desfeita.`,
       confirmLabel: "Excluir",
     });
-    if (!ok) return;
+    if (!ok) {
+      setDeleteConfirmation("");
+      return;
+    }
 
     try {
       await deleteServantAccount(member.userId);
@@ -284,7 +298,6 @@ export default function ServantMemberPage() {
             },
             {
               header: "Coordenador",
-              align: "right",
               mobileRow: 1,
               cell: (m) => (
                 <Switch
@@ -297,7 +310,6 @@ export default function ServantMemberPage() {
             },
             {
               header: "Excluir",
-              align: "right",
               mobileRow: 1,
               cell: (m) => (
                 <IconButton
@@ -342,43 +354,70 @@ export default function ServantMemberPage() {
 
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <KeyRound size={16} color="#ef4444" />
-            <span style={{ ...sectionLabelStyle, color: "#ef4444" }}>Zona de Risco</span>
+            <KeyRound size={16} color="var(--primary)" />
+            <span style={sectionLabelStyle}>Configurações avançadas</span>
           </div>
-          <div className="card" style={{ border: "1px solid rgba(239, 68, 68, 0.3)", display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-end" }}>
-            <div style={{ flex: "1 1 320px", display: "grid", gap: "0.5rem" }}>
-              <label style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Nova senha para {member.name}</label>
+          <div className="card grid gap-2">
+            <label className="text-[0.8125rem] font-semibold">Nova senha para {member.name}</label>
+            <input
+              className="input"
+              type="text"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Digite a nova senha"
+            />
+            <label className="mt-1 text-[0.8125rem] font-semibold">Sua senha atual (para confirmar)</label>
+            <div className="flex flex-wrap gap-3">
               <input
-                className="input"
-                type="text"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Digite a nova senha"
+                className="input min-w-0 flex-1"
+                type="password"
+                value={confirmingPassword}
+                onChange={(e) => setConfirmingPassword(e.target.value)}
+                placeholder="Sua senha de acesso"
               />
-              <label style={{ fontSize: "0.8125rem", fontWeight: 600, marginTop: "0.25rem" }}>Sua senha atual (para confirmar)</label>
-              <div style={{ display: "flex", gap: "0.75rem" }}>
-                <input
-                  className="input"
-                  type="password"
-                  value={confirmingPassword}
-                  onChange={(e) => setConfirmingPassword(e.target.value)}
-                  placeholder="Sua senha de acesso"
-                />
-                <button
-                  onClick={handleChangePassword}
-                  className="btn btn-secondary"
-                  disabled={!newPassword || !confirmingPassword || passwordLoading}
-                  style={{ flexShrink: 0 }}
-                >
-                  {passwordLoading ? "Alterando..." : "Alterar Senha"}
-                </button>
-              </div>
+              <Button
+                variant="secondary"
+                onClick={handleChangePassword}
+                disabled={!newPassword || !confirmingPassword || passwordLoading}
+                className="shrink-0"
+              >
+                {passwordLoading ? "Alterando..." : "Alterar Senha"}
+              </Button>
             </div>
+          </div>
+        </div>
 
-            <button onClick={handleDelete} className="btn" style={{ background: "#ef4444", color: "white", flexShrink: 0 }}>
+        {/* Card só para a exclusão. Estava junto da troca de senha, e um botão
+            vermelho ao lado de um formulário comum é fácil de clicar sem
+            querer. Aqui ele exige digitar o identificador antes de existir. */}
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <Trash2 size={16} color="var(--destructive)" />
+            <span style={{ ...sectionLabelStyle, color: "var(--destructive)" }}>Excluir membro</span>
+          </div>
+          <div className="card grid gap-3 border-destructive/30">
+            <p className="text-sm text-muted-foreground">
+              A conta de <strong className="text-foreground">{member.name}</strong>, todos os
+              vínculos de setor e o histórico de disponibilidade e confirmações serão apagados.
+              Não há como desfazer.
+            </p>
+            <Field
+              label={<>Digite <code className="text-foreground">{deleteToken}</code> para liberar a exclusão</>}
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder={deleteToken}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Button
+              variant="danger"
+              onClick={handleDelete}
+              disabled={deleteConfirmation.trim() !== deleteToken}
+              className="justify-self-start"
+            >
               <Trash2 size={18} />
               Excluir Membro
-            </button>
+            </Button>
           </div>
         </div>
       </div>
