@@ -234,7 +234,10 @@ export default function MinistryDetailPage() {
         </div>
       )}
 
-      <div className="card glass grid gap-4" style={{ marginBottom: "2.5rem" }}>
+      {/* 640px, a mesma medida de /admin/settings e da tela do servo. Avatar,
+          nome e e-mail ocupam pouco; esticados pela tela toda o botão de
+          trocar líder ficava na outra ponta, sem relação com o texto. */}
+      <div className="card glass grid max-w-[640px] gap-4" style={{ marginBottom: "2.5rem" }}>
           <p style={sectionLabelStyle}>Líder</p>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -341,14 +344,16 @@ export default function MinistryDetailPage() {
             <Users size={16} color="var(--primary)" />
             <span style={sectionLabelStyle}>Servos do Ministério</span>
           </div>
-          <div style={{ display: "grid", gap: "0.5rem" }}>
+          <div className="grid max-w-[640px] gap-2">
             {allServants.map((srv, i) => (
               <div key={i} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{srv.user.name}</p>
                   <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{srv.user.username || srv.user.email || "-"}</p>
                 </div>
-                <span style={{ fontSize: "0.75rem", padding: "0.25rem 0.625rem", borderRadius: "1rem", background: "var(--muted)" }}>
+                {/* Texto puro, sem pílula. O fundo arredondado sugeria estado
+                    ou etiqueta clicável, e é só o nome do setor. */}
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {srv.sectorName}
                 </span>
               </div>
