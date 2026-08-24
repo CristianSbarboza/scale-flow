@@ -15,7 +15,7 @@ Dois disparos, por servo e por data escalada:
 ## 👤 Requisitos Funcionais
 
 - **RF01** — Recebe lembrete quem está em `schedule_assignments` para aquela data, de uma escala com `status = 'published'`. Rascunho não dispara nada.
-- **RF02** — A mensagem identifica a **igreja**, o ministério/setor, a data e o horário. Um número só atende todas as igrejas, então dizer de qual é não é enfeite.
+- **RF02** — A mensagem identifica o ministério/setor, a data e o horário. **Não** traz o nome da igreja: uma pessoa pertence a exatamente uma (`users.church_id` é coluna única, e nenhum vínculo de servo cruza igrejas), então nomeá-la não desfaz ambiguidade nenhuma.
 - **RF03** — Servo sem telefone cadastrado é simplesmente pulado, sem erro e sem travar a fila dos outros.
 - **RF04** — Cada combinação (data escalada, servo, tipo de lembrete) dispara **no máximo uma vez**, mesmo que o processo reinicie no meio.
 - **RF05** — Um lembrete cujo horário já passou quando o processo sobe **não** é enviado com atraso. Lembrete atrasado é pior que lembrete nenhum: "seu culto é em 2 horas" chegando depois do culto destrói a confiança no aviso.

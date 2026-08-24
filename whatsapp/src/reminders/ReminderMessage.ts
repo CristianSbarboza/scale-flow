@@ -5,9 +5,6 @@ import type { DueReminder, ReminderKind } from "./types.js";
 /**
  * O texto da mensagem. Classe pura: recebe o relógio, não olha o banco nem a
  * rede — o que a torna verificável sem nada ligado.
- *
- * A igreja aparece no topo porque **um número atende todas elas**. Sem isso,
- * quem serve em mais de uma comunidade recebe um aviso sem saber de qual é.
  */
 export class ReminderMessage {
   constructor(
