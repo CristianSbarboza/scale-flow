@@ -42,6 +42,7 @@ export default function DataPanel<T>({
   onRowClick,
   empty,
   loading = false,
+  footer,
   className,
   style,
 }: {
@@ -57,6 +58,14 @@ export default function DataPanel<T>({
   empty: React.ReactNode;
   /** Enquanto verdadeiro, mostra os pontinhos no lugar dos dados. */
   loading?: boolean;
+  /**
+   * Bloco abaixo da lista, dentro do mesmo painel — um formulário de "adicionar
+   * item", por exemplo.
+   *
+   * Existe para o controle de adicionar não ficar solto fora do container: a
+   * lista e o que a alimenta são a mesma coisa e devem dividir a superfície.
+   */
+  footer?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -181,6 +190,10 @@ export default function DataPanel<T>({
           <p className="py-12 text-center text-muted-foreground">{empty}</p>
         )}
       </div>
+
+      {/* Fora dos dois blocos acima de propósito: o rodapé é o mesmo no
+          desktop e no celular, e duplicá-lo daria duas cópias para divergir. */}
+      {footer && <div className="border-t border-border pt-4">{footer}</div>}
     </Panel>
   );
 }

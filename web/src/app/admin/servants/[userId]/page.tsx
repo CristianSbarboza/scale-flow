@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Star, Phone, Save } from "lucide-react";
+import { ArrowLeft, LayoutGrid, KeyRound, Trash2, User, Phone, Save } from "lucide-react";
 import { formatPhone, validateStoredPhone } from "@/lib/phone";
 import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
@@ -12,11 +12,10 @@ import StatsRule from "@/components/ui/StatsRule";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import Button from "@/components/ui/Button";
-import ListRow from "@/components/ui/ListRow";
-import Badge from "@/components/ui/Badge";
 import IconButton from "@/components/ui/IconButton";
-import EmptyState from "@/components/ui/EmptyState";
-import type { ServantSummary } from "@/types/domain";
+import DataPanel from "@/components/ui/DataPanel";
+import Switch from "@/components/ui/Switch";
+import type { ServantMembership, ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -61,6 +60,9 @@ export default function ServantMemberPage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  // Qual interruptor está salvando. Sem isso ele volta sozinho enquanto o
+  // servidor responde, e parece que o clique não pegou.
+  const [coordinatorLoading, setCoordinatorLoading] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const [m, sec] = await Promise.all([getServantMember(userId), getSectors()]);
@@ -136,6 +138,7 @@ export default function ServantMemberPage() {
   };
 
   const handleToggleCoordinator = async (servantId: number, next: boolean) => {
+    setCoordinatorLoading(servantId);
     try {
       await setServantCoordinator(servantId, next);
       showToast(next ? "Definido como coordenador do setor." : "Removido como coordenador do setor.", "success");
@@ -143,6 +146,8 @@ export default function ServantMemberPage() {
     } catch (error) {
       console.error(error);
       showToast("Erro ao atualizar coordenador.", "error");
+    } finally {
+      setCoordinatorLoading(null);
     }
   };
 
@@ -260,62 +265,66 @@ export default function ServantMemberPage() {
           </p>
         </form>
 
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <LayoutGrid size={16} color="var(--primary)" />
-            <span style={sectionLabelStyle}>Setores</span>
-          </div>
-
-          {/* Uma superfície só para a lista e o seletor. Antes, cada setor era
-              um card inteiro (1,5rem de padding cada) e o seletor ficava solto
-              depois deles, sem container nenhum. */}
-          <div className="card">
-            {member.memberships.map((m) => (
-              <ListRow
-                key={m.servantId}
-                leading={<LayoutGrid size={16} className="shrink-0 text-primary" />}
-                title={m.sectorName}
-                subtitle={m.ministryName}
-                trailing={
-                  <div className="flex items-center gap-1">
-                    {/* A etiqueta vai aqui, e não junto do nome: o título do
-                        ListRow tem `truncate`, e um nome de setor comprido
-                        cortaria a etiqueta junto. */}
-                    {m.isCoordinator && <Badge solid className="mr-1">Coordenador</Badge>}
-                    <IconButton
-                      label={m.isCoordinator ? "Remover como coordenador do setor" : "Tornar coordenador do setor"}
-                      onClick={() => handleToggleCoordinator(m.servantId, !m.isCoordinator)}
-                      tone={m.isCoordinator ? "primary" : "muted"}
-                    >
-                      <Star size={16} fill={m.isCoordinator ? "var(--primary)" : "none"} />
-                    </IconButton>
-                    <IconButton
-                      label={`Remover do setor ${m.sectorName}`}
-                      onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
-                      tone="destructive"
-                    >
-                      <Trash2 size={16} />
-                    </IconButton>
-                  </div>
-                }
-              />
-            ))}
-
-            {member.memberships.length === 0 && (
-              <EmptyState className="border-b border-border">Sem setores vinculados.</EmptyState>
-            )}
-
-            {availableSectors.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-3 pt-4">
+        {/* DataPanel em vez de lista à mão: ele dá os cabeçalhos de coluna no
+            desktop e vira cards rotulados no celular, a partir da mesma
+            declaração. Escrever as duas formas separadas foi o que ele nasceu
+            para evitar. */}
+        <DataPanel<ServantMembership>
+          title="Setores"
+          columns={[
+            {
+              header: "Nome",
+              primary: true,
+              cell: (m) => (
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{m.sectorName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{m.ministryName}</p>
+                </div>
+              ),
+            },
+            {
+              header: "Coordenador",
+              align: "right",
+              mobileRow: 1,
+              cell: (m) => (
+                <Switch
+                  checked={m.isCoordinator}
+                  onChange={(next) => handleToggleCoordinator(m.servantId, next)}
+                  label={`Coordenador do setor ${m.sectorName}`}
+                  disabled={coordinatorLoading === m.servantId}
+                />
+              ),
+            },
+            {
+              header: "Excluir",
+              align: "right",
+              mobileRow: 1,
+              cell: (m) => (
+                <IconButton
+                  label={`Remover do setor ${m.sectorName}`}
+                  tone="destructive"
+                  onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              ),
+            },
+          ]}
+          rows={member.memberships}
+          rowKey={(m) => m.servantId}
+          empty="Sem setores vinculados."
+          footer={
+            availableSectors.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-3">
                 <Select
                   label="Setor a adicionar"
                   value={selectedSectorId}
                   onChange={setSelectedSectorId}
                   options={[
                     { value: "", label: "Selecione um setor" },
-                    ...availableSectors.map((s) => ({
-                      value: String(s.id),
-                      label: `${s.ministry.name} - ${s.name}`,
+                    ...availableSectors.map((sec) => ({
+                      value: String(sec.id),
+                      label: `${sec.ministry.name} - ${sec.name}`,
                     })),
                   ]}
                 />
@@ -324,12 +333,12 @@ export default function ServantMemberPage() {
                 </Button>
               </div>
             ) : (
-              <p className="pt-4 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Já vinculado a todos os setores disponíveis.
               </p>
-            )}
-          </div>
-        </div>
+            )
+          }
+        />
 
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
