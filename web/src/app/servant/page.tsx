@@ -49,6 +49,7 @@ export default async function ServantDashboard({
   const schedules = await getServantOverview();
   const currentUser = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
   const ownColor = currentUser?.color ?? null;
+  const ownIcon = currentUser?.avatarIcon ?? null;
 
   const coordinatorSectors = mapCoordinatorSectors(memberships);
 
@@ -57,6 +58,7 @@ export default async function ServantDashboard({
       name={session.user?.name ?? ""}
       sectorName={sectorNames}
       color={ownColor}
+      icon={ownIcon}
       schedules={schedules}
       coordinatorSectors={coordinatorSectors}
       initialTab={initialTab}

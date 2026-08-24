@@ -13,9 +13,10 @@ interface ServantSidebarProps {
   name: string;
   sectorName: string;
   color: string | null;
+  icon: string | null;
 }
 
-export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorName, color }: ServantSidebarProps) {
+export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorName, color, icon }: ServantSidebarProps) {
   return (
     <aside className="glass servant-sidebar">
       <div style={{ marginBottom: "2.5rem", padding: "0 0.5rem", display: "flex", alignItems: "center", gap: "0.625rem" }}>
@@ -67,7 +68,7 @@ export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorNam
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <NotificationBell placement="top" />
-          <ServantProfileMenu name={name} sectorName={sectorName} color={color} />
+          <ServantProfileMenu name={name} sectorName={sectorName} color={color} icon={icon} />
         </div>
       </div>
     </aside>

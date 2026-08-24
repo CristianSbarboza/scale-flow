@@ -14,6 +14,7 @@ interface Props {
   name: string;
   sectorName: string;
   color: string | null;
+  icon: string | null;
   onClose: () => void;
 }
 
@@ -22,7 +23,7 @@ interface Props {
  * diferença é que ali elas são uma página e aqui um modal, e que o servo tem
  * a seção de cor do painel, que não existe para admin e líder.
  */
-export default function SettingsModal({ name, sectorName, color, onClose }: Props) {
+export default function SettingsModal({ name, sectorName, color, icon, onClose }: Props) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -48,7 +49,7 @@ export default function SettingsModal({ name, sectorName, color, onClose }: Prop
         {/* -mr-3 pr-3 devolve a faixa da barra de rolagem: sem isso ela fica
             por cima do conteudo. */}
         <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-6 overflow-y-auto pr-3">
-          <ProfileSection name={name} subtitle={sectorName} color={color} />
+          <ProfileSection name={name} subtitle={sectorName} color={color} icon={icon} editableIcon />
           <PersonalDataSection />
           <AppearanceSection />
           <PanelStyleSection color={color} />

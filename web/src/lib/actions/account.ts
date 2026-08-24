@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/scope";
 import { normalizeStoredPhone } from "@/lib/phone";
+import { isAvatarIconKey, type AvatarIconKey } from "@/lib/avatarIcons";
 
 export async function registerUser(name: string, email: string, password: string) {
   // Cria uma conta de ADMIN — só um admin já autenticado pode fazer isso, e o
@@ -129,5 +130,21 @@ export async function updateOwnColor(color: string | null) {
   if (!session) throw new Error("Não autorizado");
 
   await db.update(users).set({ color }).where(eq(users.id, session.user.id));
+  revalidatePath("/servant");
+}
+
+/**
+ * Ícone do círculo de perfil. Só servo tem essa opção — é quem ainda não tem
+ * upload de foto própria. `icon` é validado contra o conjunto fixo porque
+ * toda action é um endpoint: a UI só mostra o seletor para servo, mas isso
+ * não impede uma chamada direta.
+ */
+export async function updateOwnAvatarIcon(icon: AvatarIconKey | null) {
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Não autorizado");
+  if (session.user.role !== "servant") throw new Error("Apenas servos podem escolher um ícone de perfil");
+  if (icon !== null && !isAvatarIconKey(icon)) throw new Error("Ícone inválido");
+
+  await db.update(users).set({ avatarIcon: icon }).where(eq(users.id, session.user.id));
   revalidatePath("/servant");
 }

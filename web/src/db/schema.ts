@@ -35,6 +35,9 @@ export const users = pgTable("users", {
   phone: text("phone"),
   role: text("role", { enum: ["admin", "leader", "servant"] }).default("servant").notNull(),
   color: text("color"),
+  // Chave de src/lib/avatarIcons.tsx. Servo ainda não sobe foto de perfil —
+  // enquanto isso não existe, é a alternativa à inicial do nome no círculo.
+  avatarIcon: text("avatar_icon"),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
