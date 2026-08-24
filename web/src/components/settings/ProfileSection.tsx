@@ -22,7 +22,9 @@ export default function ProfileSection({
         <div className="min-w-0">
           <p className="truncate text-[1.0625rem] font-semibold">{name}</p>
           {subtitle && <p className="truncate text-[0.8125rem] text-muted-foreground">{subtitle}</p>}
-          {badge && <Badge solid className="mt-1.5">{badge}</Badge>}
+          {/* Sem `solid`: o papel é uma legenda do perfil, não um estado que
+              precise de pílula. O fundo arredondado sugeria algo clicável. */}
+          {badge && <Badge className="mt-1.5">{badge}</Badge>}
         </div>
       </div>
     </SettingsSection>
