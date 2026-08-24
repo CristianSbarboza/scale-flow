@@ -216,8 +216,11 @@ export default function ServantMemberPage() {
         items={[{ icon: LayoutGrid, label: "Setores Vinculados", value: member.memberships.length }]}
       />
 
-      <div style={{ display: "flex", gap: "1.25rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
-        <form onSubmit={handleSaveProfile} className="card" style={{ flex: "1 1 320px", maxWidth: "520px" }}>
+      {/* Coluna única de 640px, a mesma medida de /admin/settings. Sem limite,
+          a lista de setores esticava pela tela inteira para mostrar um nome e
+          dois botões, e as ações ficavam longe do texto a que pertencem. */}
+      <div className="grid max-w-[640px] gap-10">
+        <form onSubmit={handleSaveProfile} className="card">
           <p style={{ ...sectionLabelStyle, marginBottom: "1rem" }}>Dados do Membro</p>
           <div className="grid gap-4">
             <Field
@@ -256,9 +259,7 @@ export default function ServantMemberPage() {
               : "O e-mail de login não muda por aqui."}
           </p>
         </form>
-      </div>
 
-      <div style={{ display: "grid", gap: "2.5rem" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
             <LayoutGrid size={16} color="var(--primary)" />
