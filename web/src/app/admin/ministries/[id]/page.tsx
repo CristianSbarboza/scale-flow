@@ -157,7 +157,7 @@ export default function MinistryDetailPage() {
         className="mb-8"
         items={[
           { icon: LayoutGrid, label: "Setores", value: ministry.sectors?.length || 0 },
-          { icon: Users, label: "Total de Servos", value: allServants.length },
+          { icon: Users, label: "Servos", value: allServants.length },
         ]}
       />
 
