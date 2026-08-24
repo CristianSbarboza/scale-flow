@@ -194,9 +194,12 @@ export class ReminderScheduler {
    * Rajada é o sinal mais forte de automação que existe, e o número usado é
    * pessoal: um ban leva junto a conta de verdade.
    *
-   * Quando min e max são iguais, o intervalo é fixo. Vale saber que um
-   * intervalo *exato* é, em si, um padrão reconhecível — uma variação de
-   * poucos segundos parece mais gente. Fica configurável para isso.
+   * Sorteado na faixa a cada envio, e a faixa é larga de propósito: um
+   * intervalo *exato* é um padrão tão reconhecível quanto uma rajada. Dois
+   * intervalos seguidos raramente se repetem entre 20 e 55 segundos.
+   *
+   * A fila mais longa não empurra ninguém para fora da tolerância: `decide()`
+   * roda para todos com o mesmo `now`, capturado antes do primeiro envio.
    */
   private pace(): Promise<void> {
     if (this.options.dryRun) return Promise.resolve();
