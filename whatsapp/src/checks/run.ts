@@ -16,6 +16,7 @@ import { ControlServer } from "../http/ControlServer.js";
 import type { WhatsAppSession } from "../whatsapp/WhatsAppSession.js";
 import type {
   DueReminder,
+  PublishedNotice,
   ReminderKind,
   ReminderStore,
   SendStatus,
@@ -54,6 +55,17 @@ class FakeStore implements ReminderStore {
   }
   async findContextByUsername() {
     return null;
+  }
+  /** Avisos de escala publicada: os testes que os usam passam a lista aqui. */
+  publicados: PublishedNotice[] = [];
+  async findPublishedNotices(): Promise<PublishedNotice[]> {
+    return this.publicados.filter((p) => !this.log.has(`s${p.scheduleId}:${p.servantId}:published`));
+  }
+  async claimPublished(p: PublishedNotice): Promise<number | null> {
+    const k = `s${p.scheduleId}:${p.servantId}:published`;
+    if (this.log.has(k)) return null;
+    this.log.set(k, { status: "pending" });
+    return [...this.log.keys()].indexOf(k) + 1;
   }
   async claim(r: DueReminder, kind: ReminderKind): Promise<number | null> {
     const k = this.key(r, kind);
@@ -276,6 +288,66 @@ async function main() {
         const r = servo({ servantId: i + 1 });
         return linhaVersiculo(rm.build(r, "day_before")) !== linhaVersiculo(rm.build(r, "two_hours"));
       }), true);
+  }
+
+  console.log("\n--- aviso de escala publicada ---");
+  {
+    const aviso = (over: Partial<PublishedNotice> = {}): PublishedNotice => ({
+      scheduleId: 9, scheduleName: "Setembro/2026", servantId: 1,
+      servantName: "Maria Aparecida Souza", phone: "5511987654321",
+      ministryName: "Multimídia", sectorName: "Transmissão",
+      dateCount: 12, firstDate: "2026-09-06", lastDate: "2026-09-27", ...over,
+    });
+
+    const montarPub = (avisos: PublishedNotice[], falharPara: string[] = []) => {
+      const store = new FakeStore([]);
+      store.publicados = avisos;
+      const sender = new FakeSender(falharPara);
+      const scheduler = new ReminderScheduler(store, sender, new FakeClock(em("2026-08-24 10:00")), {
+        toleranceMinutes: 15, lookbackHours: 48, lookaheadHours: 48,
+        sendDelayMinMs: 0, sendDelayMaxMs: 0, dryRun: false,
+      }, () => {});
+      return { store, sender, scheduler };
+    };
+
+    {
+      const { scheduler, sender } = montarPub([aviso()]);
+      const r = await scheduler.tick();
+      eq("avisa quem está no setor", { sent: r.sent, enviados: sender.enviados.length }, { sent: 1, enviados: 1 });
+    }
+    {
+      // A diferença central: vai para todo o setor, escalado ou não.
+      const { scheduler, sender } = montarPub([
+        aviso({ servantId: 1 }), aviso({ servantId: 2 }), aviso({ servantId: 3 }),
+      ]);
+      const r = await scheduler.tick();
+      eq("todos do setor recebem", { sent: r.sent, enviados: sender.enviados.length }, { sent: 3, enviados: 3 });
+    }
+    {
+      const { scheduler, sender } = montarPub([aviso()]);
+      await scheduler.tick();
+      await scheduler.tick();
+      await scheduler.tick();
+      eq("três ciclos = um aviso só", sender.enviados.length, 1);
+    }
+    {
+      const { scheduler, sender, store } = montarPub([aviso({ servantId: 1, phone: "5511000000000" }), aviso({ servantId: 2 })], ["5511000000000"]);
+      const r = await scheduler.tick();
+      eq("falha de um não para os outros", { sent: r.sent, failed: r.failed }, { sent: 1, failed: 1 });
+      eq("motivo gravado", store.log.get("s9:1:published")?.detail, "número não está no WhatsApp");
+    }
+
+    const { ReminderMessage: RM2 } = await import("../reminders/ReminderMessage.js");
+    const rmPub = new RM2(new ServiceClock(TZ), undefined, "https://app.exemplo.com");
+    const t = rmPub.buildPublished(aviso());
+    eq("não diz 'você está escalado'", t.includes("escalado"), false);
+    eq("pede para informar disponibilidade", t.includes("Informe os dias em que você pode servir"), true);
+    eq("o link abre a aba de preencher", t.includes("https://app.exemplo.com/servant?aba=next"), true);
+    eq("diz o período", t.includes("12 datas entre 06/09 e 27/09"), true);
+    eq("escala sem data não inventa período",
+      rmPub.buildPublished(aviso({ dateCount: 0 })).includes("já está aberta."), true);
+    eq("uma data só concorda no singular",
+      rmPub.buildPublished(aviso({ dateCount: 1, firstDate: "2026-09-06" })).includes("1 data em 06/09"), true);
   }
 
   console.log("\n--- rotas de controle ---");

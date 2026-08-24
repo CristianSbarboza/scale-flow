@@ -34,6 +34,8 @@ export class Env {
      * é pior que não mandar link.
      */
     readonly appUrl: string | null,
+    /** Quanto tempo depois de publicada uma escala ainda vale avisar. */
+    readonly publishedWindowHours: number,
   ) {}
 
   static load(source: NodeJS.ProcessEnv = process.env): Env {
@@ -52,6 +54,7 @@ export class Env {
       source.DRY_RUN === "true",
       source.CONTROL_TOKEN?.trim() || null,
       source.APP_URL?.trim().replace(/\/+$/, "") || null,
+      number(source, "PUBLISHED_WINDOW_HOURS", 48),
     );
 
     if (env.sendDelayMinMs > env.sendDelayMaxMs) {

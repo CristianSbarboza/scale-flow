@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createSchedule, getSchedules, deleteSchedule } from "@/lib/actions/schedules";
+import { createSchedule, getSchedules, deleteSchedule, publishSchedule, unpublishSchedule } from "@/lib/actions/schedules";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
@@ -21,6 +21,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
+import Switch from "@/components/ui/Switch";
 import Button from "@/components/ui/Button";
 
 interface ScheduleDate {
@@ -70,6 +71,7 @@ export default function SchedulesPage() {
   const [lastLink, setLastLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
   const [detailsSchedule, setDetailsSchedule] = useState<Schedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -147,6 +149,34 @@ export default function SchedulesPage() {
       showToast(error instanceof Error ? error.message : "Erro ao criar escala.", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePublish = async (schedule: Schedule, next: boolean) => {
+    // Publicar avisa todo o setor por WhatsApp — não é o tipo de coisa que se
+    // desfaz com um clique de arrependimento, então confirma antes.
+    if (next) {
+      const ok = await askConfirm({
+        title: "Publicar escala",
+        message:
+          `Publicar ${schedule.name}? Todos os servos de ${schedule.sector.name} com telefone ` +
+          `cadastrado receberão um aviso no WhatsApp para preencher a disponibilidade.`,
+        confirmLabel: "Publicar",
+      });
+      if (!ok) return;
+    }
+
+    setPublishingId(schedule.id);
+    try {
+      if (next) await publishSchedule(schedule.id);
+      else await unpublishSchedule(schedule.id);
+      showToast(next ? "Escala publicada." : "Escala voltou para rascunho.", "success");
+      const atualizadas = await getSchedules();
+      setSchedules(atualizadas as unknown as Schedule[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao mudar a situação.", "error");
+    } finally {
+      setPublishingId(null);
     }
   };
 
@@ -296,6 +326,26 @@ export default function SchedulesPage() {
             {
               header: "Setor",
               cell: (s) => s.sector.name,
+            },
+            {
+              header: "Situação",
+              mobileRow: 1,
+              cell: (s) => (
+                // Interruptor, não botão: publicar e despublicar são o mesmo
+                // eixo, e o estado precisa ser visível na lista — era o rótulo
+                // "draft" que ninguém sabia como mudar.
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={s.status === "published"}
+                    onChange={(next) => handleTogglePublish(s, next)}
+                    label={s.status === "published" ? `Despublicar ${s.name}` : `Publicar ${s.name}`}
+                    disabled={publishingId === s.id}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {s.status === "published" ? "Publicada" : "Rascunho"}
+                  </span>
+                </div>
+              ),
             },
             {
               header: "Ações",

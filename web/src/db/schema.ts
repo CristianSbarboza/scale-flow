@@ -77,6 +77,14 @@ export const schedules = pgTable("schedules", {
   // public: qualquer um com o link responde. private: exige login e vínculo com o setor.
   visibility: text("visibility", { enum: ["public", "private"] }).default("public").notNull(),
   shareLink: text("share_link").notNull().unique(), // nanoid
+  /**
+   * Quando virou `published`. Nulo enquanto rascunho.
+   *
+   * Separado de `createdAt` porque uma escala pode nascer em rascunho e ser
+   * publicada semanas depois — e é a publicação, não a criação, que dispara o
+   * aviso aos servos do setor.
+   */
+  publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -177,9 +185,12 @@ export const swapRequestsRelations = relations(swapRequests, ({ one }) => ({
  */
 export const notificationLog = pgTable("notification_log", {
   id: serial("id").primaryKey(),
-  dateId: integer("date_id").references(() => scheduleDates.id, { onDelete: "cascade" }).notNull(),
+  /** Preenchido nos avisos por data. Nulo no aviso de escala publicada. */
+  dateId: integer("date_id").references(() => scheduleDates.id, { onDelete: "cascade" }),
+  /** Preenchido só no aviso de escala publicada, que é por escala, não por data. */
+  scheduleId: integer("schedule_id").references(() => schedules.id, { onDelete: "cascade" }),
   servantId: integer("servant_id").references(() => servants.id, { onDelete: "cascade" }).notNull(),
-  kind: text("kind", { enum: ["day_before", "two_hours"] }).notNull(),
+  kind: text("kind", { enum: ["day_before", "two_hours", "schedule_published"] }).notNull(),
   status: text("status", { enum: ["pending", "sent", "failed", "skipped"] }).notNull(),
   /** Motivo, quando falhou ou foi pulado. */
   detail: text("detail"),
@@ -196,6 +207,10 @@ export const notificationLog = pgTable("notification_log", {
   // enviar. Por isso a reserva também reaproveita `pending` parado há mais de
   // 5 minutos: a janela de tolerância ainda estará aberta.
   uniqueIndex("notification_log_unique").on(t.dateId, t.servantId, t.kind),
+  // Irmão do de cima, para o aviso que é por escala. Os dois convivem porque
+  // no Postgres NULL nunca colide com NULL num índice único: linha de aviso
+  // por data tem `scheduleId` nulo e vice-versa.
+  uniqueIndex("notification_log_schedule_unique").on(t.scheduleId, t.servantId, t.kind),
 ]);
 
 export const notificationLogRelations = relations(notificationLog, ({ one }) => ({

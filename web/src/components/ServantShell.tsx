@@ -14,10 +14,13 @@ interface ServantShellProps {
   color: string | null;
   schedules: ServantOverviewSchedule[];
   coordinatorSectors: CoordinatorSector[];
+  /** Aba aberta ao entrar. Vem de `?aba=` na URL, lida pela página. */
+  initialTab?: ServantTab;
 }
 
-export default function ServantShell({ name, sectorName, color, schedules, coordinatorSectors }: ServantShellProps) {
-  const [tab, setTab] = useState<ServantTab>("calendar");
+export default function ServantShell({ name, sectorName, color, schedules, coordinatorSectors, initialTab }: ServantShellProps) {
+  // Só o estado inicial vem de fora; trocar de aba depois é estado local.
+  const [tab, setTab] = useState<ServantTab>(initialTab ?? "calendar");
   const tabs = getServantTabs(coordinatorSectors.length > 0);
 
   return (

@@ -1,6 +1,6 @@
 import type { Clock, ServiceClock } from "../time/ServiceClock.js";
 import { ReminderMessage } from "./ReminderMessage.js";
-import { REMINDER_KINDS, type DueReminder, type ReminderKind, type ReminderStore, type Sender } from "./types.js";
+import { REMINDER_KINDS, type DueReminder, type PublishedNotice, type ReminderKind, type ReminderStore, type Sender } from "./types.js";
 
 export interface SchedulerOptions {
   /** Quanto tempo depois do horário ainda vale enviar. */
@@ -13,6 +13,13 @@ export interface SchedulerOptions {
   dryRun: boolean;
   /** Endereço público do app, para o link no fim da mensagem. */
   appUrl?: string | null;
+  /**
+   * Quanto tempo depois de publicada uma escala ainda vale avisar.
+   *
+   * Sem esta janela, o primeiro ciclo depois de subir o serviço avisaria de
+   * toda escala publicada que existe — inclusive as de meses atrás.
+   */
+  publishedWindowHours?: number;
 }
 
 export interface TickResult {
@@ -48,7 +55,50 @@ export class ReminderScheduler {
     for (const kind of REMINDER_KINDS) {
       await this.processKind(kind, result);
     }
+    await this.processPublished(result);
     return result;
+  }
+
+  /**
+   * Avisos de escala publicada.
+   *
+   * Não passa por `decide()`: este aviso não tem horário para vencer. Ou a
+   * escala foi publicada dentro da janela e o servo ainda não recebeu, ou não
+   * há o que fazer — daí não existir estado "atrasado" aqui.
+   */
+  private async processPublished(result: TickResult): Promise<void> {
+    const janela = this.options.publishedWindowHours ?? 48;
+    const avisos = await this.store.findPublishedNotices(janela);
+
+    for (const notice of avisos) {
+      const claimId = await this.store.claimPublished(notice);
+      if (claimId === null) continue;
+      await this.deliverPublished(notice, claimId, result);
+      await this.pace();
+    }
+  }
+
+  private async deliverPublished(
+    notice: PublishedNotice,
+    claimId: number,
+    result: TickResult,
+  ): Promise<void> {
+    const texto = this.message.buildPublished(notice);
+    try {
+      if (this.options.dryRun) {
+        this.log(`dry   published ${notice.servantName} <${notice.phone}>`);
+      } else {
+        await this.sender.send(notice.phone, texto);
+        this.log(`sent  published ${notice.servantName} — ${notice.scheduleName}`);
+      }
+      await this.store.finish(claimId, "sent", this.options.dryRun ? "dry-run" : undefined);
+      result.sent++;
+    } catch (erro) {
+      const motivo = erro instanceof Error ? erro.message : String(erro);
+      await this.store.finish(claimId, "failed", motivo.slice(0, 500));
+      result.failed++;
+      this.log(`FAIL  published ${notice.servantName} — ${motivo}`);
+    }
   }
 
   private async processKind(kind: ReminderKind, result: TickResult): Promise<void> {

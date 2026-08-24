@@ -50,6 +50,7 @@ async function main(): Promise<void> {
     sendDelayMaxMs: env.sendDelayMaxMs,
     dryRun: env.dryRun,
     appUrl: env.appUrl,
+    publishedWindowHours: env.publishedWindowHours,
   });
 
   const control = new ControlServer(

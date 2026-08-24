@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { DueReminder, PreviewContext, ReminderKind, ReminderStore, SendStatus } from "./types.js";
+import type { DueReminder, PreviewContext, PublishedNotice, ReminderKind, ReminderStore, SendStatus } from "./types.js";
 
 /**
  * As consultas do serviço. SQL cru, de propósito.
@@ -62,6 +62,76 @@ export class ReminderRepository implements ReminderStore {
       scheduleName: r.schedule_name,
       service: { date: r.service_date, time: r.service_time },
     }));
+  }
+
+  /**
+   * Escalas publicadas há pouco cujo setor ainda não foi avisado.
+   *
+   * Diferente de `findCandidates` em dois pontos que importam:
+   *
+   * - Parte de `servants` do setor, **não** de `schedule_assignments`: o aviso
+   *   é para preencher disponibilidade, então quem ainda não tem data é
+   *   justamente quem mais precisa recebê-lo.
+   * - O recorte é `published_at`, não a data do culto. Sem a janela, o
+   *   primeiro ciclo depois de subir o serviço avisaria de toda escala já
+   *   publicada — inclusive as de meses atrás.
+   */
+  async findPublishedNotices(sinceHours: number): Promise<PublishedNotice[]> {
+    const { rows } = await this.pool.query(
+      `select sch.id            as schedule_id,
+              sch.name          as schedule_name,
+              sv.id             as servant_id,
+              u.name            as servant_name,
+              u.phone           as phone,
+              m.name            as ministry_name,
+              s.name            as sector_name,
+              count(sd.id)::int as date_count,
+              min(sd.date)::text as first_date,
+              max(sd.date)::text as last_date
+         from schedules sch
+         join sectors s     on s.id  = sch.sector_id
+         join ministries m  on m.id  = sch.ministry_id
+         join servants sv   on sv.sector_id = s.id
+         join users u       on u.id  = sv.user_id
+         left join schedule_dates sd on sd.schedule_id = sch.id
+         left join notification_log nl
+                on nl.schedule_id = sch.id and nl.servant_id = sv.id and nl.kind = $1
+        where sch.status = 'published'
+          and sch.published_at is not null
+          and sch.published_at > now() - ($2 || ' hours')::interval
+          and u.phone is not null
+          and nl.id is null
+        group by sch.id, sch.name, sv.id, u.name, u.phone, m.name, s.name`,
+      ["schedule_published", String(sinceHours)],
+    );
+
+    return rows.map((r) => ({
+      scheduleId: Number(r.schedule_id),
+      scheduleName: r.schedule_name,
+      servantId: Number(r.servant_id),
+      servantName: r.servant_name,
+      phone: r.phone,
+      ministryName: r.ministry_name,
+      sectorName: r.sector_name,
+      dateCount: Number(r.date_count),
+      firstDate: r.first_date,
+      lastDate: r.last_date,
+    }));
+  }
+
+  /** Mesma reserva atômica de `claim`, na chave por escala. */
+  async claimPublished(notice: PublishedNotice): Promise<number | null> {
+    const { rows } = await this.pool.query(
+      `insert into notification_log (schedule_id, servant_id, kind, status)
+            values ($1, $2, 'schedule_published', 'pending')
+       on conflict (schedule_id, servant_id, kind) do update
+              set status = 'pending', sent_at = now()
+            where notification_log.status = 'pending'
+              and notification_log.sent_at < now() - interval '5 minutes'
+        returning id`,
+      [notice.scheduleId, notice.servantId],
+    );
+    return rows.length > 0 ? Number(rows[0].id) : null;
   }
 
   /**

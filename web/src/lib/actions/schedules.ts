@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { ministries, sectors, schedules, scheduleDates } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-import { eq, and, exists } from "drizzle-orm";
+import { eq, and, exists, sql } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
 import type { CalendarSchedule } from "@/types/domain";
 import type { Scope } from "@/types/scope";
@@ -97,6 +97,40 @@ export async function updateSchedule(
       startTime: d.startTime,
     });
   }
+
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+}
+
+/**
+ * Publica a escala: abre para os servos do setor preencherem disponibilidade.
+ *
+ * Nada no app fazia isso — a coluna `status` existia, o tipo existia, a tela
+ * mostrava o rótulo, e não havia caminho de `draft` para `published`. Como o
+ * serviço de lembretes só considera escala publicada, ele nunca teve o que
+ * enviar.
+ *
+ * `publishedAt` só é gravado na primeira vez. Republicar depois de despublicar
+ * não deve reenviar o aviso para quem já recebeu — e é o `notification_log`
+ * que garante isso, mas manter a data original evita que o cron reavalie a
+ * escala como novidade.
+ */
+export async function publishSchedule(id: number) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+
+  await db.update(schedules)
+    .set({ status: "published", publishedAt: sql`coalesce(${schedules.publishedAt}, now())` })
+    .where(eq(schedules.id, id));
+
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+}
+
+/** Volta para rascunho. Não apaga `publishedAt` — ver `publishSchedule`. */
+export async function unpublishSchedule(id: number) {
+  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+
+  await db.update(schedules).set({ status: "draft" }).where(eq(schedules.id, id));
 
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");

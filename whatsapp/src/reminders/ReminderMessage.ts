@@ -1,6 +1,6 @@
 import type { ServiceClock } from "../time/ServiceClock.js";
 import { VerseBook } from "./VerseBook.js";
-import type { DueReminder, ReminderKind } from "./types.js";
+import type { DueReminder, PublishedNotice, ReminderKind } from "./types.js";
 
 /**
  * O texto da mensagem. Classe pura: recebe o relógio, não olha o banco nem a
@@ -56,6 +56,44 @@ export class ReminderMessage {
       ``,
       `_Mensagem automática do ScaleFlow._`,
     ].join("\n");
+  }
+
+  /**
+   * Aviso de escala publicada. Vai para **todo o setor**, inclusive quem ainda
+   * não tem data — o pedido é justamente que preencham.
+   *
+   * Por isso não fala em "você está escalado": a maioria de quem recebe ainda
+   * não está. O link abre a aba onde se responde.
+   */
+  buildPublished(notice: PublishedNotice): string {
+    const versiculo = this.verses.pick(`${notice.scheduleId}:${notice.servantId}:published`);
+    const periodo = this.periodo(notice);
+
+    return [
+      `Olá, ${primeiroNome(notice.servantName)}!`,
+      `A escala *${notice.scheduleName}* já está aberta${periodo}.`,
+      ``,
+      `*Ministério:* ${notice.ministryName}`,
+      `*Setor:* ${notice.sectorName}`,
+      ``,
+      `Informe os dias em que você pode servir:`,
+      ...(this.appUrl ? [`${this.appUrl}/servant?aba=next`] : []),
+      ``,
+      `_"${versiculo.text}"_`,
+      `— *${versiculo.reference}*`,
+      ``,
+      `_Mensagem automática do ScaleFlow._`,
+    ].join("\n");
+  }
+
+  /** `, com 12 datas entre 06/09 e 28/09` — ou vazio, se a escala não tem data. */
+  private periodo({ dateCount, firstDate, lastDate }: PublishedNotice): string {
+    if (dateCount === 0) return "";
+    const dia = (iso: string) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+    const quantas = `${dateCount} ${dateCount === 1 ? "data" : "datas"}`;
+    return dateCount === 1
+      ? `, com ${quantas} em ${dia(firstDate)}`
+      : `, com ${quantas} entre ${dia(firstDate)} e ${dia(lastDate)}`;
   }
 }
 

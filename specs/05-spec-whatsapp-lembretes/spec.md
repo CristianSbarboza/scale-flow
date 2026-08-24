@@ -7,14 +7,16 @@
 
 Avisar o servo escalado, pelo WhatsApp, antes de ele precisar servir. Hoje a escala existe no sistema e a pessoa só a vê se entrar nele — o lembrete vai até ela.
 
-Dois disparos, por servo e por data escalada:
+Três disparos:
 
-- **Um dia antes, às 09h.**
-- **Duas horas antes do horário do culto.**
+- **Escala publicada** — para **todos os servos do setor**, escalados ou não, pedindo que preencham a disponibilidade. É o único que não depende de estar escalado, porque é justamente o convite para se escalar.
+- **Um dia antes, às 09h** — por servo e por data escalada.
+- **Duas horas antes do horário do culto** — idem.
 
 ## 👤 Requisitos Funcionais
 
-- **RF01** — Recebe lembrete quem está em `schedule_assignments` para aquela data, de uma escala com `status = 'published'`. Rascunho não dispara nada.
+- **RF01** — Os lembretes de véspera e de 2 horas vão para quem está em `schedule_assignments` naquela data, de uma escala com `status = 'published'`. Rascunho não dispara nada.
+- **RF08** — O aviso de escala publicada vai para **todos os servos do setor**, e dispara em `schedules.published_at`, não na data do culto. Só vale dentro de uma janela (padrão 48h): sem ela, subir o serviço avisaria de toda escala publicada que já existe.
 - **RF02** — A mensagem identifica o ministério/setor, a data e o horário. **Não** traz o nome da igreja: uma pessoa pertence a exatamente uma (`users.church_id` é coluna única, e nenhum vínculo de servo cruza igrejas), então nomeá-la não desfaz ambiguidade nenhuma.
 - **RF03** — Servo sem telefone cadastrado é simplesmente pulado, sem erro e sem travar a fila dos outros.
 - **RF04** — Cada combinação (data escalada, servo, tipo de lembrete) dispara **no máximo uma vez**, mesmo que o processo reinicie no meio.
@@ -24,7 +26,7 @@ Dois disparos, por servo e por data escalada:
 
 ## 🚫 Não Faz Parte
 
-- **Mensagem com a escala completa quando ela for confirmada.** Estava na ideia inicial e saiu desta rodada, por decisão. Fica para uma spec própria.
+- **Mensagem com a escala completa quando ela for confirmada.** Estava na ideia inicial e saiu desta rodada, por decisão. Fica para uma spec própria. Note que o aviso de escala **publicada** (RF08) é outra coisa: sai quando a escala abre para preenchimento, não quando fecha.
 - **Receber mensagens.** O canal é de mão única. Resposta do servo cai no WhatsApp pessoal de quem é dono do número e é tratada na mão.
 - **Escolha de horário pelo usuário.** 09h e 2h são fixos. Configurável por igreja é outra spec.
 - **Confirmação de presença pelo WhatsApp** ("responda SIM"). Exigiria receber mensagens.
