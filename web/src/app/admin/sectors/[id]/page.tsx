@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutGrid, Users, Star, Mail, Edit3 } from "lucide-react";
-import { getSectorById, updateSector } from "@/lib/actions/sectors";
+import { getSectorById, updateSector, deleteSector } from "@/lib/actions/sectors";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import Avatar from "@/components/ui/Avatar";
 import BackLink from "@/components/ui/BackLink";
 import Button from "@/components/ui/Button";
 import DataPanel from "@/components/ui/DataPanel";
+import DeleteSection from "@/components/ui/DeleteSection";
 import Field from "@/components/ui/Field";
 import PageHeader from "@/components/ui/PageHeader";
 import StatsRule from "@/components/ui/StatsRule";
@@ -195,6 +196,30 @@ export default function SectorDetailPage() {
           empty="Nenhum servo vinculado a este setor."
         />
       </div>
+
+      <DeleteSection
+        className="mt-10 max-w-[640px]"
+        label="Excluir setor"
+        confirmToken={sector.name}
+        buttonLabel="Excluir Setor"
+        confirmTitle="Excluir setor"
+        confirmMessage={`Excluir ${sector.name} definitivamente? Os vínculos dos servos, as escalas do setor e todo o histórico de disponibilidade e confirmações serão apagados. Essa ação não pode ser desfeita.`}
+        onDelete={async () => {
+          await deleteSector(id);
+          showToast("Setor excluído.", "success");
+          router.push("/admin/sectors");
+        }}
+      >
+        {/* O aviso lista o que a cascata leva. Dizer só "não pode ser
+            desfeito" não informa o tamanho do estrago. */}
+        Serão apagados: o vínculo de{" "}
+        <strong className="text-foreground">
+          {servants.length} {servants.length === 1 ? "servo" : "servos"}
+        </strong>{" "}
+        com este setor, todas as escalas dele e o histórico de disponibilidade e confirmações.{" "}
+        <strong className="text-foreground">As contas das pessoas continuam existindo</strong> —
+        some o vínculo com este setor, não o cadastro de quem servia nele.
+      </DeleteSection>
 
       {editOpen && (
         <AdminCreateModal title="Editar setor" onClose={() => setEditOpen(false)}>

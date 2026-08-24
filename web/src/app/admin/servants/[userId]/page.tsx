@@ -13,6 +13,7 @@ import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
+import DeleteSection from "@/components/ui/DeleteSection";
 import DataPanel from "@/components/ui/DataPanel";
 import Switch from "@/components/ui/Switch";
 import type { ServantMembership, ServantSummary } from "@/types/domain";
@@ -63,7 +64,6 @@ export default function ServantMemberPage() {
   // Qual interruptor está salvando. Sem isso ele volta sozinho enquanto o
   // servidor responde, e parece que o clique não pegou.
   const [coordinatorLoading, setCoordinatorLoading] = useState<number | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const load = useCallback(async () => {
     const [m, sec] = await Promise.all([getServantMember(userId), getSectors()]);
@@ -212,27 +212,6 @@ export default function ServantMemberPage() {
       showToast(error instanceof Error ? error.message : "Erro ao alterar senha.", "error");
     } finally {
       setPasswordLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    const ok = await askConfirm({
-      title: "Excluir membro",
-      message: `Excluir ${member.name} definitivamente? A conta, todos os vínculos e o histórico de disponibilidade/confirmação serão apagados. Essa ação não pode ser desfeita.`,
-      confirmLabel: "Excluir",
-    });
-    if (!ok) {
-      setDeleteConfirmation("");
-      return;
-    }
-
-    try {
-      await deleteServantAccount(member.userId);
-      showToast("Membro excluído.", "success");
-      router.push("/admin/servants");
-    } catch (error) {
-      console.error(error);
-      showToast("Erro ao excluir membro.", "error");
     }
   };
 
@@ -461,39 +440,23 @@ export default function ServantMemberPage() {
           </div>
         </div>
 
-        {/* Card só para a exclusão. Estava junto da troca de senha, e um botão
-            vermelho ao lado de um formulário comum é fácil de clicar sem
-            querer. Aqui ele exige digitar o identificador antes de existir. */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <Trash2 size={16} color="var(--destructive)" />
-            <span style={{ ...sectionLabelStyle, color: "var(--destructive)" }}>Excluir membro</span>
-          </div>
-          <div className="card grid gap-3 border-destructive/30">
-            <p className="text-sm text-muted-foreground">
-              A conta de <strong className="text-foreground">{member.name}</strong>, todos os
-              vínculos de setor e o histórico de disponibilidade e confirmações serão apagados.
-              Não há como desfazer.
-            </p>
-            <Field
-              label={<>Digite <code className="text-foreground">{deleteToken}</code> para liberar a exclusão</>}
-              value={deleteConfirmation}
-              onChange={(e) => setDeleteConfirmation(e.target.value)}
-              placeholder={deleteToken}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              disabled={deleteConfirmation.trim() !== deleteToken}
-              className="justify-self-start"
-            >
-              <Trash2 size={18} />
-              Excluir Membro
-            </Button>
-          </div>
-        </div>
+        <DeleteSection
+          label="Excluir membro"
+          confirmToken={deleteToken}
+          tokenHint={member.username ? "usuário" : "e-mail"}
+          buttonLabel="Excluir Membro"
+          confirmTitle="Excluir membro"
+          confirmMessage={`Excluir ${member.name} definitivamente? A conta, todos os vínculos e o histórico de disponibilidade e confirmações serão apagados. Essa ação não pode ser desfeita.`}
+          onDelete={async () => {
+            await deleteServantAccount(member.userId);
+            showToast("Membro excluído.", "success");
+            router.push("/admin/servants");
+          }}
+        >
+          A conta de <strong className="text-foreground">{member.name}</strong>, todos os
+          vínculos de setor e o histórico de disponibilidade e confirmações serão apagados.
+          Não há como desfazer.
+        </DeleteSection>
       </div>
     </div>
   );

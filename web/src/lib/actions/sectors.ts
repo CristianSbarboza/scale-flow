@@ -69,6 +69,25 @@ export async function updateSector(id: number, name: string) {
   revalidatePath("/admin/ministries");
 }
 
+/**
+ * Apaga o setor. Em cascata leva os vínculos de servo, as escalas do setor,
+ * suas datas, disponibilidades e escalações.
+ *
+ * **As contas das pessoas ficam.** Some o vínculo com este setor, não o
+ * cadastro de quem servia nele.
+ */
+export async function deleteSector(id: number) {
+  // Mesma guarda de quem edita: admin, ou o líder do ministério dono. Já
+  // confere a igreja antes de qualquer papel.
+  await requireSectorAccess(id);
+
+  await db.delete(sectors).where(eq(sectors.id, id));
+
+  revalidatePath("/admin/sectors");
+  revalidatePath("/admin/ministries");
+  revalidatePath("/admin");
+}
+
 export async function getSectorById(id: number) {
   const scope = await getScope();
 

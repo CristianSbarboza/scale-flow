@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, ShieldAlert, Copy, Check } from "lucide-react";
-import { getMinistryById, updateMinistryDetails, transferMinistryLeader } from "@/lib/actions/ministries";
+import { getMinistryById, updateMinistryDetails, transferMinistryLeader, deleteMinistry } from "@/lib/actions/ministries";
 import Field from "@/components/ui/Field";
 import TextareaField from "@/components/ui/TextareaField";
 import Button from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
 import AdminCreateModal from "@/components/AdminCreateModal";
+import DeleteSection from "@/components/ui/DeleteSection";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import StatsRule from "@/components/ui/StatsRule";
@@ -371,6 +372,32 @@ export default function MinistryDetailPage() {
           </div>
         </div>
       </div>
+
+      <DeleteSection
+        className="mt-10 max-w-[640px]"
+        label="Excluir ministério"
+        confirmToken={ministry.name}
+        buttonLabel="Excluir Ministério"
+        confirmTitle="Excluir ministério"
+        confirmMessage={`Excluir ${ministry.name} definitivamente? Os setores, os vínculos dos servos, as escalas e todo o histórico serão apagados. Essa ação não pode ser desfeita.`}
+        onDelete={async () => {
+          await deleteMinistry(id);
+          showToast("Ministério excluído.", "success");
+          router.push("/admin/ministries");
+        }}
+      >
+        {/* O aviso lista o que a cascata leva. Dizer só "não pode ser
+            desfeito" não informa o tamanho do estrago. */}
+        Serão apagados{" "}
+        <strong className="text-foreground">
+          {ministry.sectors?.length || 0} {(ministry.sectors?.length || 0) === 1 ? "setor" : "setores"}
+        </strong>, o vínculo de{" "}
+        <strong className="text-foreground">
+          {allServants.length} {allServants.length === 1 ? "servo" : "servos"}
+        </strong>, todas as escalas e o histórico de disponibilidade e confirmações.{" "}
+        <strong className="text-foreground">As contas das pessoas continuam existindo</strong> —
+        some o vínculo com este ministério, não o cadastro de quem servia nele.
+      </DeleteSection>
     </div>
   );
 }

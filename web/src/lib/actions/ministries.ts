@@ -96,6 +96,29 @@ export async function transferMinistryLeader(id: number, leaderName: string, lea
   return { password: generatedPassword, unchanged: false };
 }
 
+/**
+ * Apaga o ministério. Em cascata leva setores, vínculos de servo, escalas,
+ * datas, disponibilidades e escalações.
+ *
+ * **As contas das pessoas ficam.** O que morre é o vínculo delas com este
+ * ministério — quem servia aqui continua existindo, e continua nos outros
+ * ministérios em que estiver.
+ */
+export async function deleteMinistry(id: number) {
+  const scope = await requireAdmin();
+
+  const apagados = await db.delete(ministries)
+    .where(and(eq(ministries.id, id), eq(ministries.churchId, scope.churchId)))
+    .returning({ id: ministries.id });
+
+  // Sem linha apagada significa id de outra igreja (ou inexistente). Falhar
+  // aqui é melhor que responder "pronto" para quem não tinha o que apagar.
+  if (apagados.length === 0) throw new Error("Ministério não encontrado");
+
+  revalidatePath("/admin/ministries");
+  revalidatePath("/admin");
+}
+
 export async function getMinistries() {
   const scope = await getScope();
   // A igreja entra nos dois ramos. O do admin não é "sem filtro": é "sem
