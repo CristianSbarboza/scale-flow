@@ -12,6 +12,10 @@ import StatsRule from "@/components/ui/StatsRule";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import Button from "@/components/ui/Button";
+import ListRow from "@/components/ui/ListRow";
+import Badge from "@/components/ui/Badge";
+import IconButton from "@/components/ui/IconButton";
+import EmptyState from "@/components/ui/EmptyState";
 import type { ServantSummary } from "@/types/domain";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -261,71 +265,69 @@ export default function ServantMemberPage() {
             <span style={sectionLabelStyle}>Setores</span>
           </div>
 
-          <div style={{ display: "grid", gap: "0.5rem", marginBottom: "1.25rem" }}>
+          {/* Uma superfície só para a lista e o seletor. Antes, cada setor era
+              um card inteiro (1,5rem de padding cada) e o seletor ficava solto
+              depois deles, sem container nenhum. */}
+          <div className="card">
             {member.memberships.map((m) => (
-              <div
+              <ListRow
                 key={m.servantId}
-                className="card"
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <p style={{ fontWeight: 600 }}>{m.sectorName}</p>
-                    {m.isCoordinator && (
-                      <span style={{ fontSize: "0.625rem", fontWeight: 700, padding: "0.125rem 0.5rem", borderRadius: "1rem", background: "rgba(249, 115, 22, 0.15)", color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                        Coordenador
-                      </span>
-                    )}
+                leading={<LayoutGrid size={16} className="shrink-0 text-primary" />}
+                title={m.sectorName}
+                subtitle={m.ministryName}
+                trailing={
+                  <div className="flex items-center gap-1">
+                    {/* A etiqueta vai aqui, e não junto do nome: o título do
+                        ListRow tem `truncate`, e um nome de setor comprido
+                        cortaria a etiqueta junto. */}
+                    {m.isCoordinator && <Badge solid className="mr-1">Coordenador</Badge>}
+                    <IconButton
+                      label={m.isCoordinator ? "Remover como coordenador do setor" : "Tornar coordenador do setor"}
+                      onClick={() => handleToggleCoordinator(m.servantId, !m.isCoordinator)}
+                      tone={m.isCoordinator ? "primary" : "muted"}
+                    >
+                      <Star size={16} fill={m.isCoordinator ? "var(--primary)" : "none"} />
+                    </IconButton>
+                    <IconButton
+                      label={`Remover do setor ${m.sectorName}`}
+                      onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
+                      tone="destructive"
+                    >
+                      <Trash2 size={16} />
+                    </IconButton>
                   </div>
-                  <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{m.ministryName}</p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.125rem" }}>
-                  <button
-                    onClick={() => handleToggleCoordinator(m.servantId, !m.isCoordinator)}
-                    title={m.isCoordinator ? "Remover como coordenador do setor" : "Tornar coordenador do setor"}
-                    style={{ color: m.isCoordinator ? "var(--primary)" : "var(--muted-foreground)", padding: "0.5rem" }}
-                  >
-                    <Star size={16} fill={m.isCoordinator ? "var(--primary)" : "none"} />
-                  </button>
-                  <button
-                    onClick={() => handleRemoveSector(m.servantId, m.sectorName)}
-                    style={{ color: "#ef4444", padding: "0.5rem" }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+                }
+              />
             ))}
+
             {member.memberships.length === 0 && (
-              <p style={{ padding: "1.5rem", textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.875rem", fontStyle: "italic" }}>
-                Sem setores vinculados.
+              <EmptyState className="border-b border-border">Sem setores vinculados.</EmptyState>
+            )}
+
+            {availableSectors.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-3 pt-4">
+                <Select
+                  label="Setor a adicionar"
+                  value={selectedSectorId}
+                  onChange={setSelectedSectorId}
+                  options={[
+                    { value: "", label: "Selecione um setor" },
+                    ...availableSectors.map((s) => ({
+                      value: String(s.id),
+                      label: `${s.ministry.name} - ${s.name}`,
+                    })),
+                  ]}
+                />
+                <Button onClick={handleAddSector} disabled={!selectedSectorId || addingLoading}>
+                  {addingLoading ? "Adicionando..." : "Adicionar"}
+                </Button>
+              </div>
+            ) : (
+              <p className="pt-4 text-xs text-muted-foreground">
+                Já vinculado a todos os setores disponíveis.
               </p>
             )}
           </div>
-
-          {availableSectors.length > 0 && (
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <Select
-                label="Setor a adicionar"
-                value={selectedSectorId}
-                onChange={setSelectedSectorId}
-                options={[
-                  { value: "", label: "Selecione um setor" },
-                  ...availableSectors.map((s) => ({
-                    value: String(s.id),
-                    label: `${s.ministry.name} - ${s.name}`,
-                  })),
-                ]}
-              />
-              <button
-                onClick={handleAddSector}
-                className="btn btn-primary"
-                disabled={!selectedSectorId || addingLoading}
-              >
-                Adicionar
-              </button>
-            </div>
-          )}
         </div>
 
         <div>

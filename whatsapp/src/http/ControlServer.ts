@@ -135,16 +135,29 @@ export class ControlServer {
         return;
       }
 
-      // O culto é fabricado a partir de agora, para o texto sair coerente com
-      // o tipo de aviso: em 2 horas se for o de 2 horas, amanhã se for a
-      // véspera.
+      // `date` e `time` permitem reproduzir um culto específico — é o caso de
+      // mandar o aviso de um horário que o cron já recusou por atraso. Sem
+      // eles, o culto é fabricado a partir de agora, coerente com o tipo de
+      // aviso: em 2 horas para o de 2 horas, amanhã para a véspera.
       const agora = clock.now();
       const alvo = new Date(agora.getTime() + (kind === "two_hours" ? 2 : 26) * 60 * 60 * 1000);
+      const fmt = (opts: Intl.DateTimeFormatOptions, locale: string) =>
+        new Intl.DateTimeFormat(locale, { timeZone: clock.timeZoneName, ...opts }).format(alvo);
+
+      const dateParam = req.query.date ? String(req.query.date) : null;
+      const timeParam = req.query.time ? String(req.query.time) : null;
+      if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        res.status(400).json({ erro: "date precisa ser YYYY-MM-DD" });
+        return;
+      }
+      if (timeParam && !/^\d{2}:\d{2}$/.test(timeParam)) {
+        res.status(400).json({ erro: "time precisa ser HH:MM" });
+        return;
+      }
+
       const service = {
-        date: new Intl.DateTimeFormat("en-CA", { timeZone: clock.timeZoneName }).format(alvo),
-        time: new Intl.DateTimeFormat("pt-BR", {
-          timeZone: clock.timeZoneName, hour: "2-digit", minute: "2-digit", hour12: false,
-        }).format(alvo),
+        date: dateParam ?? fmt({}, "en-CA"),
+        time: timeParam ?? fmt({ hour: "2-digit", minute: "2-digit", hour12: false }, "pt-BR"),
       };
 
       const texto = message.build({
