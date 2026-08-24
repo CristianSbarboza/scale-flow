@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, Save, ShieldAlert, Copy, Check } from "lucide-react";
-import { getMinistryById, updateMinistry } from "@/lib/actions/ministries";
+import { getMinistryById, updateMinistryDetails, transferMinistryLeader } from "@/lib/actions/ministries";
+import Field from "@/components/ui/Field";
+import TextareaField from "@/components/ui/TextareaField";
+import Button from "@/components/ui/Button";
+import Avatar from "@/components/ui/Avatar";
+import { useToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import StatsRule from "@/components/ui/StatsRule";
 
 interface Ministry {
@@ -40,18 +46,24 @@ export default function MinistryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string);
+  const { showToast } = useToast();
+  const askConfirm = useConfirm();
 
   const [ministry, setMinistry] = useState<Ministry | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  // A troca de líder é um formulário à parte, fechado por padrão. Aberto por
+  // acidente ele não faz nada; só o botão de confirmar transfere.
+  const [transferOpen, setTransferOpen] = useState(false);
   const [leaderName, setLeaderName] = useState("");
   const [leaderEmail, setLeaderEmail] = useState("");
+  const [transferring, setTransferring] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,25 +77,72 @@ export default function MinistryDetailPage() {
       setMinistry(typed);
       setName(typed.name);
       setDescription(typed.description || "");
-      setLeaderName(typed.leader.name);
-      setLeaderEmail(typed.leader.email);
       setLoading(false);
     });
     return () => { isMounted = false; };
   }, [id, router]);
 
-  const handleUpdate = async () => {
+  const recarregar = async () => {
+    const atualizado = await getMinistryById(id);
+    setMinistry(atualizado as unknown as Ministry);
+    return atualizado as unknown as Ministry;
+  };
+
+  const handleSaveDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSaving(true);
-    const result = await updateMinistry(id, name, description, leaderName, leaderEmail);
-    if (result?.password) {
-      setGeneratedPassword(result.password);
+    try {
+      await updateMinistryDetails(id, name, description);
+      await recarregar();
+      showToast("Ministério atualizado.", "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao salvar.", "error");
+    } finally {
       setSaving(false);
-    } else {
-      const refreshed = await getMinistryById(id);
-      setMinistry(refreshed as unknown as Ministry);
-      setSaving(false);
-      setIsEditing(false);
     }
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // O aviso vem ANTES da gravação, não depois: o painel de senha aparecendo
+    // era o único sinal de que uma conta tinha sido criada, e já era tarde.
+    const ok = await askConfirm({
+      title: "Trocar líder do ministério",
+      message:
+        `A liderança de ${ministry?.name} passa de ${ministry?.leader.name} para ${leaderName.trim()}. ` +
+        `Se ${leaderEmail.trim()} ainda não tiver conta, uma será criada com senha gerada, ` +
+        `que aparece uma única vez para você repassar.`,
+      confirmLabel: "Trocar líder",
+    });
+    if (!ok) return;
+
+    setTransferring(true);
+    try {
+      const result = await transferMinistryLeader(id, leaderName, leaderEmail);
+      await recarregar();
+      setTransferOpen(false);
+      if (result.password) {
+        setGeneratedPassword(result.password);
+      } else {
+        showToast(result.unchanged ? "Nome do líder atualizado." : "Líder trocado.", "success");
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao trocar o líder.", "error");
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  // "Cancelar" não precisa de botão: o Salvar simplesmente não habilita.
+  const semMudanca = name.trim() === ministry?.name
+    && description.trim() === (ministry?.description ?? "");
+
+  const abrirTransferencia = () => {
+    // Nasce com os dados atuais: o caso comum é corrigir a grafia do nome,
+    // não digitar uma pessoa nova do zero.
+    setLeaderName(ministry?.leader.name ?? "");
+    setLeaderEmail(ministry?.leader.email ?? "");
+    setTransferOpen(true);
   };
 
   const copyPassword = () => {
@@ -112,42 +171,16 @@ export default function MinistryDetailPage() {
           <div style={{ width: "56px", height: "56px", borderRadius: "var(--radius)", background: "var(--muted)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", flexShrink: 0 }}>
             <Church size={28} />
           </div>
-          <div>
-            {isEditing ? (
-              <input
-                className="input"
-                style={{ fontSize: "1.375rem", fontWeight: 700, padding: "0.375rem 0.5rem", marginBottom: "0.5rem" }}
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-            ) : (
-              <h1 style={{ fontSize: "2rem" }}>{ministry.name}</h1>
-            )}
-            {isEditing ? (
-              <textarea
-                className="input"
-                style={{ height: "4.5rem" }}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Descrição do ministério (opcional)"
-              />
-            ) : (
-              <p style={{ color: "var(--muted-foreground)" }}>
-                {ministry.description || "Gerenciamento estratégico e visão ministerial deste departamento."}
-              </p>
+          <div className="min-w-0">
+            <h1 style={{ fontSize: "2rem" }}>{ministry.name}</h1>
+            {/* Sem texto de enfeite quando não há descrição: o antigo
+                "Gerenciamento estratégico e visão ministerial deste
+                departamento" parecia conteúdo e não era de ninguém. */}
+            {ministry.description && (
+              <p style={{ color: "var(--muted-foreground)" }}>{ministry.description}</p>
             )}
           </div>
         </div>
-        {!generatedPassword && (
-          <button
-            onClick={() => isEditing ? handleUpdate() : setIsEditing(true)}
-            disabled={saving}
-            className={`btn ${isEditing ? "btn-primary" : "btn-secondary"}`}
-          >
-            {isEditing ? <Save size={18} /> : <Edit3 size={18} />}
-            {isEditing ? (saving ? "Salvando..." : "Salvar") : "Editar"}
-          </button>
-        )}
       </header>
 
       {/* Mesma régua de /admin e da tela do servo. Eram dois cards de 120px de
@@ -177,7 +210,7 @@ export default function MinistryDetailPage() {
             </button>
           </div>
           <button
-            onClick={() => { setGeneratedPassword(null); setIsEditing(false); }}
+            onClick={() => setGeneratedPassword(null)}
             className="btn btn-primary"
             style={{ width: "100%", marginTop: "1rem" }}
           >
@@ -186,30 +219,80 @@ export default function MinistryDetailPage() {
         </div>
       )}
 
-      <div className="card glass" style={{ marginBottom: "2.5rem" }}>
-          <p style={{ ...sectionLabelStyle, marginBottom: "0.75rem" }}>Responsável</p>
-          {isEditing ? (
-            <div style={{ display: "grid", gap: "0.5rem" }}>
-              <input className="input" value={leaderName} onChange={e => setLeaderName(e.target.value)} placeholder="Nome" />
-              <input className="input" value={leaderEmail} onChange={e => setLeaderEmail(e.target.value)} placeholder="E-mail" />
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, flexShrink: 0 }}>
-                  {ministry.leader.name.charAt(0)}
-                </div>
-                <div>
-                  <p style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{ministry.leader.name}</p>
-                  <p style={{ fontSize: "0.6875rem", color: "var(--muted-foreground)", textTransform: "uppercase" }}>Líder Geral</p>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>
-                <Mail size={14} />
+      <div className="grid gap-6" style={{ marginBottom: "2.5rem" }}>
+        {/* Formulário sempre visível, sem modo escondido. O Salvar só habilita
+            quando algo mudou, então "cancelar" é simplesmente não salvar. */}
+        <form onSubmit={handleSaveDetails} className="card glass grid gap-4">
+          <p style={sectionLabelStyle}>Dados do ministério</p>
+          <Field
+            label="Nome"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+            required
+          />
+          <TextareaField
+            label="Descrição (opcional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Para que serve este ministério"
+          />
+          <Button type="submit" disabled={saving || semMudanca} className="justify-self-start">
+            <Save size={16} />
+            {saving ? "Salvando..." : "Salvar"}
+          </Button>
+        </form>
+
+        <div className="card glass grid gap-4">
+          <p style={sectionLabelStyle}>Líder</p>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Avatar name={ministry.leader.name} size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{ministry.leader.name}</p>
+              <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+                <Mail size={14} className="shrink-0" />
                 {ministry.leader.email}
-              </div>
+              </p>
             </div>
-        )}
+            {!transferOpen && (
+              <Button variant="secondary" onClick={abrirTransferencia} className="shrink-0">
+                <Edit3 size={16} />
+                Trocar líder
+              </Button>
+            )}
+          </div>
+
+          {transferOpen && (
+            <form onSubmit={handleTransfer} className="grid gap-4 border-t border-border pt-4">
+              <p className="text-sm text-muted-foreground">
+                Trocar o e-mail transfere a liderança para outra pessoa. Se o e-mail ainda não
+                tiver conta, uma será criada com senha gerada.
+              </p>
+              <Field
+                label="Nome do líder"
+                value={leaderName}
+                onChange={(e) => setLeaderName(e.target.value)}
+                required
+              />
+              <Field
+                label="E-mail do líder"
+                type="email"
+                value={leaderEmail}
+                onChange={(e) => setLeaderEmail(e.target.value)}
+                required
+              />
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" disabled={transferring || !leaderName.trim() || !leaderEmail.trim()}>
+                  {transferring ? "Trocando..." : "Confirmar troca"}
+                </Button>
+                <Button variant="ghost" onClick={() => setTransferOpen(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gap: "2.5rem" }}>
