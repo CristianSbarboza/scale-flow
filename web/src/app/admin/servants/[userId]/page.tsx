@@ -60,6 +60,7 @@ export default function ServantMemberPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState<string | null>(null);
+  const [editEmail, setEditEmail] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   // Qual interruptor está salvando. Sem isso ele volta sozinho enquanto o
   // servidor responde, e parece que o clique não pegou.
@@ -74,6 +75,7 @@ export default function ServantMemberPage() {
     setMember(m);
     setEditName(m.name);
     setEditPhone(m.phone);
+    setEditEmail(m.email ?? "");
     setSectors(sec as unknown as SectorOption[]);
     setLoading(false);
   }, [userId, router]);
@@ -141,7 +143,7 @@ export default function ServantMemberPage() {
     e.preventDefault();
     setProfileLoading(true);
     try {
-      await updateServantProfile(userId, editName, editPhone);
+      await updateServantProfile(userId, editName, editPhone, editEmail || null);
       showToast("Dados atualizados.", "success");
       await load();
     } catch (error) {
@@ -228,7 +230,8 @@ export default function ServantMemberPage() {
         <div>
           <h1 style={{ fontSize: "2rem" }}>{member.name}</h1>
           <p style={{ color: "var(--muted-foreground)" }}>
-            {member.username ? `usuário: ${member.username}` : (member.email || "-")}
+            {[member.username && `usuário: ${member.username}`, member.email]
+              .filter(Boolean).join(" · ") || "-"}
           </p>
           {/* Só aparece quando existe. Rótulo sem valor ao lado é pior que a
               ausência: ocupa espaço para dizer que não há informação. */}
@@ -278,12 +281,30 @@ export default function ServantMemberPage() {
               value={editPhone}
               onChange={setEditPhone}
             />
+            <Field
+              label="E-mail (opcional)"
+              type="email"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              hint={
+                member.username
+                  ? "Se preenchido, o membro também pode entrar com ele."
+                  : "Este membro entra pelo e-mail — não deixe em branco."
+              }
+            />
             <Button
               type="submit"
               disabled={
                 profileLoading
                 || phoneError !== null
-                || (editName.trim() === member.name && editPhone === member.phone)
+                // Sem username, apagar o e-mail tiraria a única forma de entrar.
+                || (!member.username && !editEmail.trim())
+                || (editName.trim() === member.name
+                    && editPhone === member.phone
+                    && (editEmail.trim().toLowerCase() || null) === member.email)
               }
               className="justify-self-start"
             >

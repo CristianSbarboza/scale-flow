@@ -141,24 +141,59 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
 }
 
 /**
- * Nome e telefone de um membro, editados pelo admin ou pelo líder.
+ * Nome, telefone e e-mail de um membro, editados pelo admin ou pelo líder.
  *
  * `requireServantAccess` é a mesma guarda de `resetServantPassword` e
  * `deleteServantAccount`: confere a igreja antes de qualquer papel, então nem
  * admin alcança membro de outra igreja.
  *
- * Não mexe em `username` nem em `email`. Os dois são identificadores de login:
- * trocá-los por esta tela derrubaria o acesso da pessoa sem ela saber por quê.
+ * **`username` continua de fora.** O e-mail entrou porque é opcional e a
+ * pessoa pode simplesmente não ter — mas ele também é forma de login, e por
+ * isso leva três guardas que nome e telefone não precisam: não pode colidir,
+ * não pode ser roubado de outra igreja, e não pode ser apagado de quem não
+ * tem username, que ficaria sem nenhuma forma de entrar.
  */
-export async function updateServantProfile(userId: string, name: string, phone: string | null) {
+export async function updateServantProfile(
+  userId: string,
+  name: string,
+  phone: string | null,
+  email: string | null = null,
+) {
   await requireServantAccess(userId);
 
   const trimmed = name.trim();
   if (!trimmed) throw new Error("O nome não pode ficar vazio");
   if (trimmed.length > 120) throw new Error("Nome muito longo (máximo 120 caracteres)");
 
+  const novoEmail = email?.trim().toLowerCase() || null;
+
+  const [atual] = await db.select({
+    email: users.email, username: users.username, churchId: users.churchId,
+  }).from(users).where(eq(users.id, userId));
+  if (!atual) throw new Error("Membro não encontrado");
+
+  if (novoEmail !== atual.email) {
+    // Sem e-mail e sem username, a pessoa não tem como entrar. O formulário
+    // não oferece esse caminho, mas a action é um endpoint POST.
+    if (!novoEmail && !atual.username) {
+      throw new Error("Este membro entra pelo e-mail. Cadastre um usuário antes de removê-lo.");
+    }
+
+    if (novoEmail) {
+      const [dono] = await db.select({ id: users.id, name: users.name, churchId: users.churchId })
+        .from(users).where(eq(users.email, novoEmail));
+      if (dono && dono.id !== userId) {
+        throw new Error(
+          dono.churchId === atual.churchId
+            ? `O e-mail ${novoEmail} já está em uso por ${dono.name}.`
+            : `O e-mail ${novoEmail} já pertence a um usuário de outra igreja.`,
+        );
+      }
+    }
+  }
+
   await db.update(users)
-    .set({ name: trimmed, phone: normalizeStoredPhone(phone) })
+    .set({ name: trimmed, phone: normalizeStoredPhone(phone), email: novoEmail })
     .where(eq(users.id, userId));
 
   revalidatePath("/admin/servants");
