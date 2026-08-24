@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import SettingsSection from "@/components/ui/SettingsSection";
-import { getOwnProfile, updateOwnProfile } from "@/lib/actions/account";
+import { getOwnProfile, updateOwnProfile, type OwnProfile } from "@/lib/actions/account";
 import { validateStoredPhone } from "@/lib/phone";
 import { useToast } from "@/components/Toast";
 
@@ -27,7 +27,8 @@ export default function PersonalDataSection() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState<string | null>(null);
-  const [salvo, setSalvo] = useState<{ name: string; phone: string | null } | null>(null);
+  const [email, setEmail] = useState("");
+  const [salvo, setSalvo] = useState<OwnProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -38,6 +39,7 @@ export default function PersonalDataSection() {
         if (!vivo) return;
         setName(perfil.name);
         setPhone(perfil.phone);
+        setEmail(perfil.email ?? "");
         setSalvo(perfil);
       })
       .catch(() => showToast("Não foi possível carregar seus dados.", "error"))
@@ -46,14 +48,22 @@ export default function PersonalDataSection() {
   }, [showToast]);
 
   const phoneError = validateStoredPhone(phone);
-  const semMudanca = salvo !== null && name.trim() === salvo.name && phone === salvo.phone;
+  const emailNormalizado = email.trim().toLowerCase() || null;
+  // Sem username, o e-mail é a única forma de entrar: apagá-lo trancaria a
+  // pessoa do lado de fora da própria conta.
+  const emailObrigatorio = salvo !== null && !salvo.hasUsername;
+  const semEmailProibido = emailObrigatorio && !emailNormalizado;
+  const semMudanca = salvo !== null
+    && name.trim() === salvo.name
+    && phone === salvo.phone
+    && emailNormalizado === salvo.email;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await updateOwnProfile(name, phone);
-      setSalvo({ name: name.trim(), phone });
+      await updateOwnProfile(name, phone, emailNormalizado);
+      setSalvo({ ...salvo!, name: name.trim(), phone, email: emailNormalizado });
       // O nome mora no JWT: sem `update()` a saudação e o avatar continuariam
       // com o antigo até o próximo login. O `refresh()` recarrega as telas
       // que o renderizam no servidor.
@@ -90,9 +100,21 @@ export default function PersonalDataSection() {
             onChange={setPhone}
             hint="Usado para contato do seu líder e para os lembretes de escala."
           />
+          <Field
+            label={emailObrigatorio ? "E-mail" : "E-mail (opcional)"}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            error={semEmailProibido ? "Você entra pelo e-mail. Ele não pode ficar em branco." : null}
+            hint={emailObrigatorio ? "É por ele que você entra no sistema." : "Se preenchido, você também pode entrar com ele."}
+            required={emailObrigatorio}
+          />
           <Button
             type="submit"
-            disabled={saving || semMudanca || phoneError !== null || !name.trim()}
+            disabled={saving || semMudanca || phoneError !== null || !name.trim() || semEmailProibido}
             className="justify-self-start"
           >
             <Save size={16} />

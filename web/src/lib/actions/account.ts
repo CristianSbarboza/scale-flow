@@ -47,15 +47,30 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
   await db.update(users).set({ password: hashedPassword }).where(eq(users.id, session.user.id));
 }
 
-/** Nome e telefone da própria conta, para a tela de configurações preencher. */
-export async function getOwnProfile(): Promise<{ name: string; phone: string | null }> {
+export interface OwnProfile {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  /** Sem username, o e-mail é a única forma de entrar — a tela impede apagá-lo. */
+  hasUsername: boolean;
+}
+
+/** Dados da própria conta, para a tela de configurações preencher. */
+export async function getOwnProfile(): Promise<OwnProfile> {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
-  const [user] = await db.select({ name: users.name, phone: users.phone })
-    .from(users).where(eq(users.id, session.user.id));
+  const [user] = await db.select({
+    name: users.name, phone: users.phone, email: users.email, username: users.username,
+  }).from(users).where(eq(users.id, session.user.id));
   if (!user) throw new Error("Usuário não encontrado");
-  return { name: user.name, phone: user.phone };
+
+  return {
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+    hasUsername: user.username !== null,
+  };
 }
 
 /**
@@ -68,7 +83,7 @@ export async function getOwnProfile(): Promise<{ name: string; phone: string | n
  * Não mexe em `username` nem em `email`: são identificadores de login, e
  * trocá-los aqui derrubaria o próprio acesso da pessoa.
  */
-export async function updateOwnProfile(name: string, phone: string | null) {
+export async function updateOwnProfile(name: string, phone: string | null, email: string | null = null) {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
@@ -76,8 +91,32 @@ export async function updateOwnProfile(name: string, phone: string | null) {
   if (!trimmed) throw new Error("O nome não pode ficar vazio");
   if (trimmed.length > 120) throw new Error("Nome muito longo (máximo 120 caracteres)");
 
+  const novoEmail = email?.trim().toLowerCase() || null;
+
+  const [atual] = await db.select({ email: users.email, username: users.username })
+    .from(users).where(eq(users.id, session.user.id));
+  if (!atual) throw new Error("Usuário não encontrado");
+
+  if (novoEmail !== atual.email) {
+    // Admin e líder entram só por e-mail. Apagá-lo seria trancar-se do lado
+    // de fora — e a action é um endpoint POST, então a tela não basta.
+    if (!novoEmail && !atual.username) {
+      throw new Error("Você entra pelo e-mail. Ele não pode ficar em branco.");
+    }
+    if (novoEmail) {
+      const [dono] = await db.select({ id: users.id })
+        .from(users).where(eq(users.email, novoEmail));
+      // Mensagem sem dono e sem igreja, ao contrário da tela do admin: quem
+      // edita a própria conta não tem por que saber de quem é o e-mail, nem
+      // que existe alguém em outra igreja.
+      if (dono && dono.id !== session.user.id) {
+        throw new Error("Este e-mail já está em uso.");
+      }
+    }
+  }
+
   await db.update(users)
-    .set({ name: trimmed, phone: normalizeStoredPhone(phone) })
+    .set({ name: trimmed, phone: normalizeStoredPhone(phone), email: novoEmail })
     .where(eq(users.id, session.user.id));
 
   revalidatePath("/servant");
