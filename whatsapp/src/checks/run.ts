@@ -223,7 +223,11 @@ async function main() {
     const { ReminderMessage } = await import("../reminders/ReminderMessage.js");
     const texto = new ReminderMessage(new ServiceClock(TZ)).build(servo(), "day_before");
     eq("saudação usa só o primeiro nome", texto.includes("Olá, Maria!"), true);
-    eq("identifica a igreja (um número atende todas)", texto.includes("Igreja Somos Um"), true);
+    // O cabeçalho com o nome da igreja foi removido por decisão do produto.
+    // Com uma igreja só na conta ele era redundante; se voltar a haver mais de
+    // uma, quem serve em duas recebe aviso sem saber de qual é — e este teste
+    // vira o lugar de exigir a volta dele.
+    eq("abre pela saudação, sem cabeçalho de igreja", texto.startsWith("Olá, "), true);
     eq("hora antes da data, as duas em negrito", texto.includes("às *19:00* — *23/08 (domingo)*"), true);
     eq("não repete o nome da escala", texto.includes("*Escala:*"), false);
     eq("sem APP_URL, não sai linha de link", texto.includes("acesse sua conta"), false);

@@ -27,9 +27,6 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Colossenses 3:23-24",
   },
   {
-    // Aparado no ponto onde a frase fecha. O trecho seguinte ("tal como o
-    // Filho do homem...") deixaria a citação pendurada no meio, e no celular
-    // isso parece mensagem cortada por erro.
     text: "Ao contrário, quem quiser tornar-se importante entre vocês deverá ser servo, e quem quiser ser o primeiro deverá ser servo dos demais.",
     reference: "Mateus 20:26-27",
   },
@@ -38,9 +35,6 @@ export const DEFAULT_VERSES: readonly Verse[] = [
     reference: "Josué 24:15",
   },
   {
-    // A lista chegou DUAS VEZES com "os Doze chamaram e disseram-lhes", que
-    // inverte quem fala — não há a quem o "lhes" se refira. Quem chama os
-    // Doze é Jesus. Texto reposto conforme a NVI, que foi a versão pedida.
     text: "Sentando-se, Jesus chamou os Doze e disse: Se alguém quiser ser o primeiro, será o último e o servo de todos.",
     reference: "Marcos 9:35",
   },

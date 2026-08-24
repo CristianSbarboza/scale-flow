@@ -14,6 +14,7 @@ import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import { validateStoredPhone } from "@/lib/phone";
+import { normalizeUsername, validateUsername } from "@/lib/username";
 import SelectField from "@/components/ui/SelectField";
 import FilterSelect from "@/components/ui/FilterSelect";
 import PageHeader from "@/components/ui/PageHeader";
@@ -155,8 +156,16 @@ export default function ServantsPage() {
         <Field
           label="Usuário"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          // Minúsculo enquanto digita, para o que se vê ser o que se grava.
+          // Corrigir depois seria pior: a pessoa sai da tela achando que
+          // cadastrou "Joao.Silva".
+          onChange={e => setUsername(normalizeUsername(e.target.value))}
           placeholder="Ex: joao.silva"
+          error={username ? validateUsername(username) : null}
+          hint="Só minúsculas, números, ponto, hífen e sublinhado."
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
         />
         <Field
@@ -179,7 +188,10 @@ export default function ServantsPage() {
           options={sectors.map(sec => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
           required
         />
-        <Button type="submit" disabled={loading || validateStoredPhone(phone) !== null}>
+        <Button
+          type="submit"
+          disabled={loading || validateStoredPhone(phone) !== null || validateUsername(username) !== null}
+        >
           <UserPlus size={18} />
           {loading ? "Cadastrando..." : "Cadastrar Servo"}
         </Button>

@@ -41,15 +41,20 @@ export const authOptions: NextAuthOptions = {
           });
           if (!church) return null;
 
+          // Minúsculo dos dois lados: o banco guarda normalizado, e quem
+          // digita "Joao.Silva" no celular (com a primeira maiúscula
+          // automática) precisa entrar do mesmo jeito.
           user = await db.query.users.findFirst({
             where: and(
-              eq(users.username, credentials.username),
+              eq(users.username, credentials.username.trim().toLowerCase()),
               eq(users.churchId, church.id)
             ),
           });
         } else if (credentials.email) {
+          // Mesmo motivo do username: e-mail é case-insensitive na prática, e
+          // o cadastro grava minúsculo.
           user = await db.query.users.findFirst({
-            where: eq(users.email, credentials.email),
+            where: eq(users.email, credentials.email.trim().toLowerCase()),
           });
         } else {
           return null;

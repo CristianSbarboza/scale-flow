@@ -122,8 +122,10 @@ function LoginForm() {
 
     const result = await signIn("credentials", {
       church: isEmail ? "" : church.trim().toLowerCase(),
-      username: isEmail ? "" : identifier.trim(),
-      email: isEmail ? identifier.trim() : "",
+      // Minúsculo nos dois: o teclado do celular capitaliza a primeira letra
+      // sozinho, e "Joao.silva" não casaria com o que está gravado.
+      username: isEmail ? "" : identifier.trim().toLowerCase(),
+      email: isEmail ? identifier.trim().toLowerCase() : "",
       password,
       redirect: false,
     });

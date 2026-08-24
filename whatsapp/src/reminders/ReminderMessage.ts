@@ -43,8 +43,6 @@ export class ReminderMessage {
       : this.verses.pick(seed("two_hours"), this.verses.pick(seed("day_before")));
 
     return [
-      `🔔 *${reminder.churchName}*`,
-      ``,
       `Olá, ${primeiroNome(reminder.servantName)}!`,
       abertura,
       ``,

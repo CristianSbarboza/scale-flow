@@ -9,6 +9,7 @@ import { hash } from "bcryptjs";
 import type { Scope } from "@/types/scope";
 import type { CoordinatorSector } from "@/types/domain";
 import { normalizeStoredPhone } from "@/lib/phone";
+import { normalizeStoredUsername } from "@/lib/username";
 
 /**
  * Converte vínculos de servo (com setor e ministério carregados) na forma
@@ -239,8 +240,11 @@ export async function getOrCreateUser(
   identifier: { email?: string | null; username?: string | null; phone?: string | null },
   churchId: number
 ) {
-  const email = identifier.email?.trim() || null;
-  const username = identifier.username?.trim() || null;
+  const email = identifier.email?.trim().toLowerCase() || null;
+  // Normaliza ANTES da busca, não só da gravação: procurar por "Joao" não
+  // acharia o "joao" que já existe, e o insert seguinte esbarraria no índice
+  // único — ou pior, criaria a segunda conta se o caso diferisse.
+  const username = normalizeStoredUsername(identifier.username);
   // Normaliza no servidor: a máscara do cliente é conforto, não garantia.
   // Sem isto, o mesmo número gravado por caminhos diferentes vira valores
   // diferentes, e ninguém percebe até a primeira busca — ou a primeira
