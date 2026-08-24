@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, Save, ShieldAlert, Copy, Check } from "lucide-react";
 import { getMinistryById, updateMinistry } from "@/lib/actions/ministries";
+import StatsRule from "@/components/ui/StatsRule";
 
 interface Ministry {
   id: number;
@@ -149,6 +150,17 @@ export default function MinistryDetailPage() {
         )}
       </header>
 
+      {/* Mesma régua de /admin e da tela do servo. Eram dois cards de 120px de
+          altura para exibir dois números — a contagem é referência, não o
+          assunto da tela. */}
+      <StatsRule
+        className="mb-8"
+        items={[
+          { icon: LayoutGrid, label: "Setores", value: ministry.sectors?.length || 0 },
+          { icon: Users, label: "Total de Servos", value: allServants.length },
+        ]}
+      />
+
       {generatedPassword && (
         <div style={{ padding: "1.25rem", background: "rgba(249, 115, 22, 0.1)", border: "1px solid var(--accent)", borderRadius: "var(--radius)", marginBottom: "2rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--accent)", marginBottom: "0.75rem" }}>
@@ -174,8 +186,7 @@ export default function MinistryDetailPage() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "1.25rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
-        <div className="card glass" style={{ flex: "2 1 260px" }}>
+      <div className="card glass" style={{ marginBottom: "2.5rem" }}>
           <p style={{ ...sectionLabelStyle, marginBottom: "0.75rem" }}>Responsável</p>
           {isEditing ? (
             <div style={{ display: "grid", gap: "0.5rem" }}>
@@ -198,17 +209,7 @@ export default function MinistryDetailPage() {
                 {ministry.leader.email}
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="card" style={{ flex: "1 1 140px", borderLeft: "3px solid var(--primary)" }}>
-          <p style={{ ...sectionLabelStyle, marginBottom: "0.25rem" }}>Setores</p>
-          <p style={{ fontSize: "2rem", fontWeight: 700 }}>{ministry.sectors?.length || 0}</p>
-        </div>
-        <div className="card" style={{ flex: "1 1 140px", borderLeft: "3px solid var(--primary)" }}>
-          <p style={{ ...sectionLabelStyle, marginBottom: "0.25rem" }}>Total de Servos</p>
-          <p style={{ fontSize: "2rem", fontWeight: 700 }}>{allServants.length}</p>
-        </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gap: "2.5rem" }}>
