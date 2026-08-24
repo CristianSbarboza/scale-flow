@@ -276,8 +276,15 @@ export default function MinistryDetailPage() {
                 onChange={(e) => setLeaderEmail(e.target.value)}
                 required
               />
+              {/* Nenhum dos dois preenchido: o formulário está dentro de um
+                  card, não é a ação principal da tela. A borda separa o
+                  confirmar do cancelar sem gastar a cor cheia. */}
               <div className="flex flex-wrap gap-3">
-                <Button type="submit" disabled={transferring || !leaderName.trim() || !leaderEmail.trim()}>
+                <Button
+                  variant="outline"
+                  type="submit"
+                  disabled={transferring || !leaderName.trim() || !leaderEmail.trim()}
+                >
                   {transferring ? "Trocando..." : "Confirmar troca"}
                 </Button>
                 <Button variant="ghost" onClick={() => setTransferOpen(false)}>
