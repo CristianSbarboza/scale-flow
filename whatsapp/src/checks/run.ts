@@ -228,7 +228,8 @@ async function main() {
     // nenhum vínculo cruza igrejas), então dizer o nome dela na mensagem
     // nunca desfaz ambiguidade nenhuma — só ocupa duas linhas.
     eq("abre pela saudação, sem cabeçalho de igreja", texto.startsWith("Olá, "), true);
-    eq("hora antes da data, as duas em negrito", texto.includes("às *19:00* — *23/08 (domingo)*"), true);
+    eq("traz a hora em negrito", texto.includes("às *19:00*."), true);
+    eq("não traz a data por extenso", texto.includes("23/08"), false);
     eq("não repete o nome da escala", texto.includes("*Escala:*"), false);
     eq("sem APP_URL, não sai linha de link", texto.includes("acesse sua conta"), false);
 

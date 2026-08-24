@@ -22,11 +22,11 @@ export class ReminderMessage {
   private readonly appUrl: string | null;
 
   build(reminder: DueReminder, kind: ReminderKind): string {
-    // Hora antes da data, as duas em negrito: o horário é o que a pessoa
-    // precisa saber de relance; a data confirma.
-    const { hora, data } = this.clock.describeParts(reminder.service);
+    // Só a hora. "amanhã"/"hoje" já situa o dia, e a data por extenso ao lado
+    // repetia a mesma informação em outro formato.
+    const { hora } = this.clock.describeParts(reminder.service);
     const dia = kind === "day_before" ? "*amanhã*" : "*hoje*";
-    const abertura = `Você está escalado(a) ${dia}, às *${hora}* — *${data}*.`;
+    const abertura = `Você está escalado(a) ${dia}, às *${hora}*.`;
 
     // A semente é a própria mensagem: mesmo lembrete, mesmo versículo. Ver
     // VerseBook para por que não é sorteio de verdade.
