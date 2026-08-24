@@ -376,7 +376,7 @@ export default function ServantMemberPage() {
                 placeholder="Sua senha de acesso"
               />
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={handleChangePassword}
                 disabled={!newPassword || !confirmingPassword || passwordLoading}
                 className="shrink-0"

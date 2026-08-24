@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, Save, ShieldAlert, Copy, Check } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, ShieldAlert, Copy, Check } from "lucide-react";
 import { getMinistryById, updateMinistryDetails, transferMinistryLeader } from "@/lib/actions/ministries";
 import Field from "@/components/ui/Field";
 import TextareaField from "@/components/ui/TextareaField";
 import Button from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
+import AdminCreateModal from "@/components/AdminCreateModal";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import StatsRule from "@/components/ui/StatsRule";
@@ -60,6 +61,7 @@ export default function MinistryDetailPage() {
 
   // A troca de líder é um formulário à parte, fechado por padrão. Aberto por
   // acidente ele não faz nada; só o botão de confirmar transfere.
+  const [editOpen, setEditOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [leaderName, setLeaderName] = useState("");
   const [leaderEmail, setLeaderEmail] = useState("");
@@ -94,6 +96,7 @@ export default function MinistryDetailPage() {
     try {
       await updateMinistryDetails(id, name, description);
       await recarregar();
+      setEditOpen(false);
       showToast("Ministério atualizado.", "success");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Erro ao salvar.", "error");
@@ -136,6 +139,14 @@ export default function MinistryDetailPage() {
   // "Cancelar" não precisa de botão: o Salvar simplesmente não habilita.
   const semMudanca = name.trim() === ministry?.name
     && description.trim() === (ministry?.description ?? "");
+
+  const abrirEdicao = () => {
+    // Recarrega os campos do que está gravado: se a pessoa abriu, digitou e
+    // fechou sem salvar, o rascunho não pode reaparecer na próxima vez.
+    setName(ministry?.name ?? "");
+    setDescription(ministry?.description ?? "");
+    setEditOpen(true);
+  };
 
   const abrirTransferencia = () => {
     // Nasce com os dados atuais: o caso comum é corrigir a grafia do nome,
@@ -181,6 +192,10 @@ export default function MinistryDetailPage() {
             )}
           </div>
         </div>
+        <Button variant="outline" onClick={abrirEdicao} className="shrink-0">
+          <Edit3 size={16} />
+          Editar
+        </Button>
       </header>
 
       {/* Mesma régua de /admin e da tela do servo. Eram dois cards de 120px de
@@ -219,31 +234,7 @@ export default function MinistryDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-6" style={{ marginBottom: "2.5rem" }}>
-        {/* Formulário sempre visível, sem modo escondido. O Salvar só habilita
-            quando algo mudou, então "cancelar" é simplesmente não salvar. */}
-        <form onSubmit={handleSaveDetails} className="card glass grid gap-4">
-          <p style={sectionLabelStyle}>Dados do ministério</p>
-          <Field
-            label="Nome"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={80}
-            required
-          />
-          <TextareaField
-            label="Descrição (opcional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Para que serve este ministério"
-          />
-          <Button type="submit" disabled={saving || semMudanca} className="justify-self-start">
-            <Save size={16} />
-            {saving ? "Salvando..." : "Salvar"}
-          </Button>
-        </form>
-
-        <div className="card glass grid gap-4">
+      <div className="card glass grid gap-4" style={{ marginBottom: "2.5rem" }}>
           <p style={sectionLabelStyle}>Líder</p>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -256,7 +247,7 @@ export default function MinistryDetailPage() {
               </p>
             </div>
             {!transferOpen && (
-              <Button variant="secondary" onClick={abrirTransferencia} className="shrink-0">
+              <Button variant="outline" onClick={abrirTransferencia} className="shrink-0">
                 <Edit3 size={16} />
                 Trocar líder
               </Button>
@@ -292,8 +283,35 @@ export default function MinistryDetailPage() {
               </div>
             </form>
           )}
-        </div>
       </div>
+
+      {editOpen && (
+        <AdminCreateModal title="Editar ministério" onClose={() => setEditOpen(false)}>
+          <form onSubmit={handleSaveDetails} className="grid gap-4">
+            <Field
+              label="Nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={80}
+              required
+            />
+            <TextareaField
+              label="Descrição (opcional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Para que serve este ministério"
+            />
+            <div className="mt-2 flex flex-wrap justify-end gap-3">
+              <Button variant="ghost" onClick={() => setEditOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving || semMudanca}>
+                {saving ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </form>
+        </AdminCreateModal>
+      )}
 
       <div style={{ display: "grid", gap: "2.5rem" }}>
         <div>

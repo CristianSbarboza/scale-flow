@@ -3,6 +3,8 @@ import { cn } from "@/lib/cn";
 const variants = {
   primary: "btn-primary",
   secondary: "btn-secondary",
+  /** Sem fundo, marcado pela borda. O neutro para ação secundária. */
+  outline: "btn-outline",
   ghost: "btn-ghost",
   danger: "btn-danger",
 } as const;
