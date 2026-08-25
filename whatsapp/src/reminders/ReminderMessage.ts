@@ -53,7 +53,7 @@ export class ReminderMessage {
       // A linha do link só existe se houver endereço configurado: link
       // quebrado é pior que link nenhum.
       ...(this.appUrl ? [``, `Para mais detalhes, acesse sua conta:`, `${this.appUrl}/servant`] : []),
-      ...this.comoEntrar(reminder.churchUsername),
+      ...this.comoEntrar(reminder.churchUsername, reminder.servantUsername),
       ``,
       `_Mensagem automática do ScaleFlow._`,
     ].join("\n");
@@ -79,7 +79,7 @@ export class ReminderMessage {
       ``,
       `Informe os dias em que você pode servir:`,
       ...(this.appUrl ? [`${this.appUrl}/servant?aba=next`] : []),
-      ...this.comoEntrar(notice.churchUsername),
+      ...this.comoEntrar(notice.churchUsername, notice.servantUsername),
       ``,
       `_"${versiculo.text}"_`,
       `— *${versiculo.reference}*`,
@@ -101,12 +101,20 @@ export class ReminderMessage {
    * formulário só sabe dizer "peça ao líder se não souber"; escrevê-lo aqui
    * tira esse pedido do caminho.
    */
-  private comoEntrar(churchUsername: string): string[] {
+  private comoEntrar(churchUsername: string, servantUsername: string | null): string[] {
     if (!this.appUrl) return [];
+
+    // Sem username não dá para nomeá-lo, e inventar um seria pior que omitir:
+    // a pessoa tentaria entrar com um dado que não existe. Aí a linha só diz
+    // o que o formulário vai pedir, que continua sendo verdade.
+    const porUsuario = servantUsername
+      ? `Ou pelo usuário: *${servantUsername}*, igreja *${churchUsername}*, e sua senha.`
+      : `Pelo nome de usuário, o app pede também a igreja — a sua é *${churchUsername}*.`;
+
     return [
       ``,
       `*Como entrar:* se você cadastrou e-mail, use o e-mail e a senha.`,
-      `Pelo nome de usuário, o app pede também a igreja — a sua é *${churchUsername}*.`,
+      porUsuario,
     ];
   }
 

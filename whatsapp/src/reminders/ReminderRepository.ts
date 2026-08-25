@@ -32,6 +32,7 @@ export class ReminderRepository implements ReminderStore {
               u.phone          as phone,
               c.name           as church_name,
               c.username       as church_username,
+              u.username       as servant_username,
               m.name           as ministry_name,
               s.name           as sector_name,
               sch.name         as schedule_name
@@ -59,6 +60,7 @@ export class ReminderRepository implements ReminderStore {
       phone: r.phone,
       churchName: r.church_name,
       churchUsername: r.church_username,
+      servantUsername: r.servant_username,
       ministryName: r.ministry_name,
       sectorName: r.sector_name,
       scheduleName: r.schedule_name,
@@ -88,6 +90,7 @@ export class ReminderRepository implements ReminderStore {
               m.name            as ministry_name,
               s.name            as sector_name,
               c.username        as church_username,
+              u.username        as servant_username,
               count(sd.id)::int as date_count,
               min(sd.date)::text as first_date,
               max(sd.date)::text as last_date
@@ -105,7 +108,7 @@ export class ReminderRepository implements ReminderStore {
           and sch.published_at > now() - ($2 || ' hours')::interval
           and u.phone is not null
           and nl.id is null
-        group by sch.id, sch.name, sv.id, u.name, u.phone, m.name, s.name, c.username`,
+        group by sch.id, sch.name, sv.id, u.name, u.phone, m.name, s.name, c.username, u.username`,
       ["schedule_published", String(sinceHours)],
     );
 
@@ -118,6 +121,7 @@ export class ReminderRepository implements ReminderStore {
       ministryName: r.ministry_name,
       sectorName: r.sector_name,
       churchUsername: r.church_username,
+      servantUsername: r.servant_username,
       dateCount: Number(r.date_count),
       firstDate: r.first_date,
       lastDate: r.last_date,
@@ -149,7 +153,7 @@ export class ReminderRepository implements ReminderStore {
   async findContextByUsername(username: string): Promise<PreviewContext | null> {
     const { rows } = await this.pool.query(
       `select u.name as servant_name, c.name as church_name,
-              c.username as church_username,
+              c.username as church_username, u.username as servant_username,
               m.name as ministry_name, s.name as sector_name
          from users u
          join churches c   on c.id = u.church_id
@@ -166,6 +170,7 @@ export class ReminderRepository implements ReminderStore {
       servantName: r.servant_name,
       churchName: r.church_name,
       churchUsername: r.church_username,
+      servantUsername: r.servant_username,
       ministryName: r.ministry_name ?? "—",
       sectorName: r.sector_name ?? "—",
     };

@@ -27,6 +27,8 @@ export interface PublishedNotice {
   sectorName: string;
   /** O que o servo digita no campo "Igreja" do login. Ver `DueReminder`. */
   churchUsername: string;
+  /** O nome de usuário do próprio servo, ou `null`. Ver `DueReminder`. */
+  servantUsername: string | null;
   /** Quantas datas a escala tem, para a mensagem dizer o tamanho. */
   dateCount: number;
   /** Primeira e última data, para situar o período. */
@@ -50,6 +52,13 @@ export interface DueReminder {
    * adivinhar — o formulário hoje só sabe dizer "peça ao líder se não souber".
    */
   churchUsername: string;
+  /**
+   * O nome de usuário do próprio servo, ou `null`.
+   *
+   * Nulo é normal, não defeito: admin e líder entram por e-mail e têm este
+   * campo vazio. Quem monta a mensagem decide o que dizer sem ele.
+   */
+  servantUsername: string | null;
   ministryName: string;
   sectorName: string;
   scheduleName: string;
@@ -59,7 +68,7 @@ export interface DueReminder {
 /** Dados de uma pessoa para montar uma mensagem de teste. */
 export type PreviewContext = Pick<
   DueReminder,
-  "servantName" | "churchName" | "churchUsername" | "ministryName" | "sectorName"
+  "servantName" | "churchName" | "churchUsername" | "servantUsername" | "ministryName" | "sectorName"
 >;
 
 /**

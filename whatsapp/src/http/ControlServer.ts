@@ -168,6 +168,7 @@ export class ControlServer {
         servantName: contexto?.servantName ?? "Amigo(a)",
         churchName: contexto?.churchName ?? "ScaleFlow",
         churchUsername: contexto?.churchUsername ?? "sua-igreja",
+        servantUsername: contexto?.servantUsername ?? null,
         ministryName: contexto?.ministryName ?? "—",
         sectorName: contexto?.sectorName ?? "—",
         service,

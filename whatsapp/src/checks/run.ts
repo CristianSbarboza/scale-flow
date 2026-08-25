@@ -104,6 +104,7 @@ function servo(over: Partial<DueReminder> = {}): DueReminder {
     phone: "5511987654321",
     churchName: "Igreja Somos Um",
     churchUsername: "somos-um",
+    servantUsername: "maria",
     ministryName: "Multimídia",
     sectorName: "Transmissão",
     scheduleName: "Agosto/2026",
@@ -297,7 +298,7 @@ async function main() {
       scheduleId: 9, scheduleName: "Setembro/2026", servantId: 1,
       servantName: "Maria Aparecida Souza", phone: "5511987654321",
       ministryName: "Multimídia", sectorName: "Transmissão",
-      churchUsername: "somos-um",
+      churchUsername: "somos-um", servantUsername: "maria",
       dateCount: 12, firstDate: "2026-09-06", lastDate: "2026-09-27", ...over,
     });
 
