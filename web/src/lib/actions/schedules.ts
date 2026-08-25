@@ -140,18 +140,48 @@ export async function deleteSchedule(id: number) {
   revalidatePath("/servant");
 }
 
+/**
+ * `destino` move a escala de ministério/setor. Opcional porque quem edita quase
+ * sempre só mexe em nome e datas — e porque o painel do coordenador administra
+ * um setor só, onde mover não faz sentido.
+ *
+ * Mover é uma **segunda autorização**, não mais um campo: poder editar a escala
+ * onde ela está não dá direito de colocá-la em qualquer setor. Os dois ids
+ * chegam do cliente, então os dois são checados — o setor de destino pelo
+ * `requireScheduleSectorAccess` (que já inclui a barreira de igreja), e o par
+ * setor/ministério pela mesma checagem que o `createSchedule` faz, senão dá
+ * para casar um setor desta igreja com o ministério de outra.
+ */
 export async function updateSchedule(
   id: number,
   name: string,
   dates: { date: string, startTime: string }[],
   visibility?: "public" | "private",
+  destino?: { ministryId: number, sectorId: number },
 ) {
   await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
 
+  if (destino) {
+    await requireScheduleSectorAccess(destino.sectorId);
+
+    const [sector] = await db.select({ ministryId: sectors.ministryId })
+      .from(sectors).where(eq(sectors.id, destino.sectorId));
+    if (!sector || sector.ministryId !== destino.ministryId) {
+      throw new Error("O setor informado não pertence a este ministério");
+    }
+  }
+
   await db.update(schedules)
-    .set(visibility ? { name, visibility } : { name })
+    .set({
+      name,
+      ...(visibility ? { visibility } : {}),
+      ...(destino ? { ministryId: destino.ministryId, sectorId: destino.sectorId } : {}),
+    })
     .where(eq(schedules.id, id));
 
+  // Apagar e recriar as datas leva junto disponibilidades e escalados, pelo
+  // cascade de `date_id`. Já era assim em toda edição, e é o que impede a
+  // escala de mudar de setor carregando gente do setor antigo escalada.
   await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
 
   for (const d of dates) {

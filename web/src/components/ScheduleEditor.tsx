@@ -9,23 +9,54 @@ import { useToast } from "@/components/Toast";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 import Button from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
+import SelectField from "@/components/ui/SelectField";
 
 interface Props {
   schedule: {
     id: number;
     name: string;
     visibility: ScheduleVisibility;
+    /** Opcionais: quem não sabe onde a escala está também não pode movê-la. */
+    ministryId?: number;
+    sectorId?: number;
     dates: { date: string, startTime: string }[];
   };
+  /**
+   * Sem estas duas listas o editor não oferece a troca de ministério/setor.
+   * É o caso do painel do coordenador, que administra um setor só — mover a
+   * escala para fora dele não é decisão dele.
+   */
+  ministries?: { id: number, name: string }[];
+  sectors?: { id: number, name: string, ministryId: number }[];
   onClose: () => void;
   onSave: () => void;
 }
 
-export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
+export default function ScheduleEditor({ schedule, ministries, sectors, onClose, onSave }: Props) {
   const { showToast } = useToast();
   const [name, setName] = useState(schedule.name);
   const [visibility, setVisibility] = useState<ScheduleVisibility>(schedule.visibility);
   const [dates, setDates] = useState(schedule.dates.map(d => ({ ...d })));
+
+  // Só dá para mover com as listas em mãos e sabendo de onde a escala sai.
+  const podeMover =
+    ministries !== undefined && sectors !== undefined &&
+    schedule.ministryId !== undefined && schedule.sectorId !== undefined;
+  const [ministryId, setMinistryId] = useState(String(schedule.ministryId ?? ""));
+  const [sectorId, setSectorId] = useState(String(schedule.sectorId ?? ""));
+
+  const setoresDoMinisterio = (sectors ?? []).filter(
+    (sec) => String(sec.ministryId) === ministryId,
+  );
+  const mudouDeSetor = podeMover && sectorId !== String(schedule.sectorId);
+
+  // Trocar de ministério invalida o setor escolhido: ele é de outro ministério.
+  // Se o novo ministério tiver um setor só, adianta e já seleciona.
+  const handleMinistryChange = (novo: string) => {
+    setMinistryId(novo);
+    const doNovo = (sectors ?? []).filter((sec) => String(sec.ministryId) === novo);
+    setSectorId(doNovo.length === 1 ? String(doNovo[0].id) : "");
+  };
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("09:00");
   const [loading, setLoading] = useState(false);
@@ -43,15 +74,19 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (dates.length === 0) { showToast("Adicione ao menos uma data", "error"); return; }
+    if (podeMover && !sectorId) { showToast("Escolha o setor da escala", "error"); return; }
 
     setLoading(true);
     try {
-      await updateSchedule(schedule.id, name, dates, visibility);
+      await updateSchedule(
+        schedule.id, name, dates, visibility,
+        podeMover ? { ministryId: Number(ministryId), sectorId: Number(sectorId) } : undefined,
+      );
       onSave();
       onClose();
     } catch (error) {
       console.error(error);
-      showToast("Erro ao atualizar escala", "error");
+      showToast(error instanceof Error ? error.message : "Erro ao atualizar escala", "error");
     } finally {
       setLoading(false);
     }
@@ -82,7 +117,11 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div>
             <h3 style={{ marginBottom: '0.25rem' }}>Editar Escala</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Ajuste o nome e os horários disponíveis.</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+              {podeMover
+                ? "Ajuste o nome, onde ela fica e os horários disponíveis."
+                : "Ajuste o nome e os horários disponíveis."}
+            </p>
           </div>
           <CloseButton onClick={onClose} />
         </div>
@@ -98,6 +137,35 @@ export default function ScheduleEditor({ schedule, onClose, onSave }: Props) {
               required
             />
           </div>
+
+          {podeMover && (
+            <div className="grid gap-6" style={{ gap: '0.5rem' }}>
+              <div className="grid gap-6" style={{ gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+                <SelectField
+                  label="Ministério"
+                  value={ministryId}
+                  onChange={handleMinistryChange}
+                  options={(ministries ?? []).map((m) => ({ value: m.id, label: m.name }))}
+                  required
+                />
+                <SelectField
+                  label="Setor"
+                  value={sectorId}
+                  onChange={setSectorId}
+                  placeholder={setoresDoMinisterio.length === 0 ? "Nenhum setor" : "Selecionar"}
+                  options={setoresDoMinisterio.map((sec) => ({ value: sec.id, label: sec.name }))}
+                  required
+                />
+              </div>
+              {mudouDeSetor && (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>
+                  Ao salvar, a escala passa a ser do novo setor: quem responde a
+                  disponibilidade passa a ser os servos de lá, e as respostas e
+                  escalações atuais são descartadas.
+                </p>
+              )}
+            </div>
+          )}
 
           <VisibilityToggle value={visibility} onChange={setVisibility} />
 

@@ -415,6 +415,8 @@ export default function SchedulesPage() {
       {editingSchedule && (
         <ScheduleEditor 
           schedule={editingSchedule}
+          ministries={ministries}
+          sectors={sectors}
           onClose={() => setEditingSchedule(null)}
           onSave={() => getSchedules().then(sch => setSchedules(sch as unknown as Schedule[]))}
         />
