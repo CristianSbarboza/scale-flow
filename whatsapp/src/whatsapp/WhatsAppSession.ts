@@ -4,6 +4,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   type WASocket,
 } from "@whiskeysockets/baileys";
+import { rm } from "node:fs/promises";
 import { quietLogger } from "./quietLogger.js";
 
 /**
@@ -33,6 +34,8 @@ export class WhatsAppSession {
   private lastDisconnectReason: string | null = null;
   /** Impede duas reconexões simultâneas quando vários eventos chegam juntos. */
   private connecting = false;
+  /** Idem, para o recomeço do zero depois de um logout. */
+  private repairing = false;
 
   constructor(
     private readonly sessionDir: string,
@@ -68,6 +71,11 @@ export class WhatsAppSession {
 
       socket.ev.on("creds.update", saveCreds);
       socket.ev.on("connection.update", (update) => {
+        // Um socket já substituído continua emitindo: sem esta linha, o `close`
+        // atrasado do socket velho derruba o estado do novo logo depois da
+        // troca — e o QR recém-emitido some da tela sem explicação.
+        if (this.socket !== socket) return;
+
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
@@ -87,10 +95,12 @@ export class WhatsAppSession {
           this.lastDisconnectReason = lastDisconnect?.error?.message ?? `status ${status}`;
 
           // `loggedOut` é definitivo: o aparelho desvinculou o número. Só um
-          // QR novo resolve, e reconectar em laço só gastaria banda.
+          // QR novo resolve, e reconectar com a credencial morta só levaria
+          // outro logout — daí o recomeço do zero em vez de um `start()` seco.
           if (status === DisconnectReason.loggedOut) {
             this.setState("logged_out");
-            this.log("sessão encerrada pelo WhatsApp — é preciso parear de novo em /qr");
+            this.log("sessão encerrada pelo WhatsApp — descartando credenciais para gerar um QR novo");
+            void this.repair();
             return;
           }
 
@@ -101,6 +111,40 @@ export class WhatsAppSession {
       });
     } finally {
       this.connecting = false;
+    }
+  }
+
+  /**
+   * Recomeça do zero depois de um logout: joga fora as credenciais e sobe um
+   * socket novo, que aí sim emite QR.
+   *
+   * Apagar `sessionDir` é o passo que faltava. Com a credencial morta ainda no
+   * disco, o Baileys tenta *retomar* a sessão e toma outro logout em vez de
+   * emitir um QR — então o `/qr.png` respondia 409 para sempre, embora a
+   * mensagem do log mandasse ir justamente lá parear.
+   *
+   * Só roda em `loggedOut`, que é quando o aparelho já desvinculou o número:
+   * não existe credencial boa para se perder aqui.
+   */
+  private async repair(): Promise<void> {
+    if (this.repairing) return;
+    this.repairing = true;
+
+    try {
+      // Antes do `rm`: com `socket` nulo, a guarda lá em cima passa a ignorar
+      // o que o socket velho ainda emitir durante a troca.
+      this.socket = null;
+      this.lastQr = null;
+
+      await rm(this.sessionDir, { recursive: true, force: true });
+      // Uma pausa curta para o caso de o pareamento novo também falhar com
+      // 401: sem ela, a recuperação vira um laço quente de apagar e subir.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await this.start();
+    } catch (erro) {
+      this.log(`falha ao recomeçar a sessão: ${erro instanceof Error ? erro.message : String(erro)}`);
+    } finally {
+      this.repairing = false;
     }
   }
 
