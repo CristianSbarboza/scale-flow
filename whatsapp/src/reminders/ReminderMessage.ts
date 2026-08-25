@@ -53,6 +53,7 @@ export class ReminderMessage {
       // A linha do link só existe se houver endereço configurado: link
       // quebrado é pior que link nenhum.
       ...(this.appUrl ? [``, `Para mais detalhes, acesse sua conta:`, `${this.appUrl}/servant`] : []),
+      ...this.comoEntrar(reminder.churchUsername),
       ``,
       `_Mensagem automática do ScaleFlow._`,
     ].join("\n");
@@ -78,12 +79,35 @@ export class ReminderMessage {
       ``,
       `Informe os dias em que você pode servir:`,
       ...(this.appUrl ? [`${this.appUrl}/servant?aba=next`] : []),
+      ...this.comoEntrar(notice.churchUsername),
       ``,
       `_"${versiculo.text}"_`,
       `— *${versiculo.reference}*`,
       ``,
       `_Mensagem automática do ScaleFlow._`,
     ].join("\n");
+  }
+
+  /**
+   * Como entrar na conta.
+   *
+   * Anda junto do link, e some junto com ele: sem endereço para abrir,
+   * explicar o login é instrução para lugar nenhum.
+   *
+   * O `@` é o que decide a tela. Quem cadastrou e-mail entra com ele e a
+   * senha, e pronto. Quem entra pelo nome de usuário precisa dizer de qual
+   * igreja é, porque `maria` só é única dentro de uma igreja — e o username da
+   * igreja é o único dado do login que o servo não tem como adivinhar. O
+   * formulário só sabe dizer "peça ao líder se não souber"; escrevê-lo aqui
+   * tira esse pedido do caminho.
+   */
+  private comoEntrar(churchUsername: string): string[] {
+    if (!this.appUrl) return [];
+    return [
+      ``,
+      `*Como entrar:* se você cadastrou e-mail, use o e-mail e a senha.`,
+      `Pelo nome de usuário, o app pede também a igreja — a sua é *${churchUsername}*.`,
+    ];
   }
 
   /** `, com 12 datas entre 06/09 e 28/09` — ou vazio, se a escala não tem data. */

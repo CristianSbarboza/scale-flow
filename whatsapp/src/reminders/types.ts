@@ -25,6 +25,8 @@ export interface PublishedNotice {
   phone: string;
   ministryName: string;
   sectorName: string;
+  /** O que o servo digita no campo "Igreja" do login. Ver `DueReminder`. */
+  churchUsername: string;
   /** Quantas datas a escala tem, para a mensagem dizer o tamanho. */
   dateCount: number;
   /** Primeira e última data, para situar o período. */
@@ -42,6 +44,12 @@ export interface DueReminder {
   /** E.164 sem `+`, como o banco guarda. Nunca nulo aqui — a consulta filtra. */
   phone: string;
   churchName: string;
+  /**
+   * O *username* da igreja, não o nome de exibição: é o que o servo digita no
+   * campo "Igreja" do login, e o único dado do pareamento que ele não tem como
+   * adivinhar — o formulário hoje só sabe dizer "peça ao líder se não souber".
+   */
+  churchUsername: string;
   ministryName: string;
   sectorName: string;
   scheduleName: string;
@@ -51,7 +59,7 @@ export interface DueReminder {
 /** Dados de uma pessoa para montar uma mensagem de teste. */
 export type PreviewContext = Pick<
   DueReminder,
-  "servantName" | "churchName" | "ministryName" | "sectorName"
+  "servantName" | "churchName" | "churchUsername" | "ministryName" | "sectorName"
 >;
 
 /**
