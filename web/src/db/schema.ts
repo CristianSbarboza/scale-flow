@@ -1,5 +1,5 @@
 import { pgTable, serial, text, timestamp, integer, uuid, date, time, boolean, uniqueIndex } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * Topo da hierarquia: igreja → ministérios → setores → servos.
@@ -213,7 +213,15 @@ export const notificationLog = pgTable("notification_log", {
   // Irmão do de cima, para o aviso que é por escala. Os dois convivem porque
   // no Postgres NULL nunca colide com NULL num índice único: linha de aviso
   // por data tem `scheduleId` nulo e vice-versa.
-  uniqueIndex("notification_log_schedule_unique").on(t.scheduleId, t.servantId, t.kind),
+  //
+  // **Parcial**, e o `where` não é opcional na declaração: é assim que o
+  // índice existe no banco desde o 004, e quem lê este arquivo precisa ver.
+  // Um `on conflict (schedule_id, servant_id, kind)` sem repetir este mesmo
+  // predicado não infere o índice — o Postgres recusa, e o aviso de escala
+  // publicada morre inteiro. Ver `claimPublished` no serviço whatsapp/.
+  uniqueIndex("notification_log_schedule_unique")
+    .on(t.scheduleId, t.servantId, t.kind)
+    .where(sql`${t.scheduleId} is not null`),
 ]);
 
 export const notificationLogRelations = relations(notificationLog, ({ one }) => ({

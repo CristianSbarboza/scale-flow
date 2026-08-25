@@ -133,7 +133,13 @@ export class ReminderRepository implements ReminderStore {
     const { rows } = await this.pool.query(
       `insert into notification_log (schedule_id, servant_id, kind, status)
             values ($1, $2, 'schedule_published', 'pending')
-       on conflict (schedule_id, servant_id, kind) do update
+       -- O "where" abaixo repete o predicado do indice, e nao e enfeite: o
+       -- notification_log_schedule_unique e PARCIAL (so indexa linhas com
+       -- schedule_id), e o Postgres se recusa a inferir indice parcial sem o
+       -- predicado. Sem esta linha todo aviso de escala publicada morria com
+       -- "no unique or exclusion constraint matching the ON CONFLICT
+       -- specification", e o erro subia ate abortar o ciclo inteiro.
+       on conflict (schedule_id, servant_id, kind) where schedule_id is not null do update
               set status = 'pending', sent_at = now()
             where notification_log.status = 'pending'
               and notification_log.sent_at < now() - interval '5 minutes'
