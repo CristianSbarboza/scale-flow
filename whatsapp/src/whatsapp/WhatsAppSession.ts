@@ -14,7 +14,8 @@ import { quietLogger } from "./quietLogger.js";
  */
 type ErroComStatus = { output?: { statusCode?: number } };
 
-export type SessionState = "starting" | "awaiting_qr" | "connected" | "disconnected" | "logged_out";
+export type SessionState =
+  | "starting" | "awaiting_qr" | "connected" | "disconnected" | "logged_out" | "replaced";
 
 /**
  * A conexão com o WhatsApp: pareamento, reconexão e estado.
@@ -101,6 +102,25 @@ export class WhatsAppSession {
             this.setState("logged_out");
             this.log("sessão encerrada pelo WhatsApp — descartando credenciais para gerar um QR novo");
             void this.repair();
+            return;
+          }
+
+          // `connectionReplaced` é o único caso em que reconectar **piora**.
+          // Ele significa que outra sessão assumiu esta conexão — quase sempre
+          // um segundo processo lendo o mesmo `sessionDir`. Voltar tomaria a
+          // conexão de volta, o outro faria o mesmo, e os dois ficariam se
+          // derrubando para sempre a cada 5s. Sem contar que a briga acaba
+          // custando a credencial: o WhatsApp encerra a sessão dos dois.
+          //
+          // Parar é a resposta certa, e é uma decisão de gente: só quem está
+          // no host sabe qual das instâncias deve continuar viva.
+          if (status === DisconnectReason.connectionReplaced) {
+            this.setState("replaced");
+            this.log(
+              "outra sessão assumiu esta conexão — não vou reconectar para não " +
+              "brigar com ela. Verifique se há um segundo processo usando " +
+              `${this.sessionDir} e deixe só um de pé.`,
+            );
             return;
           }
 
