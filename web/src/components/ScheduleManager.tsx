@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { getScheduleResponses } from "@/lib/actions/schedules";
+import { getScheduleResponses, getScheduleSectorServants } from "@/lib/actions/schedules";
 import LoadingDots from "@/components/ui/LoadingDots";
 import { assignServant, removeAssignment } from "@/lib/actions/availability";
-import { UserPlus, X, Clock, Calendar, CheckCircle2 } from "lucide-react";
+import { UserPlus, X, Clock, Calendar, CheckCircle2, Plus } from "lucide-react";
+import type { SectorServantOption } from "@/types/domain";
 import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 
 interface ScheduleSummary {
   id: number;
@@ -48,11 +50,20 @@ interface ResponseDate {
 
 export default function ScheduleManager({ schedule, onClose }: Props) {
   const [dates, setDates] = useState<ResponseDate[]>([]);
+  const [sectorServants, setSectorServants] = useState<SectorServantOption[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Data cujo seletor de "escalar mesmo sem resposta" está aberto. */
+  const [addingFor, setAddingFor] = useState<number | null>(null);
+  /** `dateId:servantId` em voo, para não escalar duas vezes no clique repetido. */
+  const [assigning, setAssigning] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const data = await getScheduleResponses(schedule.id);
+    const [data, servos] = await Promise.all([
+      getScheduleResponses(schedule.id),
+      getScheduleSectorServants(schedule.id),
+    ]);
     setDates(data as ResponseDate[]);
+    setSectorServants(servos);
     setLoading(false);
   }, [schedule.id]);
 
@@ -62,8 +73,13 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
   }, [load]);
 
   const handleAssign = async (dateId: number, servantId: number) => {
-    await assignServant(dateId, servantId);
-    load();
+    setAssigning(`${dateId}:${servantId}`);
+    try {
+      await assignServant(dateId, servantId);
+      await load();
+    } finally {
+      setAssigning(null);
+    }
   };
 
   const handleRemove = async (assignmentId: number) => {
@@ -124,7 +140,17 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
           ) : (
             <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
               <AnimatePresence mode="popLayout">
-                {dates.map((d) => (
+                {dates.map((d) => {
+                  const escalados = new Set(d.assignments.map((a) => a.servantId));
+                  const responderam = new Set(d.availabilities.map((av) => av.servantId));
+                  // Quem ainda pode entrar neste dia: o setor inteiro menos quem
+                  // já está escalado. Não filtra por disponibilidade de
+                  // propósito — o seletor existe justamente para a emergência em
+                  // que a pessoa não conseguiu responder.
+                  const escalaveis = sectorServants.filter((sv) => !escalados.has(sv.servantId));
+                  const seletorAberto = addingFor === d.id;
+
+                  return (
                   <motion.div
                     layout
                     key={d.id}
@@ -137,7 +163,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                       <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: 'var(--radius)', color: 'white' }}>
                         <Calendar size={20} />
                       </div>
-                      <div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontWeight: 600, fontSize: '1.1rem' }}>
                           {new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}
                         </h4>
@@ -145,7 +171,62 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                           <Clock size={12} /> {d.startTime.slice(0, 5)}
                         </div>
                       </div>
+                      <IconButton
+                        label={seletorAberto ? 'Fechar a lista do setor' : 'Escalar alguém do setor'}
+                        tone={seletorAberto ? 'primary' : 'muted'}
+                        aria-expanded={seletorAberto}
+                        onClick={() => setAddingFor(seletorAberto ? null : d.id)}
+                        className="shrink-0 border border-border"
+                      >
+                        <Plus
+                          size={18}
+                          style={{ transition: 'transform 150ms', transform: seletorAberto ? 'rotate(45deg)' : 'none' }}
+                        />
+                      </IconButton>
                     </div>
+
+                    <AnimatePresence initial={false}>
+                      {seletorAberto && (
+                        <motion.div
+                          key="seletor"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div style={{ padding: '0.75rem', borderRadius: 'var(--radius)', background: 'var(--muted)', border: '1px solid var(--border)' }}>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.625rem' }}>
+                              Todo o setor. Dá para escalar quem não informou disponibilidade.
+                            </p>
+                            <div className="grid gap-6" style={{ gap: '0.375rem', maxHeight: '13rem', overflowY: 'auto', scrollbarWidth: 'thin' }}>
+                              {escalaveis.map((sv) => (
+                                <button
+                                  key={sv.servantId}
+                                  onClick={() => handleAssign(d.id, sv.servantId)}
+                                  disabled={assigning !== null}
+                                  className="flex items-center gap-4 justify-between items-center disabled:cursor-not-allowed disabled:opacity-60 hover:bg-card"
+                                  style={{ padding: '0.5rem 0.625rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', textAlign: 'left', transition: 'background 150ms' }}
+                                >
+                                  <span style={{ fontSize: '0.875rem' }}>{sv.name}</span>
+                                  {responderam.has(sv.servantId) ? (
+                                    <span style={{ fontSize: '0.6875rem', color: '#10b981', flexShrink: 0 }}>disponível</span>
+                                  ) : (
+                                    <UserPlus size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                                  )}
+                                </button>
+                              ))}
+                              {escalaveis.length === 0 && (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontStyle: 'italic', textAlign: 'center' }}>
+                                  {sectorServants.length === 0
+                                    ? 'Este setor ainda não tem servos cadastrados.'
+                                    : 'Todo o setor já está escalado neste dia.'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     <div className="grid gap-6" style={{ gap: '1rem' }}>
                       {/* Assigned Section */}
@@ -201,7 +282,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                               >
                                 <span style={{ fontSize: '0.875rem' }}>{av.servant.user.name}</span>
                                 <Button variant="primary" onClick={() => handleAssign(d.id, av.servantId)}
-                                  
+                                  disabled={assigning !== null}
                                   style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: 'auto' }}>
                                   <UserPlus size={12} /> Escalar
                                 </Button>
@@ -217,7 +298,8 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}

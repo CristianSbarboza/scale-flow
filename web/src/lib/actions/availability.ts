@@ -79,6 +79,15 @@ export async function assignServant(dateId: number, servantId: number) {
   );
   if (!servant) throw new Error("Este servo não pertence ao setor desta escala");
 
+  // Escalar duas vezes a mesma pessoa no mesmo dia não é erro do líder, é
+  // clique repetido — e não há unique em (date_id, servant_id) para barrar.
+  // Sem isto, a pessoa aparecia duplicada em "Confirmados" e o "Remover" só
+  // tirava uma das linhas.
+  const [existing] = await db.select().from(scheduleAssignments).where(
+    and(eq(scheduleAssignments.dateId, dateId), eq(scheduleAssignments.servantId, servantId))
+  );
+  if (existing) return;
+
   await db.insert(scheduleAssignments).values({
     dateId,
     servantId,

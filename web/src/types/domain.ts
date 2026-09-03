@@ -31,6 +31,19 @@ export interface ServantSummary {
   memberships: ServantMembership[];
 }
 
+/**
+ * Um servo do setor, para o seletor de escalação manual.
+ *
+ * É a lista inteira do setor, e não só quem respondeu: o ponto do seletor é
+ * justamente escalar quem não conseguiu informar disponibilidade a tempo.
+ * Quem respondeu já sai marcado na tela, cruzando com as disponibilidades da
+ * data.
+ */
+export interface SectorServantOption {
+  servantId: number;
+  name: string;
+}
+
 export interface ServantOverviewAssignee {
   servantId: number;
   userId: string;

@@ -1,12 +1,12 @@
 "use server";
 
 import { db } from "@/db";
-import { ministries, sectors, schedules, scheduleDates } from "@/db/schema";
+import { ministries, sectors, schedules, scheduleDates, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { eq, and, exists, sql } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
-import type { CalendarSchedule } from "@/types/domain";
+import type { CalendarSchedule, SectorServantOption } from "@/types/domain";
 import type { Scope } from "@/types/scope";
 
 /**
@@ -275,6 +275,31 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
       assignees: d.assignments.map((a) => ({ servantId: a.servantId, name: a.servant.user.name })),
     })),
   }));
+}
+
+/**
+ * Todos os servos do setor da escala, respondendo ou não.
+ *
+ * Serve o botão de escalar manualmente: emergência acontece, e o servo que não
+ * conseguiu abrir o sistema para marcar disponibilidade continua podendo ser
+ * escalado pelo líder. Por isso a lista não passa por `scheduleAvailability`.
+ *
+ * O setor vem da escala, nunca do cliente — é o mesmo id que
+ * `requireScheduleSectorAccess` acabou de autorizar, então não há como pedir a
+ * lista de um setor que não se enxerga.
+ */
+export async function getScheduleSectorServants(scheduleId: number): Promise<SectorServantOption[]> {
+  const sectorId = await getSectorIdForScheduleId(scheduleId);
+  await requireScheduleSectorAccess(sectorId);
+
+  const rows = await db.query.servants.findMany({
+    where: eq(servants.sectorId, sectorId),
+    with: { user: publicUser },
+  });
+
+  return rows
+    .map((r) => ({ servantId: r.id, name: r.user.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
 export async function getScheduleResponses(scheduleId: number) {
