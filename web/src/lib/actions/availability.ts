@@ -104,31 +104,38 @@ export async function removeAssignment(assignmentId: number) {
   revalidatePath("/servant");
 }
 
-export async function saveAvailability(servantId: number, dateIds: number[]) {
+/**
+ * Grava a disponibilidade do servo numa escala.
+ *
+ * Quem responde por si mesmo, logado, **substitui** o que tinha enviado: a
+ * tela vem marcada com as datas já informadas, então desmarcar uma precisa
+ * apagá-la, senão o servo desmarca, salva, e a data continua lá. Foi por isso
+ * que o painel bloqueava reabrir uma escala já preenchida — o bloqueio
+ * escondia o fato de que não dava para corrigir nada.
+ *
+ * Quem responde pelo link público **sem sessão** continua só somando datas.
+ * Ali qualquer visitante escolhe qualquer nome da lista, e a tela não tem como
+ * vir marcada sem mostrar a resposta alheia — apagar seria dar a um estranho o
+ * poder de limpar o que o servo já tinha enviado.
+ *
+ * `scheduleId` chega do cliente e é validado como todo o resto: é dele que sai
+ * o conjunto de datas da escala, e usar a lista que o formulário mandou seria
+ * deixar o cliente escolher o que pode ser apagado.
+ */
+export async function saveAvailability(servantId: number, scheduleId: number, dateIds: number[]) {
   const uniqueDateIds = [...new Set(dateIds)];
-  if (uniqueDateIds.length === 0) return;
 
   const [servant] = await db.select().from(servants).where(eq(servants.id, servantId));
   if (!servant) throw new Error("Servo não encontrado");
 
-  // Todas as datas precisam ser da mesma escala, e essa escala precisa ser do
-  // setor do servo — impede gravar cruzando setores/escalas adivinhando IDs.
-  const dateRows = await db.select({
-    scheduleId: schedules.id,
+  const [schedule] = await db.select({
+    id: schedules.id,
     sectorId: schedules.sectorId,
     visibility: schedules.visibility,
     status: schedules.status,
-  })
-    .from(scheduleDates)
-    .innerJoin(schedules, eq(scheduleDates.scheduleId, schedules.id))
-    .where(inArray(scheduleDates.id, uniqueDateIds));
+  }).from(schedules).where(eq(schedules.id, scheduleId));
+  if (!schedule) throw new Error("Escala não encontrada");
 
-  if (dateRows.length !== uniqueDateIds.length) throw new Error("Data inválida");
-
-  const [schedule] = dateRows;
-  if (dateRows.some((r) => r.scheduleId !== schedule.scheduleId)) {
-    throw new Error("As datas precisam ser da mesma escala");
-  }
   if (schedule.sectorId !== servant.sectorId) {
     throw new Error("Este servo não pertence ao setor desta escala");
   }
@@ -138,6 +145,13 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
   if (schedule.status !== "published") {
     throw new Error("Esta escala ainda não está aberta para respostas");
   }
+
+  // Todas as datas precisam ser desta escala — impede gravar cruzando
+  // setores/escalas adivinhando IDs.
+  const datasDaEscala = await db.select({ id: scheduleDates.id })
+    .from(scheduleDates).where(eq(scheduleDates.scheduleId, scheduleId));
+  const idsDaEscala = new Set(datasDaEscala.map((d) => d.id));
+  if (uniqueDateIds.some((id) => !idsDaEscala.has(id))) throw new Error("Data inválida");
 
   // Escala privada: exige login e que o servo informado seja o próprio usuário.
   // Escala pública: sem login segue aberta (por design), mas se houver sessão
@@ -150,17 +164,36 @@ export async function saveAvailability(servantId: number, dateIds: number[]) {
     throw new Error("Não autorizado a responder por outro servo");
   }
 
-  for (const dateId of uniqueDateIds) {
-    const [existing] = await db.select().from(scheduleAvailability).where(
-      and(eq(scheduleAvailability.dateId, dateId), eq(scheduleAvailability.servantId, servantId))
-    );
-    if (existing) continue;
+  // A mesma condição que a página usa para vir com as datas marcadas. Se as
+  // duas saírem de sincronia, ou o servo edita uma tela em branco (e perde o
+  // que tinha), ou desmarca e nada acontece.
+  const substituindo = Boolean(session) && servant.userId === session?.user.id;
 
-    await db.insert(scheduleAvailability).values({
-      servantId,
-      dateId,
-    });
+  const jaMarcadas = idsDaEscala.size === 0 ? [] : await db.select({ dateId: scheduleAvailability.dateId })
+    .from(scheduleAvailability)
+    .where(and(
+      eq(scheduleAvailability.servantId, servantId),
+      inArray(scheduleAvailability.dateId, [...idsDaEscala]),
+    ));
+
+  if (substituindo) {
+    const remover = jaMarcadas.map((r) => r.dateId).filter((id) => !uniqueDateIds.includes(id));
+    if (remover.length > 0) {
+      await db.delete(scheduleAvailability).where(and(
+        eq(scheduleAvailability.servantId, servantId),
+        inArray(scheduleAvailability.dateId, remover),
+      ));
+    }
   }
+
+  const existentes = new Set(jaMarcadas.map((r) => r.dateId));
+  const inserir = uniqueDateIds.filter((id) => !existentes.has(id));
+  if (inserir.length > 0) {
+    await db.insert(scheduleAvailability).values(
+      inserir.map((dateId) => ({ servantId, dateId })),
+    );
+  }
+
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
 }

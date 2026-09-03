@@ -8,6 +8,7 @@ import SelectField from "@/components/ui/SelectField";
 import Button, { buttonClass } from "@/components/ui/Button";
 
 interface AvailabilityFormProps {
+  scheduleId: number;
   dates: Array<{
     id: number;
     date: string;
@@ -20,15 +21,36 @@ interface AvailabilityFormProps {
   initialServantId?: string;
   /** Escala privada: o servo já está identificado pela sessão, não há o que escolher. */
   lockedServantName?: string;
+  /**
+   * Servo da sessão. Só as respostas dele vêm marcadas, e só o envio dele
+   * substitui o que havia — a mesma condição que `saveAvailability` aplica.
+   */
+  editableServantId?: number;
+  /** Datas que esse servo já tinha enviado. */
+  initialDates: number[];
   returnToServant?: boolean;
 }
 
-export default function AvailabilityForm({ dates, servants, initialServantId, lockedServantName, returnToServant }: AvailabilityFormProps) {
+export default function AvailabilityForm({ scheduleId, dates, servants, initialServantId, lockedServantName, editableServantId, initialDates, returnToServant }: AvailabilityFormProps) {
   const validInitialServantId = servants.some((s) => String(s.id) === initialServantId) ? initialServantId! : "";
+  const ehOServoDaSessao = (id: string) => editableServantId !== undefined && id === String(editableServantId);
   const [selectedServant, setSelectedServant] = useState(validInitialServantId);
-  const [selectedDates, setSelectedDates] = useState<number[]>([]);
+  const [selectedDates, setSelectedDates] = useState<number[]>(
+    ehOServoDaSessao(validInitialServantId) ? initialDates : [],
+  );
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const editando = ehOServoDaSessao(selectedServant);
+  /** Já havia resposta: a tela é uma correção, não um primeiro envio. */
+  const corrigindo = editando && initialDates.length > 0;
+
+  // Trocar de nome na lista pública troca de quem são as respostas: as do servo
+  // da sessão vêm marcadas, as de qualquer outro nome não são nossas para mostrar.
+  const handleServantChange = (id: string) => {
+    setSelectedServant(id);
+    setSelectedDates(ehOServoDaSessao(id) ? initialDates : []);
+  };
 
   const toggleDate = (dateId: number) => {
     if (selectedDates.includes(dateId)) {
@@ -41,11 +63,14 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedServant) return alert("Selecione seu nome");
-    if (selectedDates.length === 0) return alert("Selecione ao menos uma data");
+    // Zero datas só faz sentido para quem está corrigindo o que já enviou:
+    // é assim que o servo avisa que não pode em nenhum dia. Num primeiro
+    // envio em branco não há nada a gravar, e o pedido é engano.
+    if (selectedDates.length === 0 && !editando) return alert("Selecione ao menos uma data");
 
     setLoading(true);
     try {
-      await saveAvailability(parseInt(selectedServant), selectedDates);
+      await saveAvailability(parseInt(selectedServant), scheduleId, selectedDates);
       setSubmitted(true);
     } catch (error) {
       console.error(error);
@@ -71,7 +96,11 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
           <Check size={32} color="white" />
         </div>
         <h2 style={{ marginBottom: '0.5rem' }}>Obrigado!</h2>
-        <p style={{ color: 'var(--muted-foreground)' }}>Sua disponibilidade foi enviada com sucesso ao administrador.</p>
+        <p style={{ color: 'var(--muted-foreground)' }}>
+          {corrigindo
+            ? "Sua disponibilidade foi atualizada. Vale a que está aqui agora."
+            : "Sua disponibilidade foi enviada com sucesso ao administrador."}
+        </p>
         {returnToServant && (
           <Link href="/servant" className={buttonClass("primary")} style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
             Voltar ao meu painel
@@ -95,13 +124,20 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
             label="Quem é você?"
             hideLabel
             value={selectedServant}
-            onChange={setSelectedServant}
+            onChange={handleServantChange}
             placeholder="Selecione seu nome"
             options={servants.map((s) => ({ value: s.id, label: s.user.name }))}
             required
           />
         )}
       </div>
+
+      {corrigindo && (
+        <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', textAlign: 'center', marginTop: '-0.75rem' }}>
+          Suas respostas anteriores já vêm marcadas. Vale exatamente o que ficar
+          marcado ao salvar — desmarcar remove a data.
+        </p>
+      )}
 
       <div className="grid gap-6" style={{ gap: '0.75rem' }}>
         {dates.map((d) => {
@@ -149,7 +185,7 @@ export default function AvailabilityForm({ dates, servants, initialServantId, lo
         {loading ? "Enviando..." : (
           <>
             <Send size={18} />
-            Confirmar Disponibilidade
+            {corrigindo ? "Salvar alterações" : "Confirmar Disponibilidade"}
           </>
         )}
       </Button>

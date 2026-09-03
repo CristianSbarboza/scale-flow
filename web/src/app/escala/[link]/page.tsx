@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { schedules, servants } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { schedules, servants, scheduleAvailability } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -111,10 +111,13 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
     return (
       <SchedulePage
         schedule={schedule}
+        scheduleId={schedule.id}
         dates={sortedDates}
         servants={[me]}
         initialServantId={String(me.id)}
         lockedServantName={me.user.name}
+        editableServantId={me.id}
+        initialDates={await marcadasPor(me.id, sortedDates)}
         returnToServant={from === "servant"}
       />
     );
@@ -130,27 +133,58 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
     }
   });
 
+  // Servo logado respondendo por si mesmo: a tela vem marcada com o que ele já
+  // enviou, e o envio passa a substituir (ver `saveAvailability`). Visitante
+  // anônimo continua com a tela em branco e só somando datas — ali qualquer um
+  // escolhe qualquer nome, e marcar a tela mostraria a resposta alheia.
+  const [eu] = session
+    ? await db.query.servants.findMany({
+        where: and(eq(servants.sectorId, schedule.sectorId), eq(servants.userId, session.user.id)),
+        columns: { id: true },
+        limit: 1,
+      })
+    : [];
+
   return (
     <SchedulePage
       schedule={schedule}
+      scheduleId={schedule.id}
       dates={sortedDates}
       servants={sectorServants}
-      initialServantId={servantId}
+      initialServantId={eu ? String(eu.id) : servantId}
+      editableServantId={eu?.id}
+      initialDates={eu ? await marcadasPor(eu.id, sortedDates) : []}
       returnToServant={from === "servant"}
     />
   );
 }
 
+/** As datas desta escala em que o servo já marcou disponibilidade. */
+async function marcadasPor(servantId: number, dates: Array<{ id: number }>) {
+  if (dates.length === 0) return [];
+  const rows = await db.select({ dateId: scheduleAvailability.dateId })
+    .from(scheduleAvailability)
+    .where(and(
+      eq(scheduleAvailability.servantId, servantId),
+      inArray(scheduleAvailability.dateId, dates.map((d) => d.id)),
+    ));
+  return rows.map((r) => r.dateId);
+}
+
 interface SchedulePageProps {
   schedule: { name: string; ministry: { name: string; church: { name: string } }; sector: { name: string } };
+  scheduleId: number;
   dates: Array<{ id: number; date: string; startTime: string }>;
   servants: Array<{ id: number; user: { name: string } }>;
   initialServantId?: string;
   lockedServantName?: string;
+  /** Servo da sessão: o único cujas respostas a tela mostra e o envio substitui. */
+  editableServantId?: number;
+  initialDates: number[];
   returnToServant: boolean;
 }
 
-function SchedulePage({ schedule, dates, servants, initialServantId, lockedServantName, returnToServant }: SchedulePageProps) {
+function SchedulePage({ schedule, scheduleId, dates, servants, initialServantId, lockedServantName, editableServantId, initialDates, returnToServant }: SchedulePageProps) {
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="w-full max-w-[600px] mx-auto px-6">
@@ -174,10 +208,13 @@ function SchedulePage({ schedule, dates, servants, initialServantId, lockedServa
         </div>
 
         <AvailabilityForm
+          scheduleId={scheduleId}
           dates={dates}
           servants={servants}
           initialServantId={initialServantId}
           lockedServantName={lockedServantName}
+          editableServantId={editableServantId}
+          initialDates={initialDates}
           returnToServant={returnToServant}
         />
       </div>

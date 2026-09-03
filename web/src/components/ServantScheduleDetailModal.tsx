@@ -1,8 +1,10 @@
 "use client";
 
-import { Clock, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { Clock, CalendarDays, PencilLine } from "lucide-react";
 import type { ServantOverviewSchedule } from "@/types/domain";
 import CloseButton from "@/components/ui/CloseButton";
+import { buttonClass } from "@/components/ui/Button";
 
 interface ServantScheduleDetailModalProps {
   schedule: ServantOverviewSchedule;
@@ -35,7 +37,7 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div>
             <h3 style={{ marginBottom: "0.25rem" }}>{schedule.name}</h3>
             <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>{schedule.ministryName}</p>
@@ -44,7 +46,7 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
           <CloseButton onClick={onClose} />
         </div>
 
-        <div style={{ padding: "1.5rem", overflowY: "auto", display: "grid", gap: "0.75rem" }}>
+        <div style={{ padding: "1.5rem", overflowY: "auto", display: "grid", gap: "0.75rem", flex: "1 1 auto", minHeight: 0 }}>
           {sortedDates.map((date) => {
             const status = statusFor(date);
             return (
@@ -75,6 +77,24 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
               </div>
             );
           })}
+        </div>
+
+        {/* Ter respondido não fecha a escala: emergência, viagem, troca de
+            turno — o servo precisa poder voltar e corrigir. Antes, clicar numa
+            escala preenchida só abria esta lista, sem caminho de volta ao
+            formulário. */}
+        <div style={{ padding: "1.25rem 1.5rem", borderTop: "1px solid var(--border)", display: "grid", gap: "0.75rem", justifyItems: "center", flexShrink: 0 }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", textAlign: "center" }}>
+            Quer editar sua disponibilidade?
+          </p>
+          <Link
+            href={`/escala/${schedule.shareLink}?from=servant&servantId=${schedule.servantId}`}
+            className={buttonClass("primary")}
+            style={{ display: "inline-flex" }}
+          >
+            <PencilLine size={16} />
+            Editar disponibilidade
+          </Link>
         </div>
       </div>
     </div>
