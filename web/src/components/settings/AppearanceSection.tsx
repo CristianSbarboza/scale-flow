@@ -10,19 +10,19 @@ import { useTheme, type Theme } from "@/components/Providers";
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: "dark", label: "Escuro" },
   { value: "light", label: "Claro" },
-  { value: "amada", label: "Amada do Pai" },
+  { value: "jess", label: "Jess" },
 ];
 
 const THEME_ICONS: Record<Theme, React.ReactNode> = {
   dark: <Moon size={16} className="shrink-0 text-muted-foreground" />,
   light: <Sun size={16} className="shrink-0 text-muted-foreground" />,
-  amada: <Heart size={16} className="shrink-0 text-muted-foreground" />,
+  jess: <Heart size={16} className="shrink-0 text-muted-foreground" />,
 };
 
 /**
  * Aparência: tema do sistema.
  *
- * O tema "Amada do Pai" é exclusivo do servo — por isso o seletor de 3 opções
+ * O tema "Jess" é exclusivo do servo — por isso o seletor de 3 opções
  * só aparece para esse papel; admin e líder continuam com o botão simples de
  * alternar claro/escuro.
  */
@@ -37,7 +37,7 @@ export default function AppearanceSection() {
         <div>
           <p className="text-[0.9375rem] font-semibold">Tema do sistema</p>
           <p className="text-[0.8125rem] text-muted-foreground">
-            {isServant ? "Escolha entre claro, escuro ou Amada do Pai." : "Alterne entre modo claro e escuro."}
+            {isServant ? "Escolha entre claro, escuro ou Jess." : "Alterne entre modo claro e escuro."}
           </p>
         </div>
 

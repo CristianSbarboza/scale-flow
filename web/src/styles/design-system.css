@@ -4,7 +4,7 @@
  * Quatro blocos, nesta ordem:
  *   1. :root            a paleta (tema escuro, o padrão)
  *   2. .light           os overrides do tema claro
- *   3. .amada           os overrides do tema "Amada do Pai", exclusivo do servo
+ *   3. .jess            os overrides do tema "Jess", exclusivo do servo
  *   4. @theme inline    a ponte que expõe tudo como utilitário Tailwind
  *
  * O `inline` faz o Tailwind gerar `var(--primary)` em vez de copiar o valor,
@@ -16,7 +16,7 @@
    não por prefers-color-scheme — então `dark:` precisa escutar a classe. */
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant light (&:where(.light, .light *));
-@custom-variant amada (&:where(.amada, .amada *));
+@custom-variant jess (&:where(.jess, .jess *));
 
 :root {
   /* Colors - Orange, Black, White Palette */
@@ -283,10 +283,10 @@
   background: radial-gradient(circle at top left, #fff7ed, #ffffff);
 }
 
-/* Tema "Amada do Pai" — rosa e suave, exclusivo da área do servo.
+/* Tema "Jess" — rosa e suave, exclusivo da área do servo.
    Estado escolhido por servo em AppearanceSection; nunca aplicado a
    admin/líder (ver checagem de role lá). */
-.amada {
+.jess {
   --primary: #ec4899;
   --primary-hover: #db2777;
   --primary-foreground: #ffffff;
@@ -322,12 +322,12 @@
   --ring: #f472b6;
 }
 
-.amada .glass {
+.jess .glass {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(236, 72, 153, 0.12);
 }
 
-.amada body {
+.jess body {
   background: radial-gradient(circle at top left, #ffe4ef, #fff0f5);
 }
 

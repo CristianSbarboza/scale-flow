@@ -5,7 +5,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { ToastProvider } from "@/components/Toast";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
 
-export type Theme = "dark" | "light" | "amada";
+export type Theme = "dark" | "light" | "jess";
 
 interface ThemeContextType {
   theme: Theme;
@@ -25,10 +25,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
+    const savedTheme = localStorage.getItem("theme") as Theme | "amada" | null;
     setTimeout(() => {
       if (savedTheme) {
-        setThemeState(savedTheme);
+        // "amada" era o nome antigo deste tema. Quem já o escolhera tem o valor
+        // velho gravado no navegador, e sem esta troca cairia num tema que não
+        // existe mais — classe sem regra nenhuma no CSS.
+        setThemeState(savedTheme === "amada" ? "jess" : savedTheme);
       }
       setMounted(true);
     }, 0);
@@ -52,7 +55,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Aplica o tema no <html> e garante que "amada" (exclusivo do servo) nunca
+ * Aplica o tema no <html> e garante que "jess" (exclusivo do servo) nunca
  * fique de pé para outro papel — o mesmo navegador pode logar como servo e
  * depois como admin/líder, e o valor salvo em localStorage não sabe disso.
  * Fica dentro do SessionProvider por precisar de useSession.
@@ -63,12 +66,12 @@ function ThemeSync({ theme, mounted }: { theme: Theme; mounted: boolean }) {
   useEffect(() => {
     if (!mounted) return;
     const isServant = session?.user.role === "servant";
-    const effective: Theme = theme === "amada" && status === "authenticated" && !isServant ? "dark" : theme;
+    const effective: Theme = theme === "jess" && status === "authenticated" && !isServant ? "dark" : theme;
 
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark", "amada");
+    root.classList.remove("light", "dark", "jess");
     root.classList.add(effective);
-    // colorScheme só entende light/dark — "amada" é um tema claro para
+    // colorScheme só entende light/dark — "jess" é um tema claro para
     // efeito de scrollbar e controles nativos do navegador.
     root.style.colorScheme = effective === "dark" ? "dark" : "light";
   }, [theme, mounted, session, status]);
