@@ -52,19 +52,30 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
   const [dates, setDates] = useState<ResponseDate[]>([]);
   const [sectorServants, setSectorServants] = useState<SectorServantOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   /** Data cujo seletor de "escalar mesmo sem resposta" está aberto. */
   const [addingFor, setAddingFor] = useState<number | null>(null);
   /** `dateId:servantId` em voo, para não escalar duas vezes no clique repetido. */
   const [assigning, setAssigning] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [data, servos] = await Promise.all([
-      getScheduleResponses(schedule.id),
-      getScheduleSectorServants(schedule.id),
-    ]);
-    setDates(data as ResponseDate[]);
-    setSectorServants(servos);
-    setLoading(false);
+    // Sem o catch, qualquer falha no servidor deixava o modal girando em
+    // "Carregando" para sempre, e quem está escalando não tinha como
+    // diferenciar isso de uma escala sem resposta nenhuma.
+    try {
+      const [data, servos] = await Promise.all([
+        getScheduleResponses(schedule.id),
+        getScheduleSectorServants(schedule.id),
+      ]);
+      setDates(data as ResponseDate[]);
+      setSectorServants(servos);
+      setErro(null);
+    } catch (e) {
+      console.error(e);
+      setErro(e instanceof Error ? e.message : "Não foi possível carregar as respostas desta escala");
+    } finally {
+      setLoading(false);
+    }
   }, [schedule.id]);
 
   useEffect(() => {
@@ -136,6 +147,11 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
           {loading ? (
             <div className="flex justify-center py-20 text-muted-foreground">
               <LoadingDots label="Carregando dados da escala" />
+            </div>
+          ) : erro ? (
+            <div className="py-20" style={{ textAlign: 'center', display: 'grid', gap: '1rem', justifyItems: 'center' }}>
+              <p style={{ color: 'var(--muted-foreground)' }}>{erro}</p>
+              <Button variant="secondary" onClick={() => { setLoading(true); load(); }}>Tentar de novo</Button>
             </div>
           ) : (
             <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>

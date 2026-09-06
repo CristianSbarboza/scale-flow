@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { ministries, sectors, schedules, scheduleDates, servants } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-import { eq, and, exists, sql } from "drizzle-orm";
+import { eq, and, exists, inArray, sql } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
 import type { CalendarSchedule, SectorServantOption } from "@/types/domain";
 import type { Scope } from "@/types/scope";
@@ -141,6 +141,52 @@ export async function deleteSchedule(id: number) {
 }
 
 /**
+ * As datas da escala passam a ser exatamente `dates`, preservando as linhas que
+ * já existiam.
+ *
+ * Antes toda edição apagava as datas e as recriava, e o cascade de `date_id`
+ * levava junto disponibilidades, escalados e pedidos de troca. Ou seja: trocar
+ * só o nome da escala zerava as respostas de todo mundo, sem aviso e sem volta.
+ *
+ * O casamento é por (dia, horário), que é o que o formulário sabe editar — ele
+ * só adiciona e remove datas, nunca altera uma no lugar. Data repetida é
+ * consumida uma linha por vez para que duas linhas iguais continuem sendo duas.
+ * Os formatos vêm diferentes dos dois lados (`09:00:00` do banco, `09:00` do
+ * formulário), daí o corte antes de comparar.
+ */
+async function sincronizarDatas(scheduleId: number, dates: { date: string, startTime: string }[]) {
+  const chave = (date: string, startTime: string) => `${date.slice(0, 10)}|${startTime.slice(0, 5)}`;
+
+  const existentes = await db.select().from(scheduleDates)
+    .where(eq(scheduleDates.scheduleId, scheduleId));
+
+  const disponiveis = new Map<string, number[]>();
+  for (const linha of existentes) {
+    const k = chave(linha.date, linha.startTime);
+    const fila = disponiveis.get(k);
+    if (fila) fila.push(linha.id);
+    else disponiveis.set(k, [linha.id]);
+  }
+
+  const manter = new Set<number>();
+  const inserir: { date: string, startTime: string }[] = [];
+  for (const d of dates) {
+    const reaproveitada = disponiveis.get(chave(d.date, d.startTime))?.shift();
+    if (reaproveitada !== undefined) manter.add(reaproveitada);
+    else inserir.push(d);
+  }
+
+  const remover = existentes.filter((linha) => !manter.has(linha.id)).map((linha) => linha.id);
+  if (remover.length > 0) {
+    await db.delete(scheduleDates).where(inArray(scheduleDates.id, remover));
+  }
+
+  for (const d of inserir) {
+    await db.insert(scheduleDates).values({ scheduleId, date: d.date, startTime: d.startTime });
+  }
+}
+
+/**
  * `destino` move a escala de ministério/setor. Opcional porque quem edita quase
  * sempre só mexe em nome e datas — e porque o painel do coordenador administra
  * um setor só, onde mover não faz sentido.
@@ -159,7 +205,8 @@ export async function updateSchedule(
   visibility?: "public" | "private",
   destino?: { ministryId: number, sectorId: number },
 ) {
-  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+  const sectorIdAtual = await getSectorIdForScheduleId(id);
+  await requireScheduleSectorAccess(sectorIdAtual);
 
   if (destino) {
     await requireScheduleSectorAccess(destino.sectorId);
@@ -179,17 +226,17 @@ export async function updateSchedule(
     })
     .where(eq(schedules.id, id));
 
-  // Apagar e recriar as datas leva junto disponibilidades e escalados, pelo
-  // cascade de `date_id`. Já era assim em toda edição, e é o que impede a
-  // escala de mudar de setor carregando gente do setor antigo escalada.
-  await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
+  if (destino && destino.sectorId !== sectorIdAtual) {
+    // Trocar de setor invalida as respostas: quem respondeu e quem estava
+    // escalado é do setor antigo. Aqui apagar as datas é o efeito desejado —
+    // o cascade de `date_id` leva junto disponibilidades e escalados.
+    await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
 
-  for (const d of dates) {
-    await db.insert(scheduleDates).values({
-      scheduleId: id,
-      date: d.date,
-      startTime: d.startTime,
-    });
+    for (const d of dates) {
+      await db.insert(scheduleDates).values({ scheduleId: id, date: d.date, startTime: d.startTime });
+    }
+  } else {
+    await sincronizarDatas(id, dates);
   }
 
   revalidatePath("/admin/schedules");
