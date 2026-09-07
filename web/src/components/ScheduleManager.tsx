@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getScheduleResponses, getScheduleSectorServants } from "@/lib/actions/schedules";
 import LoadingDots from "@/components/ui/LoadingDots";
 import { assignServant, removeAssignment } from "@/lib/actions/availability";
-import { UserPlus, X, Clock, Calendar, CheckCircle2, Plus } from "lucide-react";
+import { UserPlus, X, Clock, Calendar, CheckCircle2, Plus, FileDown } from "lucide-react";
+import { exportarEscalaPdf } from "@/lib/escalaPdf";
 import type { SectorServantOption } from "@/types/domain";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
@@ -93,6 +94,9 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
     }
   };
 
+  /** Sem ninguém confirmado não há o que exportar — a folha sairia só com o cabeçalho. */
+  const totalEscalados = dates.reduce((soma, d) => soma + d.assignments.length, 0);
+
   const handleRemove = async (assignmentId: number) => {
     await removeAssignment(assignmentId);
     load();
@@ -134,11 +138,21 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
               </span>
             </div>
           </div>
-          <Button variant="ghost" onClick={onClose}
-            
-            style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
-            <X size={20} />
-          </Button>
+          <div className="flex items-center gap-4 items-center" style={{ gap: '0.5rem', flexShrink: 0 }}>
+            <Button
+              variant="outline"
+              onClick={() => exportarEscalaPdf(schedule, dates)}
+              disabled={loading || totalEscalados === 0}
+              title={totalEscalados === 0 ? 'Nenhum servo confirmado para exportar' : 'Exportar os confirmados em PDF'}
+            >
+              <FileDown size={16} />
+              Exportar PDF
+            </Button>
+            <Button variant="ghost" onClick={onClose}
+              style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
+              <X size={20} />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
