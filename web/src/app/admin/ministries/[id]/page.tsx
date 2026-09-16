@@ -328,14 +328,17 @@ export default function MinistryDetailPage() {
             <LayoutGrid size={16} color="var(--primary)" />
             <span style={sectionLabelStyle}>Setores</span>
           </div>
+          {/* `minWidth: 0` no card porque item de grid nasce com min-width: auto —
+              um nome comprido sem espaço alargava a coluna e vazava do card.
+              `overflowWrap: anywhere` quebra só a palavra que não cabe. */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.75rem" }}>
             {(ministry.sectors || []).map(s => (
-              <Link key={s.id} href={`/admin/sectors/${s.id}`} className="card" style={{ display: "block" }}>
+              <Link key={s.id} href={`/admin/sectors/${s.id}`} className="card" style={{ display: "block", minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
                   <ArrowUpRight size={16} color="var(--muted-foreground)" />
                   <span style={{ fontSize: "1.25rem", fontWeight: 700 }}>{s.servants?.length || 0}</span>
                 </div>
-                <p style={{ fontWeight: 600 }}>{s.name}</p>
+                <p style={{ fontWeight: 600, overflowWrap: "anywhere" }}>{s.name}</p>
                 <p style={{ fontSize: "0.6875rem", color: "var(--muted-foreground)", textTransform: "uppercase", marginTop: "0.125rem" }}>Servos</p>
               </Link>
             ))}
@@ -352,14 +355,15 @@ export default function MinistryDetailPage() {
           </div>
           <div className="grid max-w-[640px] gap-2">
             {allServants.map((srv, i) => (
-              <div key={i} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <p style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{srv.user.name}</p>
-                  <p style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{srv.user.username || srv.user.email || "-"}</p>
+              <div key={i} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+                <div className="min-w-0">
+                  <p className="truncate" style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{srv.user.name}</p>
+                  <p className="truncate" style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>{srv.user.username || srv.user.email || "-"}</p>
                 </div>
                 {/* Texto puro, sem pílula. O fundo arredondado sugeria estado
-                    ou etiqueta clicável, e é só o nome do setor. */}
-                <span className="shrink-0 text-xs text-muted-foreground">
+                    ou etiqueta clicável, e é só o nome do setor. Quebra em vez
+                    de shrink-0: nome de setor comprido esmagava a coluna do nome. */}
+                <span className="max-w-[45%] text-right text-xs text-muted-foreground [overflow-wrap:anywhere]">
                   {srv.sectorName}
                 </span>
               </div>
