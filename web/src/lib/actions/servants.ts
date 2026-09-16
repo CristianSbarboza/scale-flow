@@ -8,7 +8,7 @@ import type { Scope } from "@/types/scope";
 import { hash, compare } from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { publicUser, getScope, requireSectorAccess, requireServantAccess, getOrCreateUser } from "@/lib/scope";
+import { publicUser, getScope, requireSectorAccess, requireServantAccess, getOrCreateUser, ledBy } from "@/lib/scope";
 import { normalizeStoredPhone } from "@/lib/phone";
 import type { ServantMembership, ServantSummary } from "@/types/domain";
 
@@ -62,7 +62,7 @@ function servantsVisibleTo(scope: Scope) {
     eq(ministries.churchId, scope.churchId),
   ];
   if (scope.role !== "admin") {
-    ministryConditions.push(eq(ministries.leaderId, scope.userId));
+    ministryConditions.push(ledBy(scope.userId));
   }
   return exists(
     db.select().from(sectors).where(

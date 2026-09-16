@@ -5,7 +5,7 @@ import { ministries, sectors, schedules, scheduleDates, servants } from "@/db/sc
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { eq, and, exists, inArray, sql } from "drizzle-orm";
-import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId } from "@/lib/scope";
+import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId, ledBy } from "@/lib/scope";
 import type { CalendarSchedule, SectorServantOption } from "@/types/domain";
 import type { Scope } from "@/types/scope";
 
@@ -23,7 +23,7 @@ function schedulesVisibleTo(scope: Scope) {
     eq(ministries.churchId, scope.churchId),
   ];
   if (scope.role !== "admin") {
-    conditions.push(eq(ministries.leaderId, scope.userId));
+    conditions.push(ledBy(scope.userId));
   }
   return exists(db.select().from(ministries).where(and(...conditions)));
 }

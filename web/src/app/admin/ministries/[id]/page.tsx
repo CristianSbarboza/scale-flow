@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, ShieldAlert, Copy, Check } from "lucide-react";
-import { getMinistryById, updateMinistryDetails, transferMinistryLeader, deleteMinistry } from "@/lib/actions/ministries";
+import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, ShieldAlert, Copy, Check, UserPlus, X } from "lucide-react";
+import { getMinistryById, updateMinistryDetails, addMinistryLeader, removeMinistryLeader, deleteMinistry } from "@/lib/actions/ministries";
 import Field from "@/components/ui/Field";
+import PhoneField from "@/components/ui/PhoneField";
+import { validateStoredPhone } from "@/lib/phone";
 import TextareaField from "@/components/ui/TextareaField";
 import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 import Avatar from "@/components/ui/Avatar";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DeleteSection from "@/components/ui/DeleteSection";
@@ -19,7 +22,7 @@ interface Ministry {
   id: number;
   name: string;
   description: string | null;
-  leader: { name: string; email: string };
+  leaders: { userId: string; user: { name: string; email: string | null } }[];
   sectors: {
     id: number;
     name: string;
@@ -60,13 +63,16 @@ export default function MinistryDetailPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  // A troca de líder é um formulário à parte, fechado por padrão. Aberto por
-  // acidente ele não faz nada; só o botão de confirmar transfere.
+  // Adicionar líder é um formulário à parte, fechado por padrão. Aberto por
+  // acidente ele não faz nada; só o botão de confirmar grava.
   const [editOpen, setEditOpen] = useState(false);
-  const [transferOpen, setTransferOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [leaderName, setLeaderName] = useState("");
   const [leaderEmail, setLeaderEmail] = useState("");
-  const [transferring, setTransferring] = useState(false);
+  const [leaderPhone, setLeaderPhone] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  /** `userId` sendo tirado da liderança, para não aceitar dois cliques. */
+  const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,34 +112,47 @@ export default function MinistryDetailPage() {
     }
   };
 
-  const handleTransfer = async (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    // O aviso vem ANTES da gravação, não depois: o painel de senha aparecendo
-    // era o único sinal de que uma conta tinha sido criada, e já era tarde.
-    const ok = await askConfirm({
-      title: "Trocar líder do ministério",
-      message:
-        `A liderança de ${ministry?.name} passa de ${ministry?.leader.name} para ${leaderName.trim()}. ` +
-        `Se ${leaderEmail.trim()} ainda não tiver conta, uma será criada com senha gerada, ` +
-        `que aparece uma única vez para você repassar.`,
-      confirmLabel: "Trocar líder",
-    });
-    if (!ok) return;
-
-    setTransferring(true);
+    setAdding(true);
     try {
-      const result = await transferMinistryLeader(id, leaderName, leaderEmail);
+      const result = await addMinistryLeader(id, leaderName, leaderEmail, leaderPhone);
       await recarregar();
-      setTransferOpen(false);
+      setAddOpen(false);
       if (result.password) {
         setGeneratedPassword(result.password);
       } else {
-        showToast(result.unchanged ? "Nome do líder atualizado." : "Líder trocado.", "success");
+        showToast(
+          result.unchanged ? `${leaderName.trim()} já lidera este ministério.` : "Líder adicionado.",
+          result.unchanged ? "error" : "success",
+        );
       }
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Erro ao trocar o líder.", "error");
+      showToast(error instanceof Error ? error.message : "Erro ao adicionar o líder.", "error");
     } finally {
-      setTransferring(false);
+      setAdding(false);
+    }
+  };
+
+  const handleRemove = async (leader: Ministry["leaders"][number]) => {
+    const ok = await askConfirm({
+      title: "Tirar da liderança",
+      message:
+        `${leader.user.name} deixa de liderar ${ministry?.name}. A conta continua existindo — ` +
+        `some só o acesso a este ministério.`,
+      confirmLabel: "Tirar da liderança",
+    });
+    if (!ok) return;
+
+    setRemoving(leader.userId);
+    try {
+      await removeMinistryLeader(id, leader.userId);
+      await recarregar();
+      showToast("Líder removido.", "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao remover o líder.", "error");
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -149,12 +168,12 @@ export default function MinistryDetailPage() {
     setEditOpen(true);
   };
 
-  const abrirTransferencia = () => {
-    // Nasce com os dados atuais: o caso comum é corrigir a grafia do nome,
-    // não digitar uma pessoa nova do zero.
-    setLeaderName(ministry?.leader.name ?? "");
-    setLeaderEmail(ministry?.leader.email ?? "");
-    setTransferOpen(true);
+  const abrirAdicao = () => {
+    // Sempre em branco: é uma pessoa nova entrando, não a correção de alguém.
+    setLeaderName("");
+    setLeaderEmail("");
+    setLeaderPhone(null);
+    setAddOpen(true);
   };
 
   const copyPassword = () => {
@@ -217,7 +236,7 @@ export default function MinistryDetailPage() {
             <h3 style={{ fontSize: "1rem" }}>Nova Senha Gerada!</h3>
           </div>
           <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginBottom: "1rem" }}>
-            Este novo líder ainda não existia no sistema. Por favor, copie e envie esta senha para que ele possa realizar o primeiro acesso:
+            Este líder ainda não existia no sistema. Copie e envie esta senha para que ele possa realizar o primeiro acesso:
           </p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--input)", padding: "0.75rem 1rem", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
             <code style={{ fontSize: "1.125rem", color: "var(--accent)" }}>{generatedPassword}</code>
@@ -234,33 +253,54 @@ export default function MinistryDetailPage() {
       )}
 
       {/* 640px, a mesma medida de /admin/settings e da tela do servo. Avatar,
-          nome e e-mail ocupam pouco; esticados pela tela toda o botão de
-          trocar líder ficava na outra ponta, sem relação com o texto. */}
+          nome e e-mail ocupam pouco; esticados pela tela toda o botão ficava
+          na outra ponta, sem relação com o texto. */}
       <div className="card glass grid max-w-[640px] gap-4" style={{ marginBottom: "2.5rem" }}>
-          <p style={sectionLabelStyle}>Líder</p>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <Avatar name={ministry.leader.name} size="lg" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{ministry.leader.name}</p>
-              <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
-                <Mail size={14} className="shrink-0" />
-                {ministry.leader.email}
-              </p>
-            </div>
-            {!transferOpen && (
-              <Button variant="outline" onClick={abrirTransferencia} className="shrink-0">
-                <Edit3 size={16} />
-                Trocar líder
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p style={sectionLabelStyle}>{ministry.leaders.length === 1 ? "Líder" : "Líderes"}</p>
+            {!addOpen && (
+              <Button variant="outline" onClick={abrirAdicao} className="shrink-0">
+                <UserPlus size={16} />
+                Adicionar líder
               </Button>
             )}
           </div>
 
-          {transferOpen && (
-            <form onSubmit={handleTransfer} className="grid gap-4 border-t border-border pt-4">
+          <ul className="grid gap-3">
+            {ministry.leaders.map((l) => (
+              <li key={l.userId} className="flex flex-wrap items-center gap-4">
+                <Avatar name={l.user.name} size="lg" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{l.user.name}</p>
+                  {l.user.email && (
+                    <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+                      <Mail size={14} className="shrink-0" />
+                      {l.user.email}
+                    </p>
+                  )}
+                </div>
+                {/* O último líder não tem o X: o servidor recusaria, e um botão
+                    que sempre falha só ensina a pessoa a não confiar nos outros. */}
+                {ministry.leaders.length > 1 && (
+                  <IconButton
+                    label={`Tirar ${l.user.name} da liderança`}
+                    tone="muted"
+                    onClick={() => handleRemove(l)}
+                    disabled={removing !== null}
+                    className="shrink-0 disabled:opacity-50"
+                  >
+                    <X size={16} />
+                  </IconButton>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {addOpen && (
+            <form onSubmit={handleAdd} className="grid gap-4 border-t border-border pt-4">
               <p className="text-sm text-muted-foreground">
-                Trocar o e-mail transfere a liderança para outra pessoa. Se o e-mail ainda não
-                tiver conta, uma será criada com senha gerada.
+                Quem entra passa a gerenciar este ministério junto com os líderes atuais.
+                Se o e-mail ainda não tiver conta, uma será criada com senha gerada.
               </p>
               <Field
                 label="Nome do líder"
@@ -275,6 +315,11 @@ export default function MinistryDetailPage() {
                 onChange={(e) => setLeaderEmail(e.target.value)}
                 required
               />
+              <PhoneField
+                label="Telefone (opcional)"
+                value={leaderPhone}
+                onChange={setLeaderPhone}
+              />
               {/* Nenhum dos dois preenchido: o formulário está dentro de um
                   card, não é a ação principal da tela. A borda separa o
                   confirmar do cancelar sem gastar a cor cheia. */}
@@ -282,11 +327,11 @@ export default function MinistryDetailPage() {
                 <Button
                   variant="outline"
                   type="submit"
-                  disabled={transferring || !leaderName.trim() || !leaderEmail.trim()}
+                  disabled={adding || !leaderName.trim() || !leaderEmail.trim() || validateStoredPhone(leaderPhone) !== null}
                 >
-                  {transferring ? "Trocando..." : "Confirmar troca"}
+                  {adding ? "Adicionando..." : "Adicionar"}
                 </Button>
-                <Button variant="ghost" onClick={() => setTransferOpen(false)}>
+                <Button variant="ghost" onClick={() => setAddOpen(false)}>
                   Cancelar
                 </Button>
               </div>

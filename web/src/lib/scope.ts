@@ -1,8 +1,8 @@
 import 'server-only';
 
 import { db } from "@/db";
-import { ministries, sectors, users, servants, schedules, scheduleDates, scheduleAssignments } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { ministries, ministryLeaders, sectors, users, servants, schedules, scheduleDates, scheduleAssignments } from "@/db/schema";
+import { eq, and, exists } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hash } from "bcryptjs";
@@ -33,6 +33,22 @@ export function mapCoordinatorSectors(
 }
 
 /**
+ * Predicado "este ministério é liderado por `userId`", para compor no `where`
+ * de qualquer consulta que tenha `ministries` no FROM ou num JOIN.
+ *
+ * É a única forma de perguntar isso. A liderança mora em `ministry_leaders`
+ * desde a spec 06 — antes era `eq(ministries.leaderId, ...)` repetido em seis
+ * arquivos, e cada um teria que mudar de novo na próxima vez.
+ */
+export function ledBy(userId: string) {
+  return exists(
+    db.select().from(ministryLeaders).where(
+      and(eq(ministryLeaders.ministryId, ministries.id), eq(ministryLeaders.userId, userId))
+    )
+  );
+}
+
+/**
  * Monta o escopo da sessão atual. Duas consultas, sempre as mesmas,
  * independente do papel — assim o custo é previsível e o resultado
  * não depende de qual ramo do código chamou.
@@ -41,8 +57,8 @@ export async function getScope(): Promise<Scope> {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
-  const led = await db.select({ id: ministries.id }).from(ministries)
-    .where(eq(ministries.leaderId, session.user.id));
+  const led = await db.select({ id: ministryLeaders.ministryId }).from(ministryLeaders)
+    .where(eq(ministryLeaders.userId, session.user.id));
 
   const coordinated = await db.select({ sectorId: servants.sectorId }).from(servants)
     .where(and(eq(servants.userId, session.user.id), eq(servants.isCoordinator, true)));
@@ -98,7 +114,7 @@ async function churchOfSector(sectorId: number) {
   return row?.churchId ?? null;
 }
 
-// Admin, o líder do ministério dono do setor, ou um servo marcado como
+// Admin, um líder do ministério dono do setor, ou um servo marcado como
 // coordenador daquele setor podem gerenciar as escalas do setor.
 // Em todos os casos, dentro da própria igreja.
 export async function requireScheduleSectorAccess(sectorId: number) {
@@ -116,7 +132,7 @@ export async function requireScheduleSectorAccess(sectorId: number) {
   if (session.user.role === "leader") {
     const [sector] = await db.select().from(sectors)
       .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-      .where(and(eq(sectors.id, sectorId), eq(ministries.leaderId, session.user.id)));
+      .where(and(eq(sectors.id, sectorId), ledBy(session.user.id)));
     if (sector) return;
   }
 
@@ -128,7 +144,7 @@ export async function requireScheduleSectorAccess(sectorId: number) {
   throw new Error("Não autorizado a gerenciar a escala deste setor");
 }
 
-// Admin, ou o líder do ministério. Para gestão de estrutura (setores, membros).
+// Admin, ou um líder do ministério. Para gestão de estrutura (setores, membros).
 // Sempre dentro da própria igreja.
 export async function requireMinistryAccess(ministryId: number) {
   const session = await getServerSession(authOptions);
@@ -144,12 +160,12 @@ export async function requireMinistryAccess(ministryId: number) {
   if (session.user.role === "admin") return;
 
   const [ministry] = await db.select().from(ministries)
-    .where(and(eq(ministries.id, ministryId), eq(ministries.leaderId, session.user.id)));
+    .where(and(eq(ministries.id, ministryId), ledBy(session.user.id)));
 
   if (!ministry) throw new Error("Não autorizado a gerenciar este ministério");
 }
 
-// Admin, ou o líder do ministério dono do setor. Diferente de
+// Admin, ou um líder do ministério dono do setor. Diferente de
 // requireScheduleSectorAccess: aqui coordenador NÃO tem acesso, pois isto
 // guarda gestão de estrutura/membros, não a escala do setor.
 export async function requireSectorAccess(sectorId: number) {
@@ -167,7 +183,7 @@ export async function requireSectorAccess(sectorId: number) {
 
   const [sector] = await db.select().from(sectors)
     .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-    .where(and(eq(sectors.id, sectorId), eq(ministries.leaderId, session.user.id)));
+    .where(and(eq(sectors.id, sectorId), ledBy(session.user.id)));
 
   if (!sector) throw new Error("Não autorizado a gerenciar este setor");
 }
@@ -191,7 +207,7 @@ export async function requireServantAccess(userId: string) {
   const [membership] = await db.select().from(servants)
     .innerJoin(sectors, eq(servants.sectorId, sectors.id))
     .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-    .where(and(eq(servants.userId, userId), eq(ministries.leaderId, session.user.id)));
+    .where(and(eq(servants.userId, userId), ledBy(session.user.id)));
 
   if (!membership) {
     throw new Error("Não autorizado a gerenciar este membro");

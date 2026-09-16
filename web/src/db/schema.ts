@@ -51,10 +51,27 @@ export const ministries = pgTable("ministries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  leaderId: uuid("leader_id").references(() => users.id).notNull(),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+/**
+ * Quem lidera cada ministério. Era a coluna `ministries.leader_id`, um líder
+ * só; virou tabela quando um ministério passou a poder ter vários (spec 06).
+ *
+ * `user_id` **sem** cascade, de propósito: é o comportamento que a coluna
+ * antiga tinha. Apagar a conta de quem lidera falha, em vez de deixar um
+ * ministério sem líder nenhum sem ninguém perceber — tira da liderança
+ * primeiro, apaga depois.
+ */
+export const ministryLeaders = pgTable("ministry_leaders", {
+  id: serial("id").primaryKey(),
+  ministryId: integer("ministry_id").references(() => ministries.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("ministry_leaders_unique").on(t.ministryId, t.userId),
+]);
 
 export const sectors = pgTable("sectors", {
   id: serial("id").primaryKey(),
@@ -128,8 +145,13 @@ export const churchesRelations = relations(churches, ({ many }) => ({
 
 export const ministriesRelations = relations(ministries, ({ one, many }) => ({
   sectors: many(sectors),
-  leader: one(users, { fields: [ministries.leaderId], references: [users.id] }),
+  leaders: many(ministryLeaders),
   church: one(churches, { fields: [ministries.churchId], references: [churches.id] }),
+}));
+
+export const ministryLeadersRelations = relations(ministryLeaders, ({ one }) => ({
+  ministry: one(ministries, { fields: [ministryLeaders.ministryId], references: [ministries.id] }),
+  user: one(users, { fields: [ministryLeaders.userId], references: [users.id] }),
 }));
 
 export const sectorsRelations = relations(sectors, ({ one, many }) => ({
@@ -140,7 +162,7 @@ export const sectorsRelations = relations(sectors, ({ one, many }) => ({
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   servant: one(servants),
-  ministriesLed: many(ministries),
+  ministriesLed: many(ministryLeaders),
   church: one(churches, { fields: [users.churchId], references: [churches.id] }),
 }));
 

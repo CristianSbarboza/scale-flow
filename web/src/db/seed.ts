@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "./index";
-import { users, ministries, sectors, servants, churches } from "./schema";
+import { users, ministries, ministryLeaders, sectors, servants, churches } from "./schema";
 import { and, eq } from "drizzle-orm";
 import { hash } from "bcryptjs";
 
@@ -101,11 +101,12 @@ async function seedMinistry(name: string, leaderId: string, churchId: number) {
     [ministry] = await db.insert(ministries).values({
       name,
       description: null,
-      leaderId,
       churchId,
     }).returning();
     console.log(`✅ Ministry created: ${name}`);
   }
+  await db.insert(ministryLeaders).values({ ministryId: ministry.id, userId: leaderId })
+    .onConflictDoNothing();
   return ministry;
 }
 

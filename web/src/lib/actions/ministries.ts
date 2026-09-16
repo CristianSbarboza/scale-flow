@@ -1,10 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { ministries } from "@/db/schema";
+import { ministries, ministryLeaders } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
-import { publicUser, getScope, requireAdmin, getOrCreateUser } from "@/lib/scope";
+import { publicUser, getScope, requireAdmin, requireMinistryAccess, getOrCreateUser, ledBy } from "@/lib/scope";
 
 export async function createMinistry(
   name: string,
@@ -18,12 +18,13 @@ export async function createMinistry(
     leaderName, "leader", { email: leaderEmail, phone: leaderPhone }, scope.churchId
   );
 
-  await db.insert(ministries).values({
+  const [ministry] = await db.insert(ministries).values({
     name,
     description,
-    leaderId: user.id,
     churchId: scope.churchId,
-  });
+  }).returning({ id: ministries.id });
+
+  await db.insert(ministryLeaders).values({ ministryId: ministry.id, userId: user.id });
 
   revalidatePath("/admin/ministries");
   return { password: generatedPassword };
@@ -58,42 +59,75 @@ export async function updateMinistryDetails(id: number, name: string, descriptio
 }
 
 /**
- * Transfere a liderança do ministério.
+ * Soma um líder ao ministério. Vários por ministério, sem limite.
  *
- * É operação de peso e tem action própria por isso. Se o e-mail já pertence a
- * alguém, o ministério passa para essa pessoa; se não, uma conta nova é criada
- * e a senha volta **uma única vez**, para o admin repassar.
+ * `requireMinistryAccess`, e não `requireAdmin`: um líder pode trazer outro
+ * para o próprio ministério — é o pedido da spec 06. Admin alcança qualquer
+ * ministério da igreja pelo mesmo caminho. A barreira de igreja está lá
+ * dentro, antes do ramo de papel.
  *
- * Devolve também quem saiu e quem entrou, para a tela poder dizer o que
- * aconteceu em vez de só recarregar.
+ * Se o e-mail já pertence a alguém, essa pessoa entra (e sobe para `leader`
+ * se era servo); se não, uma conta nova é criada e a senha volta **uma única
+ * vez**, para quem adicionou repassar.
  */
-export async function transferMinistryLeader(id: number, leaderName: string, leaderEmail: string) {
-  const scope = await requireAdmin();
+export async function addMinistryLeader(
+  id: number,
+  leaderName: string,
+  leaderEmail: string,
+  leaderPhone: string | null = null,
+) {
+  await requireMinistryAccess(id);
+  const scope = await getScope();
 
   const nome = leaderName.trim();
   const email = leaderEmail.trim().toLowerCase();
-  if (!nome) throw new Error("Informe o nome do novo líder");
-  if (!email) throw new Error("Informe o e-mail do novo líder");
+  if (!nome) throw new Error("Informe o nome do líder");
+  if (!email) throw new Error("Informe o e-mail do líder");
 
-  const [atual] = await db.select({ leaderId: ministries.leaderId })
-    .from(ministries)
-    .where(and(eq(ministries.id, id), eq(ministries.churchId, scope.churchId)));
-  if (!atual) throw new Error("Ministério não encontrado");
+  const { user, generatedPassword } = await getOrCreateUser(
+    nome, "leader", { email, phone: leaderPhone }, scope.churchId
+  );
 
-  const { user, generatedPassword } = await getOrCreateUser(nome, "leader", { email }, scope.churchId);
-
-  if (user.id === atual.leaderId) {
-    // Mesmo líder: só corrigiu a grafia do nome. Não é transferência.
-    revalidatePath(`/admin/ministries/${id}`);
+  // Já lidera: não é erro, é clique repetido ou grafia corrigida. O índice
+  // único barraria de qualquer forma; aqui só se evita o texto cru do Postgres.
+  const [existente] = await db.select().from(ministryLeaders)
+    .where(and(eq(ministryLeaders.ministryId, id), eq(ministryLeaders.userId, user.id)));
+  if (existente) {
     return { password: null, unchanged: true };
   }
 
-  await db.update(ministries).set({ leaderId: user.id })
-    .where(and(eq(ministries.id, id), eq(ministries.churchId, scope.churchId)));
+  await db.insert(ministryLeaders).values({ ministryId: id, userId: user.id });
 
   revalidatePath("/admin/ministries");
   revalidatePath(`/admin/ministries/${id}`);
+  revalidatePath("/admin");
   return { password: generatedPassword, unchanged: false };
+}
+
+/**
+ * Tira alguém da liderança do ministério. Nunca o último: ministério sem
+ * líder não tem quem cuide dele, e a tela não teria nem para quem mostrar o
+ * botão de adicionar.
+ *
+ * A conta continua existindo, com o papel `leader` — como sempre foi na troca
+ * de líder. Rebaixar para servo trancaria a pessoa para fora: líder entra por
+ * e-mail e servo por usuário, e uma conta criada como líder não tem usuário.
+ */
+export async function removeMinistryLeader(id: number, userId: string) {
+  await requireMinistryAccess(id);
+
+  const atuais = await db.select({ userId: ministryLeaders.userId }).from(ministryLeaders)
+    .where(eq(ministryLeaders.ministryId, id));
+
+  if (!atuais.some((l) => l.userId === userId)) throw new Error("Esta pessoa não lidera este ministério");
+  if (atuais.length === 1) throw new Error("O ministério precisa ter ao menos um líder");
+
+  await db.delete(ministryLeaders)
+    .where(and(eq(ministryLeaders.ministryId, id), eq(ministryLeaders.userId, userId)));
+
+  revalidatePath("/admin/ministries");
+  revalidatePath(`/admin/ministries/${id}`);
+  revalidatePath("/admin");
 }
 
 /**
@@ -126,7 +160,7 @@ export async function getMinistries() {
   return await db.query.ministries.findMany({
     where: scope.role === "admin"
       ? eq(ministries.churchId, scope.churchId)
-      : and(eq(ministries.churchId, scope.churchId), eq(ministries.leaderId, scope.userId)),
+      : and(eq(ministries.churchId, scope.churchId), ledBy(scope.userId)),
     with: {
       sectors: {
         with: {
@@ -135,7 +169,7 @@ export async function getMinistries() {
           }
         }
       },
-      leader: publicUser
+      leaders: { with: { user: publicUser } },
     }
   });
 }
@@ -152,11 +186,11 @@ export async function getMinistryById(id: number) {
           }
         }
       },
-      leader: publicUser
+      leaders: { with: { user: publicUser } },
     }
   });
   if (!ministry) return null;
   if (ministry.churchId !== scope.churchId) return null;
-  if (scope.role !== "admin" && ministry.leaderId !== scope.userId) return null;
+  if (scope.role !== "admin" && !ministry.leaders.some((l) => l.userId === scope.userId)) return null;
   return ministry;
 }

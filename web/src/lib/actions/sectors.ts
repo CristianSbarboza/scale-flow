@@ -1,10 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { ministries, sectors, servants, users } from "@/db/schema";
+import { ministries, ministryLeaders, sectors, servants, users } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
-import { publicUser, getScope, requireMinistryAccess, requireSectorAccess } from "@/lib/scope";
+import { publicUser, getScope, requireMinistryAccess, requireSectorAccess, ledBy } from "@/lib/scope";
 
 export async function createSector(name: string, ministryId: number) {
   await requireMinistryAccess(ministryId);
@@ -35,7 +35,7 @@ export async function getSectors() {
   .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
   .where(scope.role === "admin"
     ? eq(ministries.churchId, scope.churchId)
-    : and(eq(ministries.churchId, scope.churchId), eq(ministries.leaderId, scope.userId)));
+    : and(eq(ministries.churchId, scope.churchId), ledBy(scope.userId)));
 
   const sectorsWithServants = await Promise.all(allSectors.map(async (s) => {
     const srvs = await db.query.servants.findMany({
@@ -101,26 +101,29 @@ export async function getSectorById(id: number) {
     ministry: {
       id: ministries.id,
       name: ministries.name,
-      leaderId: ministries.leaderId,
       churchId: ministries.churchId,
-    },
-    leader: {
-      name: users.name,
-      email: users.email,
     },
   })
   .from(sectors)
   .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
-  .innerJoin(users, eq(ministries.leaderId, users.id))
   .where(and(eq(sectors.id, id), eq(ministries.churchId, scope.churchId)));
 
   if (!sector) return null;
-  if (scope.role !== "admin" && sector.ministry?.leaderId !== scope.userId) return null;
+
+  // Os líderes vêm à parte porque são N: no join de antes, um por linha
+  // duplicaria o setor. A lista também responde "quem consulta lidera?".
+  const leaders = await db.select({ userId: users.id, name: users.name, email: users.email })
+    .from(ministryLeaders)
+    .innerJoin(users, eq(ministryLeaders.userId, users.id))
+    .where(eq(ministryLeaders.ministryId, sector.ministryId))
+    .orderBy(users.name);
+
+  if (scope.role !== "admin" && !leaders.some((l) => l.userId === scope.userId)) return null;
 
   const srvs = await db.query.servants.findMany({
     where: eq(servants.sectorId, id),
     with: { user: publicUser }
   });
 
-  return { ...sector, servants: srvs };
+  return { ...sector, leaders, servants: srvs };
 }

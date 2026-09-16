@@ -11,6 +11,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getMyChurch } from "@/lib/actions/church";
+import { ledBy } from "@/lib/scope";
 import PageHeader from "@/components/ui/PageHeader";
 
 export default async function AdminDashboard() {
@@ -31,7 +32,7 @@ export default async function AdminDashboard() {
    */
   const ministry = isLeader
     ? await db.query.ministries.findFirst({
-        where: and(eq(ministries.leaderId, session.user.id), eq(ministries.churchId, churchId)),
+        where: and(ledBy(session.user.id), eq(ministries.churchId, churchId)),
       })
     : null;
   const ministryId = ministry?.id ?? -1; // líder sem ministério: filtra por id inexistente, nunca por nada
@@ -94,19 +95,20 @@ export default async function AdminDashboard() {
     .limit(5);
 
   // Líder lidera um ministério só — o painel não teria o que listar.
+  // Consulta relacional, e não join com `users`: são N líderes por
+  // ministério, e o join devolveria uma linha por líder.
   const latestMinistries = isLeader
     ? []
-    : await db
-        .select({
-          id: ministries.id,
-          name: ministries.name,
-          leaderName: users.name,
-        })
-        .from(ministries)
-        .innerJoin(users, eq(ministries.leaderId, users.id))
-        .where(eq(ministries.churchId, churchId))
-        .orderBy(desc(ministries.createdAt))
-        .limit(5);
+    : (await db.query.ministries.findMany({
+        where: eq(ministries.churchId, churchId),
+        with: { leaders: { with: { user: { columns: { name: true } } } } },
+        orderBy: desc(ministries.createdAt),
+        limit: 5,
+      })).map((m) => ({
+        id: m.id,
+        name: m.name,
+        leaderNames: m.leaders.map((l) => l.user.name),
+      }));
 
   const ministryCount = isLeader
     ? null
@@ -174,7 +176,7 @@ export default async function AdminDashboard() {
                   key={m.id}
                   leading={<Church size={16} className="text-primary" />}
                   title={m.name}
-                  subtitle={`Líder: ${m.leaderName}`}
+                  subtitle={`${m.leaderNames.length === 1 ? "Líder" : "Líderes"}: ${m.leaderNames.join(", ")}`}
                   href={`/admin/ministries/${m.id}`}
                 />
               ))

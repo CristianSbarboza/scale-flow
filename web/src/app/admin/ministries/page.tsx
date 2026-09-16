@@ -25,10 +25,7 @@ interface Ministry {
   id: number;
   name: string;
   description: string | null;
-  leader: {
-    name: string;
-    email: string;
-  };
+  leaders: { userId: string; user: { name: string; email: string | null } }[];
   sectors: {
     id: number;
     name: string;
@@ -118,7 +115,7 @@ export default function MinistriesPage() {
 
   const filteredMinistries = ministries.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.leader?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+    m.leaders.some((l) => l.user.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (status !== "authenticated" || session?.user.role !== "admin") {
@@ -207,8 +204,8 @@ export default function MinistriesPage() {
               ),
             },
             {
-              header: "Líder",
-              cell: (m) => m.leader?.name || "N/A",
+              header: "Líderes",
+              cell: (m) => m.leaders.map((l) => l.user.name).join(", ") || "N/A",
             },
             {
               header: "Setores",

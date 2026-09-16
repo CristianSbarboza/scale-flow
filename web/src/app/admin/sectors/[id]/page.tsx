@@ -26,7 +26,7 @@ interface Sector {
   id: number;
   name: string;
   ministry: { id: number; name: string } | null;
-  leader: { name: string; email: string | null };
+  leaders: { userId: string; name: string; email: string | null }[];
   servants: Servant[];
 }
 
@@ -114,24 +114,14 @@ export default function SectorDetailPage() {
         ]}
       />
 
-      {/* Só leitura, sem botão de editar: o líder é do ministério, não deste
-          setor. Trocá-lo daqui mudaria a chefia de todos os setores irmãos
-          sem que a tela deixasse isso claro — a troca vive em /admin/ministries. */}
+      {/* Só leitura, sem botão de editar: os líderes são do ministério, não
+          deste setor. Mexer daqui mudaria a chefia de todos os setores irmãos
+          sem que a tela deixasse isso claro — a gestão vive em /admin/ministries. */}
       <div className="card glass mb-6 grid max-w-[640px] gap-4">
-        <p className="text-xs font-bold uppercase tracking-[0.03em] text-muted-foreground">
-          Líder do ministério
-        </p>
-        <div className="flex flex-wrap items-center gap-4">
-          <Avatar name={sector.leader.name} size="lg" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{sector.leader.name}</p>
-            {sector.leader.email && (
-              <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
-                <Mail size={14} className="shrink-0" />
-                {sector.leader.email}
-              </p>
-            )}
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-bold uppercase tracking-[0.03em] text-muted-foreground">
+            {sector.leaders.length === 1 ? "Líder do ministério" : "Líderes do ministério"}
+          </p>
           {sector.ministry && (
             <Link
               href={`/admin/ministries/${sector.ministry.id}`}
@@ -141,6 +131,22 @@ export default function SectorDetailPage() {
             </Link>
           )}
         </div>
+        <ul className="grid gap-3">
+          {sector.leaders.map((l) => (
+            <li key={l.userId} className="flex flex-wrap items-center gap-4">
+              <Avatar name={l.name} size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{l.name}</p>
+                {l.email && (
+                  <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+                    <Mail size={14} className="shrink-0" />
+                    {l.email}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="grid max-w-[640px] gap-6">
