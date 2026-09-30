@@ -43,6 +43,9 @@ export class ReminderMessage {
       `Olá, ${primeiroNome(reminder.servantName)}!`,
       abertura,
       ``,
+      // O título diz o que é aquele dia — Santa Ceia, conferência. Sem ele, a
+      // linha some: "Evento: " vazio pareceria dado faltando.
+      ...(reminder.dateTitle ? [`*Evento:* ${reminder.dateTitle}`] : []),
       `*Ministério:* ${reminder.ministryName}`,
       `*Setor:* ${reminder.sectorName}`,
       ``,

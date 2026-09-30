@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Edit3, Eye, Trash2, Plus, Lock, Link as LinkIcon } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
 import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
-import type { CoordinatorSchedule, CoordinatorSector } from "@/types/domain";
+import type { CoordinatorSchedule, CoordinatorSector, ScheduleDateInput } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
@@ -39,7 +39,7 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   const [name, setName] = useState("");
   const [sectorId, setSectorId] = useState(sectors.length === 1 ? String(sectors[0].id) : "");
   const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
-  const [dates, setDates] = useState<{ date: string; startTime: string }[]>([]);
+  const [dates, setDates] = useState<ScheduleDateInput[]>([]);
   const [creating, setCreating] = useState(false);
   const [lastLink, setLastLink] = useState("");
 

@@ -5,6 +5,13 @@
  * exportar apenas funções assíncronas: cada export lá vira um endpoint POST.
  */
 
+/** Uma data como os formulários de escala a enviam. `title` é opcional. */
+export interface ScheduleDateInput {
+  date: string;
+  startTime: string;
+  title?: string | null;
+}
+
 export interface Church {
   id: number;
   name: string;
@@ -56,6 +63,7 @@ export interface ServantOverviewDate {
   id: number;
   date: string;
   startTime: string;
+  title: string | null;
   confirmed: boolean;
   available: boolean;
   assignees: ServantOverviewAssignee[];
@@ -86,7 +94,7 @@ export interface CoordinatorSchedule {
   shareLink: string;
   ministry: { name: string };
   sector: { name: string };
-  dates: { id: number; date: string; startTime: string }[];
+  dates: { id: number; date: string; startTime: string; title: string | null }[];
 }
 
 export interface CalendarAssignee {
@@ -98,6 +106,7 @@ export interface CalendarDate {
   id: number;
   date: string;
   startTime: string;
+  title: string | null;
   assignees: CalendarAssignee[];
 }
 
@@ -116,6 +125,7 @@ export interface PendingSwapRequest {
   dateId: number;
   date: string;
   startTime: string;
+  title: string | null;
   scheduleName: string;
   sectorName: string;
   ministryName: string;

@@ -27,6 +27,7 @@ export class ReminderRepository implements ReminderStore {
       `select sd.id            as date_id,
               sd.date::text    as service_date,
               sd.start_time::text as service_time,
+              sd.title         as date_title,
               sv.id            as servant_id,
               u.name           as servant_name,
               u.phone          as phone,
@@ -64,6 +65,7 @@ export class ReminderRepository implements ReminderStore {
       ministryName: r.ministry_name,
       sectorName: r.sector_name,
       scheduleName: r.schedule_name,
+      dateTitle: r.date_title,
       service: { date: r.service_date, time: r.service_time },
     }));
   }

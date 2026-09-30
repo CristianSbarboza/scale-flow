@@ -62,6 +62,11 @@ export interface DueReminder {
   ministryName: string;
   sectorName: string;
   scheduleName: string;
+  /**
+   * Título da data ("Culto de Santa Ceia"), ou nada. Opcional no tipo porque
+   * quase toda data é um culto comum, e a mensagem de teste não tem data.
+   */
+  dateTitle?: string | null;
   service: WallTime;
 }
 

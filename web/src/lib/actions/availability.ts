@@ -51,6 +51,7 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
           id: d.id,
           date: d.date,
           startTime: d.startTime,
+          title: d.title,
           confirmed: d.assignments.some((a) => a.servantId === servant.id),
           available: d.availabilities.length > 0,
           assignees: d.assignments.map((a) => ({

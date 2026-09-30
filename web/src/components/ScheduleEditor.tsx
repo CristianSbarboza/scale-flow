@@ -10,6 +10,8 @@ import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityTog
 import Button from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
 import SelectField from "@/components/ui/SelectField";
+import { DATE_TITLE_MAX } from "@/components/ui/ScheduleDatesField";
+import type { ScheduleDateInput } from "@/types/domain";
 
 interface Props {
   schedule: {
@@ -19,7 +21,7 @@ interface Props {
     /** Opcionais: quem não sabe onde a escala está também não pode movê-la. */
     ministryId?: number;
     sectorId?: number;
-    dates: { date: string, startTime: string }[];
+    dates: ScheduleDateInput[];
   };
   /**
    * Sem estas duas listas o editor não oferece a troca de ministério/setor.
@@ -59,12 +61,20 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
   };
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("09:00");
+  const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
   const addDate = () => {
     if (!newDate) return;
-    setDates([...dates, { date: newDate, startTime: newStartTime }]);
+    setDates([...dates, { date: newDate, startTime: newStartTime, title: newTitle.trim() || null }]);
     setNewDate("");
+    setNewTitle("");
+  };
+
+  // Só o título muda no lugar: data e horário identificam a linha no servidor,
+  // e trocar um deles apagaria as respostas daquela data.
+  const renameDate = (index: number, title: string) => {
+    setDates(dates.map((d, i) => (i === index ? { ...d, title } : d)));
   };
 
   const removeDate = (index: number) => {
@@ -179,6 +189,17 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
               <Button variant="primary" type="button" onClick={addDate}  style={{ padding: '0.5rem' }}>
                 <CalendarPlus size={20} />
               </Button>
+              <input
+                type="text"
+                className="input"
+                aria-label="Título da data"
+                placeholder="Título (opcional) — ex: Culto de Santa Ceia"
+                maxLength={DATE_TITLE_MAX}
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addDate(); } }}
+                style={{ gridColumn: '1 / -1' }}
+              />
             </div>
           </div>
 
@@ -196,7 +217,7 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
                     className="flex items-center gap-4 justify-between items-center"
                     style={{ padding: '0.75rem 1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}
                   >
-                    <div className="flex items-center gap-4 items-center" style={{ gap: '1rem' }}>
+                    <div className="flex items-center gap-4 items-center" style={{ gap: '1rem', flexShrink: 0 }}>
                       <div className="flex items-center gap-4 items-center" style={{ gap: '0.5rem', color: 'var(--primary)' }}>
                         <CalendarIcon size={16} />
                         <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>
@@ -208,7 +229,18 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
                         {d.startTime.slice(0, 5)}
                       </div>
                     </div>
-                    <button type="button" onClick={() => removeDate(i)} style={{ color: '#ef4444', padding: '0.25rem' }}>
+                    <input
+                      type="text"
+                      className="input"
+                      aria-label="Título da data"
+                      placeholder="Sem título"
+                      maxLength={DATE_TITLE_MAX}
+                      value={d.title ?? ""}
+                      onChange={e => renameDate(i, e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") e.preventDefault(); }}
+                      style={{ flex: 1, minWidth: 0, padding: '0.375rem 0.625rem', fontSize: '0.875rem' }}
+                    />
+                    <button type="button" onClick={() => removeDate(i)} style={{ color: 'var(--destructive)', padding: '0.25rem', flexShrink: 0 }}>
                       <Trash2 size={16} />
                     </button>
                   </motion.div>

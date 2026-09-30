@@ -72,6 +72,7 @@ export async function getPendingSwapRequests(): Promise<PendingSwapRequest[]> {
     dateId: r.dateId,
     date: r.date.date,
     startTime: r.date.startTime,
+    title: r.date.title,
     scheduleName: r.date.schedule.name,
     sectorName: r.date.schedule.sector.name,
     ministryName: r.date.schedule.ministry.name,

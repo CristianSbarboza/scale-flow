@@ -23,11 +23,13 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import Switch from "@/components/ui/Switch";
 import Button from "@/components/ui/Button";
+import type { ScheduleDateInput } from "@/types/domain";
 
 interface ScheduleDate {
   id: number;
   date: string;
   startTime: string;
+  title: string | null;
 }
 
 interface Schedule {
@@ -65,7 +67,7 @@ export default function SchedulesPage() {
   const [ministryId, setMinistryId] = useState("");
   const [sectorId, setSectorId] = useState("");
   const [visibility, setVisibility] = useState<ScheduleVisibility>("public");
-  const [dates, setDates] = useState<{ date: string, startTime: string }[]>([]);
+  const [dates, setDates] = useState<ScheduleDateInput[]>([]);
 
 
   const [lastLink, setLastLink] = useState("");

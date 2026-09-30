@@ -113,6 +113,8 @@ export const scheduleDates = pgTable("schedule_dates", {
   scheduleId: integer("schedule_id").references(() => schedules.id, { onDelete: "cascade" }).notNull(),
   date: date("date").notNull(),
   startTime: time("start_time").notNull(),
+  /** O que acontece nesta data ("Culto de Santa Ceia"). Nulo é um culto comum. */
+  title: text("title"),
 });
 
 export const scheduleAvailability = pgTable("schedule_availability", {

@@ -70,6 +70,11 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
                   <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "var(--muted-foreground)", marginTop: "0.25rem" }}>
                     <Clock size={13} /> {date.startTime.slice(0, 5)}
                   </div>
+                  {date.title && (
+                    <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--primary)", marginTop: "0.25rem", overflowWrap: "anywhere" }}>
+                      {date.title}
+                    </p>
+                  )}
                 </div>
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: status.color, textAlign: "right" }}>
                   {status.label}

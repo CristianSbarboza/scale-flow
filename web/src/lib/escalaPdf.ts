@@ -22,6 +22,7 @@ interface EscalaImpressa {
 interface DataImpressa {
   date: string;
   startTime: string;
+  title: string | null;
   assignments: { servant: { user: { name: string } } }[];
 }
 
@@ -55,6 +56,7 @@ function corpoDoDocumento(escala: EscalaImpressa, dates: DataImpressa[]) {
           data: dia.toLocaleDateString("pt-BR"),
           diaDaSemana: dia.toLocaleDateString("pt-BR", { weekday: "long" }),
           hora: d.startTime.slice(0, 5),
+          titulo: d.title ?? "",
           // Só a primeira pessoa do dia leva o traço mais forte em cima: é o
           // que separa um culto do outro numa lista que repete a data.
           abreODia: indice === 0,
@@ -73,10 +75,14 @@ function corpoDoDocumento(escala: EscalaImpressa, dates: DataImpressa[]) {
     return `${cabecalho}<p class="vazio">Nenhum servo confirmado nesta escala.</p>`;
   }
 
+  // A coluna só aparece se alguma data tiver título: numa escala de cultos
+  // comuns ela seria uma coluna inteira vazia.
+  const comTitulo = linhas.some((l) => l.titulo);
+
   return `${cabecalho}
     <table>
       <thead>
-        <tr><th>Nome</th><th>Data</th><th>Dia</th><th>Hora</th></tr>
+        <tr><th>Nome</th><th>Data</th><th>Dia</th><th>Hora</th>${comTitulo ? "<th>Evento</th>" : ""}</tr>
       </thead>
       <tbody>
         ${linhas
@@ -86,6 +92,7 @@ function corpoDoDocumento(escala: EscalaImpressa, dates: DataImpressa[]) {
               <td>${l.data}</td>
               <td class="dia">${l.diaDaSemana}</td>
               <td>${l.hora}</td>
+              ${comTitulo ? `<td>${escapar(l.titulo)}</td>` : ""}
             </tr>`,
           )
           .join("")}

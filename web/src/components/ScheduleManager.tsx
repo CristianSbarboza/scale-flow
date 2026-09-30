@@ -37,6 +37,7 @@ interface ResponseDate {
   id: number;
   date: string;
   startTime: string;
+  title: string | null;
   availabilities: {
     id: number;
     servantId: number;
@@ -200,6 +201,11 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
                         <div className="flex items-center gap-4 items-center" style={{ gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
                           <Clock size={12} /> {d.startTime.slice(0, 5)}
                         </div>
+                        {d.title && (
+                          <p style={{ marginTop: '0.25rem', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary)', overflowWrap: 'anywhere' }}>
+                            {d.title}
+                          </p>
+                        )}
                       </div>
                       <IconButton
                         label={seletorAberto ? 'Fechar a lista do setor' : 'Escalar alguém do setor'}

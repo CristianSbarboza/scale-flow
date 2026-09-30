@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { eq, and, exists, inArray, sql } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId, ledBy } from "@/lib/scope";
-import type { CalendarSchedule, SectorServantOption } from "@/types/domain";
+import type { CalendarSchedule, ScheduleDateInput, SectorServantOption } from "@/types/domain";
 import type { Scope } from "@/types/scope";
 
 /**
@@ -28,14 +28,31 @@ function schedulesVisibleTo(scope: Scope) {
   return exists(db.select().from(ministries).where(and(...conditions)));
 }
 
+/**
+ * Título da data como vai para o banco: sem espaço sobrando, e vazio vira
+ * `null`. Assim "sem título" tem uma forma só, e a comparação em
+ * `sincronizarDatas` não vê diferença entre `""` e `null`.
+ *
+ * O limite é de exibição: o título aparece em célula de calendário, no PDF e
+ * na mensagem de WhatsApp.
+ */
+function tituloDaData(title: string | null | undefined): string | null {
+  const limpo = title?.trim() ?? "";
+  if (limpo.length > 80) throw new Error("O título da data pode ter no máximo 80 caracteres");
+  return limpo || null;
+}
+
 export async function createSchedule(
   name: string,
   ministryId: number,
   sectorId: number,
-  dates: { date: string, startTime: string }[],
+  dates: ScheduleDateInput[],
   visibility: "public" | "private" = "public",
 ) {
   await requireScheduleSectorAccess(sectorId);
+  // Antes de qualquer escrita: um título inválido não pode deixar a escala
+  // criada pela metade.
+  dates = dates.map((d) => ({ ...d, title: tituloDaData(d.title) }));
 
   // `requireScheduleSectorAccess` valida o setor, mas `ministryId` chega solto:
   // sem esta checagem dá para casar um setor da própria igreja com o
@@ -60,6 +77,7 @@ export async function createSchedule(
       scheduleId: schedule.id,
       date: d.date,
       startTime: d.startTime,
+      title: tituloDaData(d.title),
     });
   }
 
@@ -123,6 +141,7 @@ export async function duplicateSchedule(id: number) {
         scheduleId: copia.id,
         date: d.date,
         startTime: d.startTime,
+        title: d.title,
       })),
     );
   }
@@ -153,8 +172,12 @@ export async function deleteSchedule(id: number) {
  * consumida uma linha por vez para que duas linhas iguais continuem sendo duas.
  * Os formatos vêm diferentes dos dois lados (`09:00:00` do banco, `09:00` do
  * formulário), daí o corte antes de comparar.
+ *
+ * O título fica fora da chave: ele é editável no lugar, e renomear uma data
+ * não pode apagar as respostas dela. Linha mantida com título diferente só
+ * recebe um UPDATE.
  */
-async function sincronizarDatas(scheduleId: number, dates: { date: string, startTime: string }[]) {
+async function sincronizarDatas(scheduleId: number, dates: ScheduleDateInput[]) {
   const chave = (date: string, startTime: string) => `${date.slice(0, 10)}|${startTime.slice(0, 5)}`;
 
   const existentes = await db.select().from(scheduleDates)
@@ -168,12 +191,20 @@ async function sincronizarDatas(scheduleId: number, dates: { date: string, start
     else disponiveis.set(k, [linha.id]);
   }
 
+  const tituloAtual = new Map(existentes.map((linha) => [linha.id, linha.title]));
+
   const manter = new Set<number>();
-  const inserir: { date: string, startTime: string }[] = [];
+  const renomear: { id: number, title: string | null }[] = [];
+  const inserir: ScheduleDateInput[] = [];
   for (const d of dates) {
     const reaproveitada = disponiveis.get(chave(d.date, d.startTime))?.shift();
-    if (reaproveitada !== undefined) manter.add(reaproveitada);
-    else inserir.push(d);
+    if (reaproveitada === undefined) {
+      inserir.push(d);
+      continue;
+    }
+    manter.add(reaproveitada);
+    const title = tituloDaData(d.title);
+    if (tituloAtual.get(reaproveitada) !== title) renomear.push({ id: reaproveitada, title });
   }
 
   const remover = existentes.filter((linha) => !manter.has(linha.id)).map((linha) => linha.id);
@@ -181,8 +212,14 @@ async function sincronizarDatas(scheduleId: number, dates: { date: string, start
     await db.delete(scheduleDates).where(inArray(scheduleDates.id, remover));
   }
 
+  for (const { id, title } of renomear) {
+    await db.update(scheduleDates).set({ title }).where(eq(scheduleDates.id, id));
+  }
+
   for (const d of inserir) {
-    await db.insert(scheduleDates).values({ scheduleId, date: d.date, startTime: d.startTime });
+    await db.insert(scheduleDates).values({
+      scheduleId, date: d.date, startTime: d.startTime, title: tituloDaData(d.title),
+    });
   }
 }
 
@@ -201,12 +238,13 @@ async function sincronizarDatas(scheduleId: number, dates: { date: string, start
 export async function updateSchedule(
   id: number,
   name: string,
-  dates: { date: string, startTime: string }[],
+  dates: ScheduleDateInput[],
   visibility?: "public" | "private",
   destino?: { ministryId: number, sectorId: number },
 ) {
   const sectorIdAtual = await getSectorIdForScheduleId(id);
   await requireScheduleSectorAccess(sectorIdAtual);
+  dates = dates.map((d) => ({ ...d, title: tituloDaData(d.title) }));
 
   if (destino) {
     await requireScheduleSectorAccess(destino.sectorId);
@@ -233,7 +271,9 @@ export async function updateSchedule(
     await db.delete(scheduleDates).where(eq(scheduleDates.scheduleId, id));
 
     for (const d of dates) {
-      await db.insert(scheduleDates).values({ scheduleId: id, date: d.date, startTime: d.startTime });
+      await db.insert(scheduleDates).values({
+        scheduleId: id, date: d.date, startTime: d.startTime, title: tituloDaData(d.title),
+      });
     }
   } else {
     await sincronizarDatas(id, dates);
@@ -319,6 +359,7 @@ export async function getCalendarSchedules(): Promise<CalendarSchedule[]> {
       id: d.id,
       date: d.date,
       startTime: d.startTime,
+      title: d.title,
       assignees: d.assignments.map((a) => ({ servantId: a.servantId, name: a.servant.user.name })),
     })),
   }));

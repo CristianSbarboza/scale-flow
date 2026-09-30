@@ -32,6 +32,7 @@ interface DayEntry {
   sectorName: string;
   scheduleName: string;
   startTime: string;
+  title: string | null;
   assignees: { servantId: number; name: string }[];
 }
 
@@ -91,6 +92,7 @@ export default function AdminCalendarPage() {
           sectorName: schedule.sectorName,
           scheduleName: schedule.name,
           startTime: date.startTime,
+          title: date.title,
           assignees: date.assignees,
         };
         map.set(key, [...(map.get(key) ?? []), entry]);
@@ -286,6 +288,9 @@ export default function AdminCalendarPage() {
                             <Clock size={12} /> {entry.startTime.slice(0, 5)}
                           </div>
                         </div>
+                        {entry.title && (
+                          <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--primary)", marginBottom: "0.25rem", overflowWrap: "anywhere" }}>{entry.title}</p>
+                        )}
                         <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>{entry.sectorName}</p>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: "0.375rem" }}>
                           <Users size={14} color="var(--primary)" style={{ marginTop: "0.125rem", flexShrink: 0 }} />

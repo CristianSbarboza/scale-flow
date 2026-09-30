@@ -174,7 +174,7 @@ async function marcadasPor(servantId: number, dates: Array<{ id: number }>) {
 interface SchedulePageProps {
   schedule: { name: string; ministry: { name: string; church: { name: string } }; sector: { name: string } };
   scheduleId: number;
-  dates: Array<{ id: number; date: string; startTime: string }>;
+  dates: Array<{ id: number; date: string; startTime: string; title: string | null }>;
   servants: Array<{ id: number; user: { name: string } }>;
   initialServantId?: string;
   lockedServantName?: string;

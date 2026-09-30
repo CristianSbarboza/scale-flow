@@ -22,6 +22,7 @@ interface DayEntry {
   ministryName: string;
   sectorName: string;
   startTime: string;
+  title: string | null;
   requesterServantId: number;
   assignees: ServantOverviewAssignee[];
 }
@@ -54,6 +55,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
           ministryName: schedule.ministryName,
           sectorName: schedule.sectorName,
           startTime: date.startTime,
+          title: date.title,
           requesterServantId: schedule.servantId,
           assignees: date.assignees,
         };
@@ -201,7 +203,12 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               header: "Horário",
               primary: true,
               mobileRow: 1,
-              cell: (e) => <span className="font-bold text-primary">{e.startTime.slice(0, 5)}</span>,
+              cell: (e) => (
+                <span>
+                  <span className="font-bold text-primary">{e.startTime.slice(0, 5)}</span>
+                  {e.title && <span className="block text-xs text-muted-foreground">{e.title}</span>}
+                </span>
+              ),
             },
             { header: "Ministério", mobileRow: 2, cell: (e) => e.ministryName },
             { header: "Setor", mobileRow: 2, cell: (e) => e.sectorName },
@@ -229,6 +236,9 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               {selectedEntries.map((entry, i) => (
                 <div key={i} style={{ padding: "0.75rem 1rem", background: "var(--muted)", borderRadius: "var(--radius)" }}>
                   <p style={{ fontWeight: 600, marginBottom: "0.375rem" }}>{entry.scheduleName}</p>
+                  {entry.title && (
+                    <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--primary)", marginBottom: "0.375rem", overflowWrap: "anywhere" }}>{entry.title}</p>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>
                     <Clock size={14} /> {entry.startTime.slice(0, 5)}
                   </div>

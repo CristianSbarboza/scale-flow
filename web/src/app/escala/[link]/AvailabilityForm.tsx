@@ -13,6 +13,7 @@ interface AvailabilityFormProps {
     id: number;
     date: string;
     startTime: string;
+    title: string | null;
   }>;
   servants: Array<{
     id: number;
@@ -174,7 +175,10 @@ export default function AvailabilityForm({ scheduleId, dates, servants, initialS
               </div>
               <div>
                 <p style={{ fontWeight: 600 }}>{new Date(`${d.date.slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{d.startTime.slice(0, 5)}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+                  {d.startTime.slice(0, 5)}
+                  {d.title && <span style={{ color: 'var(--primary)', fontWeight: 600 }}> · {d.title}</span>}
+                </p>
               </div>
             </div>
           );
