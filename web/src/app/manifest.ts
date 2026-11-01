@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "ScaleFlow | Gestão de Escalas Ministeriais",
     short_name: "ScaleFlow",
     description: "Sistema premium para gestão de escalas e ministérios de igreja.",
-    start_url: "/",
+    start_url: "/entrar",
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",

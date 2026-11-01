@@ -245,6 +245,12 @@
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
   }
+
+  /* Granulado ótico sutil para o site institucional (inspirado em papel/noite editorial). */
+  .editorial-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
 }
 
 /* Light Mode Overrides */
@@ -373,8 +379,10 @@
      `rounded-lg` signifique o raio do design system e não 0.5rem. */
   --radius-lg: var(--radius);
 
-  /* Fonte do logo, definida por next/font em src/app/layout.tsx. */
+  /* Fonte do logo e vozes editoriais, definidas por next/font em src/app/layout.tsx. */
   --font-logo: var(--font-logo);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 
   /* Pontinho do LoadingDots. O atraso de cada um vem do proprio componente. */
   --animate-dot-snake: dotSnake 1.2s ease-in-out infinite;
