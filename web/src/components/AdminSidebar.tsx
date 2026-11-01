@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -12,7 +13,8 @@ import {
   LayoutGrid,
   ChevronLeft,
   ChevronRight,
-  Settings
+  Settings,
+  Sparkles
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useChurch } from "@/components/ChurchContext";
@@ -26,6 +28,7 @@ const menuItems = [
   { icon: Users, label: "Servos", href: "/admin/servants" },
   { icon: Calendar, label: "Escalas", href: "/admin/schedules" },
   { icon: CalendarDays, label: "Calendário", href: "/admin/calendar" },
+  { icon: Sparkles, label: "Assistente IA", href: "/admin/assistant" },
 ];
 
 interface AdminSidebarProps {
@@ -177,6 +180,17 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           </NavLink>
         </div>
       </aside>
+
+      {pathname !== "/admin/assistant" && (
+        <Link
+          href="/admin/assistant"
+          aria-label="Abrir Assistente IA"
+          title="Assistente IA"
+          className="fixed right-4 bottom-6 z-30 flex size-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 sm:hidden"
+        >
+          <Sparkles size={22} />
+        </Link>
+      )}
     </>
   );
 }

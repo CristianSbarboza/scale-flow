@@ -41,7 +41,7 @@ export default function ServantShell({ name, sectorName, color, icon, schedules,
         </header>
 
         <main style={{ padding: "2rem 1.5rem" }}>
-          <ServantHome schedules={schedules} coordinatorSectors={coordinatorSectors} tab={tab} onTabChange={setTab} />
+          <ServantHome schedules={schedules} coordinatorSectors={coordinatorSectors} userName={name} tab={tab} onTabChange={setTab} />
         </main>
       </div>
     </div>

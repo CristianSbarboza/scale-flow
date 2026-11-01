@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutGrid, Users, Star, Mail, Edit3 } from "lucide-react";
-import { getSectorById, updateSector, deleteSector } from "@/lib/actions/sectors";
+import { getSectorById, updateSector, deleteSector, setSectorActive } from "@/lib/actions/sectors";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import Avatar from "@/components/ui/Avatar";
 import BackLink from "@/components/ui/BackLink";
@@ -14,17 +14,21 @@ import DeleteSection from "@/components/ui/DeleteSection";
 import Field from "@/components/ui/Field";
 import PageHeader from "@/components/ui/PageHeader";
 import StatsRule from "@/components/ui/StatsRule";
+import Switch from "@/components/ui/Switch";
 import { useToast } from "@/components/Toast";
 
 interface Servant {
   id: number;
+  userId: string;
   isCoordinator: boolean;
-  user: { name: string; username: string | null; email: string | null };
+  isActive?: boolean;
+  user: { name: string; username: string | null; email: string | null; isActive?: boolean };
 }
 
 interface Sector {
   id: number;
   name: string;
+  isActive: boolean;
   ministry: { id: number; name: string } | null;
   leaders: { userId: string; name: string; email: string | null }[];
   servants: Servant[];
@@ -39,6 +43,7 @@ export default function SectorDetailPage() {
   const [sector, setSector] = useState<Sector | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -84,6 +89,19 @@ export default function SectorDetailPage() {
     }
   };
 
+  const handleToggleActive = async (next: boolean) => {
+    setTogglingActive(true);
+    try {
+      await setSectorActive(id, next);
+      await load();
+      showToast(next ? "Setor ativado." : "Setor desativado.", "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação.", "error");
+    } finally {
+      setTogglingActive(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <BackLink href="/admin/sectors">Voltar para Setores</BackLink>
@@ -99,10 +117,23 @@ export default function SectorDetailPage() {
           )
         }
         action={
-          <Button variant="outline" onClick={abrirEdicao} className="shrink-0">
-            <Edit3 size={16} />
-            Editar
-          </Button>
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={sector.isActive}
+                onChange={handleToggleActive}
+                label={sector.isActive ? `Desativar ${sector.name}` : `Ativar ${sector.name}`}
+                disabled={togglingActive}
+              />
+              <span className="text-xs text-muted-foreground">
+                {sector.isActive ? "Ativo" : "Desativado"}
+              </span>
+            </div>
+            <Button variant="outline" onClick={abrirEdicao} className="shrink-0">
+              <Edit3 size={16} />
+              Editar
+            </Button>
+          </div>
         }
       />
 
@@ -117,7 +148,7 @@ export default function SectorDetailPage() {
       {/* Só leitura, sem botão de editar: os líderes são do ministério, não
           deste setor. Mexer daqui mudaria a chefia de todos os setores irmãos
           sem que a tela deixasse isso claro — a gestão vive em /admin/ministries. */}
-      <div className="card glass mb-6 grid max-w-[640px] gap-4">
+      <div className="card glass mb-6 grid max-w-160 gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-bold uppercase tracking-[0.03em] text-muted-foreground">
             {sector.leaders.length === 1 ? "Líder do ministério" : "Líderes do ministério"}
@@ -149,7 +180,7 @@ export default function SectorDetailPage() {
         </ul>
       </div>
 
-      <div className="grid max-w-[640px] gap-6">
+      <div className="grid max-w-160 gap-6">
         <DataPanel<Servant>
           title="Coordenadores"
           columns={[
@@ -168,6 +199,7 @@ export default function SectorDetailPage() {
           ]}
           rows={coordenadores}
           rowKey={(s) => s.id}
+          onRowClick={(s) => router.push(`/admin/servants/${s.userId}`)}
           empty="Nenhum coordenador neste setor."
         />
 
@@ -199,12 +231,13 @@ export default function SectorDetailPage() {
           ]}
           rows={servants}
           rowKey={(s) => s.id}
+          onRowClick={(s) => router.push(`/admin/servants/${s.userId}`)}
           empty="Nenhum servo vinculado a este setor."
         />
       </div>
 
       <DeleteSection
-        className="mt-10 max-w-[640px]"
+        className="mt-10 max-w-160"
         label="Excluir setor"
         confirmToken={sector.name}
         buttonLabel="Excluir Setor"

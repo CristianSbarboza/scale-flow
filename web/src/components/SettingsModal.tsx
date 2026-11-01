@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Settings } from "lucide-react";
 import ProfileSection from "@/components/settings/ProfileSection";
 import PersonalDataSection from "@/components/settings/PersonalDataSection";
+import AiAssistantSection from "@/components/settings/AiAssistantSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PanelStyleSection from "@/components/settings/PanelStyleSection";
 import PasswordSection from "@/components/settings/PasswordSection";
@@ -35,7 +36,7 @@ export default function SettingsModal({ name, sectorName, color, icon, onClose }
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="card glass flex max-h-[88vh] w-full max-w-[640px] flex-col overflow-hidden"
+        className="card glass flex max-h-[88vh] w-full max-w-160 flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 flex shrink-0 items-center justify-between">
@@ -51,6 +52,7 @@ export default function SettingsModal({ name, sectorName, color, icon, onClose }
         <div className="-mr-3 grid min-h-0 flex-[1_1_auto] gap-6 overflow-y-auto pr-3">
           <ProfileSection name={name} subtitle={sectorName} color={color} icon={icon} editableIcon />
           <PersonalDataSection />
+          <AiAssistantSection isAdmin={false} />
           <AppearanceSection />
           <PanelStyleSection color={color} />
           <PasswordSection />

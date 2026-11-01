@@ -57,10 +57,20 @@ export async function createSchedule(
   // `requireScheduleSectorAccess` valida o setor, mas `ministryId` chega solto:
   // sem esta checagem dá para casar um setor da própria igreja com o
   // ministério de outra, e a escala nasceria contando para as duas.
-  const [sector] = await db.select({ ministryId: sectors.ministryId })
-    .from(sectors).where(eq(sectors.id, sectorId));
+  const [sector] = await db
+    .select({
+      ministryId: sectors.ministryId,
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(eq(sectors.id, sectorId));
   if (!sector || sector.ministryId !== ministryId) {
     throw new Error("O setor informado não pertence a este ministério");
+  }
+  if (!sector.sectorIsActive || !sector.ministryIsActive) {
+    throw new Error("Não é possível criar escala em um setor ou ministério desativado");
   }
 
   const shareLink = nanoid(10);
@@ -108,9 +118,12 @@ export async function duplicateSchedule(id: number) {
 
   const original = await db.query.schedules.findFirst({
     where: eq(schedules.id, id),
-    with: { dates: true },
+    with: { dates: true, sector: true, ministry: true },
   });
   if (!original) throw new Error("Escala não encontrada");
+  if (!original.sector.isActive || !original.ministry.isActive) {
+    throw new Error("Não é possível duplicar escala de um setor ou ministério desativado");
+  }
 
   // "(copy)", depois "(copy 2)", "(copy 3)"... Duplicar duas vezes deixaria
   // duas linhas de nome idêntico numa lista onde o nome é a única coluna que
@@ -249,10 +262,20 @@ export async function updateSchedule(
   if (destino) {
     await requireScheduleSectorAccess(destino.sectorId);
 
-    const [sector] = await db.select({ ministryId: sectors.ministryId })
-      .from(sectors).where(eq(sectors.id, destino.sectorId));
+    const [sector] = await db
+      .select({
+        ministryId: sectors.ministryId,
+        sectorIsActive: sectors.isActive,
+        ministryIsActive: ministries.isActive,
+      })
+      .from(sectors)
+      .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+      .where(eq(sectors.id, destino.sectorId));
     if (!sector || sector.ministryId !== destino.ministryId) {
       throw new Error("O setor informado não pertence a este ministério");
+    }
+    if (!sector.sectorIsActive || !sector.ministryIsActive) {
+      throw new Error("Não é possível mover a escala para um setor ou ministério desativado");
     }
   }
 
@@ -297,7 +320,20 @@ export async function updateSchedule(
  * escala como novidade.
  */
 export async function publishSchedule(id: number) {
-  await requireScheduleSectorAccess(await getSectorIdForScheduleId(id));
+  const sectorId = await getSectorIdForScheduleId(id);
+  await requireScheduleSectorAccess(sectorId);
+
+  const [sector] = await db
+    .select({
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(eq(sectors.id, sectorId));
+  if (!sector?.sectorIsActive || !sector?.ministryIsActive) {
+    throw new Error("Não é possível publicar escala de um setor ou ministério desativado");
+  }
 
   await db.update(schedules)
     .set({ status: "published", publishedAt: sql`coalesce(${schedules.publishedAt}, now())` })
@@ -381,11 +417,12 @@ export async function getScheduleSectorServants(scheduleId: number): Promise<Sec
   await requireScheduleSectorAccess(sectorId);
 
   const rows = await db.query.servants.findMany({
-    where: eq(servants.sectorId, sectorId),
+    where: and(eq(servants.sectorId, sectorId), eq(servants.isActive, true)),
     with: { user: publicUser },
   });
 
   return rows
+    .filter((r) => r.user.isActive)
     .map((r) => ({ servantId: r.id, name: r.user.name }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }

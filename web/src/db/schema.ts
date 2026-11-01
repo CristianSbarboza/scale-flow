@@ -17,6 +17,12 @@ export const churches = pgTable("churches", {
   // a igreja é o namespace. Único globalmente, e estável: não muda quando
   // o nome de exibição muda.
   username: text("username").notNull().unique(),
+  // Configuração de IA da igreja (spec 07). `aiApiKey` nunca sai em `getMyChurch()`.
+  aiProvider: text("ai_provider", { enum: ["gemini", "claude", "openai", "grok", "groq", "openrouter"] }).default("gemini").notNull(),
+  aiModel: text("ai_model"),
+  aiApiKey: text("ai_api_key"),
+  aiDefaultName: text("ai_default_name").default("Cale").notNull(),
+  aiDefaultStyle: text("ai_default_style", { enum: ["warm", "balanced", "direct"] }).default("warm").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -38,6 +44,12 @@ export const users = pgTable("users", {
   // Chave de src/lib/avatarIcons.tsx. Servo ainda não sobe foto de perfil —
   // enquanto isso não existe, é a alternativa à inicial do nome no círculo.
   avatarIcon: text("avatar_icon"),
+  // Personalização da assistente de IA para este usuário (spec 07). Nulo herda o padrão da igreja.
+  aiName: text("ai_name"),
+  aiStyle: text("ai_style", { enum: ["warm", "balanced", "direct"] }),
+  // Quando `false` (spec 08), o servo fica inativo sem perder histórico: não
+  // recebe WhatsApp, não preenche disponibilidade e não aparece para escalar.
+  isActive: boolean("is_active").default(true).notNull(),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
@@ -51,6 +63,7 @@ export const ministries = pgTable("ministries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -76,6 +89,7 @@ export const ministryLeaders = pgTable("ministry_leaders", {
 export const sectors = pgTable("sectors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
   ministryId: integer("ministry_id").references(() => ministries.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -85,6 +99,7 @@ export const servants = pgTable("servants", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   sectorId: integer("sector_id").references(() => sectors.id, { onDelete: "cascade" }).notNull(),
   isCoordinator: boolean("is_coordinator").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

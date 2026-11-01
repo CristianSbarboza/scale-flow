@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createServant, getServants } from "@/lib/actions/servants";
+import { createServant, getServants, setServantActive } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
 import { UserPlus, Plus } from "lucide-react";
@@ -21,6 +21,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useChurch } from "@/components/ChurchContext";
 import SearchInput from "@/components/ui/SearchInput";
 import AdminCreateModal from "@/components/AdminCreateModal";
+import Switch from "@/components/ui/Switch";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useToast } from "@/components/Toast";
 
@@ -30,6 +31,7 @@ interface Membership {
   sectorName: string;
   ministryId: number;
   ministryName: string;
+  isActive?: boolean;
 }
 
 interface ServantSummary {
@@ -37,19 +39,22 @@ interface ServantSummary {
   name: string;
   username: string | null;
   email: string | null;
+  isActive: boolean;
   memberships: Membership[];
 }
 
 interface Sector {
   id: number;
   name: string;
+  isActive?: boolean;
   ministryId: number;
-  ministry: { id: number; name: string };
+  ministry: { id: number; name: string; isActive?: boolean };
 }
 
 interface Ministry {
   id: number;
   name: string;
+  isActive?: boolean;
 }
 
 export default function ServantsPage() {
@@ -75,6 +80,7 @@ export default function ServantsPage() {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setAction } = useAdminTopbar();
 
@@ -135,6 +141,20 @@ export default function ServantsPage() {
   };
 
 
+  const handleToggleActive = async (s: ServantSummary, next: boolean) => {
+    setTogglingId(s.userId);
+    try {
+      await setServantActive(s.userId, next);
+      showToast(next ? "Servo ativado." : "Servo desativado.", "success");
+      const srv = await getServants();
+      setServants(srv as unknown as ServantSummary[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação.", "error");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const filteredServants = servants.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.username?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
@@ -185,7 +205,9 @@ export default function ServantsPage() {
           value={sectorId}
           onChange={setSectorId}
           placeholder="Selecione um setor"
-          options={sectors.map(sec => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
+          options={sectors
+            .filter((sec) => sec.isActive !== false && sec.ministry.isActive !== false)
+            .map((sec) => ({ value: sec.id, label: `${sec.ministry.name} - ${sec.name}` }))}
           required
         />
         <Button
@@ -267,6 +289,23 @@ export default function ServantsPage() {
             {
               header: "Setores",
               cell: (s) => s.memberships.map((m) => m.sectorName).join(", "),
+            },
+            {
+              header: "Situação",
+              mobileRow: 1,
+              cell: (s) => (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={s.isActive}
+                    onChange={(next) => handleToggleActive(s, next)}
+                    label={s.isActive ? `Desativar ${s.name}` : `Ativar ${s.name}`}
+                    disabled={togglingId === s.userId}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {s.isActive ? "Ativo" : "Desativado"}
+                  </span>
+                </div>
+              ),
             },
           ]}
         />

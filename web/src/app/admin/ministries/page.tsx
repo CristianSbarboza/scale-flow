@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createMinistry, getMinistries } from "@/lib/actions/ministries";
+import { createMinistry, getMinistries, setMinistryActive } from "@/lib/actions/ministries";
 import { Church, Plus } from "lucide-react";
 import DataPanel from "@/components/ui/DataPanel";
 import FormPanel from "@/components/ui/FormPanel";
 import Button from "@/components/ui/Button";
+import Switch from "@/components/ui/Switch";
 import GeneratedPassword from "@/components/ui/GeneratedPassword";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
@@ -25,6 +26,7 @@ interface Ministry {
   id: number;
   name: string;
   description: string | null;
+  isActive: boolean;
   leaders: { userId: string; user: { name: string; email: string | null } }[];
   sectors: {
     id: number;
@@ -49,6 +51,7 @@ export default function MinistriesPage() {
   const [leaderPhone, setLeaderPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,6 +115,20 @@ export default function MinistriesPage() {
     }
   };
 
+
+  const handleToggleActive = async (m: Ministry, next: boolean) => {
+    setTogglingId(m.id);
+    try {
+      await setMinistryActive(m.id, next);
+      showToast(next ? "Ministério ativado." : "Ministério desativado.", "success");
+      const min = await getMinistries();
+      setMinistries(min as unknown as Ministry[]);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação.", "error");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const filteredMinistries = ministries.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,6 +231,23 @@ export default function MinistriesPage() {
             {
               header: "Servos",
               cell: (m) => m.sectors?.reduce((acc, sec) => acc + (sec.servants?.length || 0), 0) || 0,
+            },
+            {
+              header: "Situação",
+              mobileRow: 1,
+              cell: (m) => (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={m.isActive}
+                    onChange={(next) => handleToggleActive(m, next)}
+                    label={m.isActive ? `Desativar ${m.name}` : `Ativar ${m.name}`}
+                    disabled={togglingId === m.id}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {m.isActive ? "Ativo" : "Desativado"}
+                  </span>
+                </div>
+              ),
             },
           ]}
         />

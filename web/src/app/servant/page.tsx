@@ -13,7 +13,7 @@ import { type ServantTab } from "@/components/ServantHome";
  * Abas que um link externo pode abrir. "coordinator" fica de fora: nem todo
  * servo a tem, e um link para ela cairia numa aba inexistente.
  */
-const ABAS_POR_URL: readonly ServantTab[] = ["calendar", "next", "month", "all"];
+const ABAS_POR_URL: readonly ServantTab[] = ["calendar", "next", "month", "all", "assistant"];
 
 export default async function ServantDashboard({
   searchParams,

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { servants, schedules, scheduleDates, scheduleAvailability, scheduleAssignments } from "@/db/schema";
+import { users, ministries, sectors, servants, schedules, scheduleDates, scheduleAvailability, scheduleAssignments } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
@@ -16,13 +16,25 @@ export async function getServantOverview(): Promise<ServantOverviewSchedule[]> {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
+  const [me] = await db
+    .select({ isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, session.user.id));
+  if (!me?.isActive) return [];
+
   const memberships = await db.query.servants.findMany({
-    where: eq(servants.userId, session.user.id),
+    where: and(eq(servants.userId, session.user.id), eq(servants.isActive, true)),
+    with: {
+      sector: { with: { ministry: true } },
+    },
   });
-  if (memberships.length === 0) return [];
+  const activeMemberships = memberships.filter(
+    (m) => m.sector.isActive && m.sector.ministry.isActive,
+  );
+  if (activeMemberships.length === 0) return [];
 
   const results: ServantOverviewSchedule[] = [];
-  for (const servant of memberships) {
+  for (const servant of activeMemberships) {
     // Rascunho não aparece: é escala ainda sendo montada, e o servo que
     // preenchesse disponibilidade nela responderia a algo que pode mudar.
     const sectorSchedules = await db.query.schedules.findMany({
@@ -75,10 +87,26 @@ export async function assignServant(dateId: number, servantId: number) {
   // O acesso acima cobre a data; `servantId` chegava sem nenhuma checagem.
   // Exigir que o servo sirva no setor da escala é a mesma regra que
   // `saveAvailability` já aplica — e, de quebra, garante a mesma igreja.
-  const [servant] = await db.select().from(servants).where(
-    and(eq(servants.id, servantId), eq(servants.sectorId, sectorId))
-  );
+  const [servant] = await db
+    .select({
+      id: servants.id,
+      servantIsActive: servants.isActive,
+      userIsActive: users.isActive,
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(and(eq(servants.id, servantId), eq(servants.sectorId, sectorId)));
   if (!servant) throw new Error("Este servo não pertence ao setor desta escala");
+  if (!servant.sectorIsActive || !servant.ministryIsActive) {
+    throw new Error("O setor ou ministério desta escala está desativado");
+  }
+  if (!servant.servantIsActive || !servant.userIsActive) {
+    throw new Error("Não é possível escalar um servo desativado");
+  }
 
   // Escalar duas vezes a mesma pessoa no mesmo dia não é erro do líder, é
   // clique repetido — e não há unique em (date_id, servant_id) para barrar.
@@ -126,16 +154,42 @@ export async function removeAssignment(assignmentId: number) {
 export async function saveAvailability(servantId: number, scheduleId: number, dateIds: number[]) {
   const uniqueDateIds = [...new Set(dateIds)];
 
-  const [servant] = await db.select().from(servants).where(eq(servants.id, servantId));
+  const [servant] = await db
+    .select({
+      id: servants.id,
+      userId: servants.userId,
+      sectorId: servants.sectorId,
+      servantIsActive: servants.isActive,
+      userIsActive: users.isActive,
+    })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .where(eq(servants.id, servantId));
   if (!servant) throw new Error("Servo não encontrado");
+  if (!servant.servantIsActive || !servant.userIsActive) {
+    throw new Error("Seu cadastro está desativado e não pode preencher a escala");
+  }
 
-  const [schedule] = await db.select({
-    id: schedules.id,
-    sectorId: schedules.sectorId,
-    visibility: schedules.visibility,
-    status: schedules.status,
-  }).from(schedules).where(eq(schedules.id, scheduleId));
+  const [schedule] = await db
+    .select({
+      id: schedules.id,
+      sectorId: schedules.sectorId,
+      visibility: schedules.visibility,
+      status: schedules.status,
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(schedules)
+    .innerJoin(sectors, eq(schedules.sectorId, sectors.id))
+    .innerJoin(ministries, eq(schedules.ministryId, ministries.id))
+    .where(eq(schedules.id, scheduleId));
   if (!schedule) throw new Error("Escala não encontrada");
+  if (!schedule.ministryIsActive) {
+    throw new Error("O ministério desta escala está desativado no momento");
+  }
+  if (!schedule.sectorIsActive) {
+    throw new Error("O setor desta escala está desativado no momento");
+  }
 
   if (schedule.sectorId !== servant.sectorId) {
     throw new Error("Este servo não pertence ao setor desta escala");

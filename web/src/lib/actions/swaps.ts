@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { servants, scheduleAssignments, swapRequests } from "@/db/schema";
+import { users, ministries, sectors, servants, scheduleAssignments, swapRequests } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
@@ -13,10 +13,27 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
-  const [requester] = await db.select().from(servants).where(
-    and(eq(servants.id, requesterServantId), eq(servants.userId, session.user.id))
-  );
+  const [requester] = await db
+    .select({
+      id: servants.id,
+      sectorId: servants.sectorId,
+      servantIsActive: servants.isActive,
+      userIsActive: users.isActive,
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(and(eq(servants.id, requesterServantId), eq(servants.userId, session.user.id)));
   if (!requester) throw new Error("Não autorizado");
+  if (!requester.servantIsActive || !requester.userIsActive) {
+    throw new Error("Seu cadastro está desativado no momento");
+  }
+  if (!requester.sectorIsActive || !requester.ministryIsActive) {
+    throw new Error("O setor ou ministério desta escala está desativado");
+  }
 
   if (requesterServantId === targetServantId) {
     throw new Error("Não é possível negociar com você mesmo");
@@ -31,10 +48,19 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
     throw new Error("Você não serve no setor desta escala");
   }
 
-  const [target] = await db.select().from(servants).where(
-    and(eq(servants.id, targetServantId), eq(servants.sectorId, sectorId))
-  );
+  const [target] = await db
+    .select({
+      id: servants.id,
+      servantIsActive: servants.isActive,
+      userIsActive: users.isActive,
+    })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .where(and(eq(servants.id, targetServantId), eq(servants.sectorId, sectorId)));
   if (!target) throw new Error("O servo escolhido não serve no setor desta escala");
+  if (!target.servantIsActive || !target.userIsActive) {
+    throw new Error("O servo escolhido está desativado no momento");
+  }
 
   const [existing] = await db.select().from(swapRequests).where(
     and(
@@ -54,9 +80,21 @@ export async function getPendingSwapRequests(): Promise<PendingSwapRequest[]> {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Não autorizado");
 
-  const myServants = await db.query.servants.findMany({ where: eq(servants.userId, session.user.id) });
-  if (myServants.length === 0) return [];
-  const myServantIds = myServants.map((s) => s.id);
+  const [me] = await db
+    .select({ isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, session.user.id));
+  if (!me?.isActive) return [];
+
+  const myServants = await db.query.servants.findMany({
+    where: and(eq(servants.userId, session.user.id), eq(servants.isActive, true)),
+    with: { sector: { with: { ministry: true } } },
+  });
+  const activeServants = myServants.filter(
+    (s) => s.sector.isActive && s.sector.ministry.isActive,
+  );
+  if (activeServants.length === 0) return [];
+  const myServantIds = activeServants.map((s) => s.id);
 
   const rows = await db.query.swapRequests.findMany({
     where: and(inArray(swapRequests.targetServantId, myServantIds), eq(swapRequests.status, "pending")),
@@ -87,11 +125,19 @@ export async function respondToSwapRequest(id: number, accept: boolean) {
 
   const request = await db.query.swapRequests.findFirst({
     where: eq(swapRequests.id, id),
-    with: { target: true },
+    with: {
+      target: { with: { user: publicUser, sector: { with: { ministry: true } } } },
+    },
   });
   if (!request) throw new Error("Pedido não encontrado");
   if (request.status !== "pending") throw new Error("Pedido já respondido");
   if (request.target.userId !== session.user.id) throw new Error("Não autorizado");
+  if (!request.target.isActive || !request.target.user.isActive) {
+    throw new Error("Seu cadastro está desativado no momento");
+  }
+  if (!request.target.sector.isActive || !request.target.sector.ministry.isActive) {
+    throw new Error("O setor ou ministério desta escala está desativado");
+  }
 
   if (accept) {
     await db.delete(scheduleAssignments).where(

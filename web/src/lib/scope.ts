@@ -19,11 +19,23 @@ import { normalizeStoredUsername } from "@/lib/username";
 export function mapCoordinatorSectors(
   rows: Array<{
     isCoordinator: boolean;
-    sector: { id: number; name: string; ministry: { id: number; name: string } };
+    isActive?: boolean;
+    sector: {
+      id: number;
+      name: string;
+      isActive?: boolean;
+      ministry: { id: number; name: string; isActive?: boolean };
+    };
   }>
 ): CoordinatorSector[] {
   return rows
-    .filter((r) => r.isCoordinator)
+    .filter(
+      (r) =>
+        r.isCoordinator &&
+        r.isActive !== false &&
+        r.sector.isActive !== false &&
+        r.sector.ministry.isActive !== false,
+    )
     .map((r) => ({
       id: r.sector.id,
       name: r.sector.name,
@@ -60,8 +72,22 @@ export async function getScope(): Promise<Scope> {
   const led = await db.select({ id: ministryLeaders.ministryId }).from(ministryLeaders)
     .where(eq(ministryLeaders.userId, session.user.id));
 
-  const coordinated = await db.select({ sectorId: servants.sectorId }).from(servants)
-    .where(and(eq(servants.userId, session.user.id), eq(servants.isCoordinator, true)));
+  const coordinated = await db
+    .select({ sectorId: servants.sectorId })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(
+      and(
+        eq(servants.userId, session.user.id),
+        eq(servants.isCoordinator, true),
+        eq(servants.isActive, true),
+        eq(users.isActive, true),
+        eq(sectors.isActive, true),
+        eq(ministries.isActive, true),
+      ),
+    );
 
   return {
     userId: session.user.id,
@@ -136,9 +162,23 @@ export async function requireScheduleSectorAccess(sectorId: number) {
     if (sector) return;
   }
 
-  const [coordination] = await db.select().from(servants).where(
-    and(eq(servants.userId, session.user.id), eq(servants.sectorId, sectorId), eq(servants.isCoordinator, true))
-  );
+  const [coordination] = await db
+    .select({ id: servants.id })
+    .from(servants)
+    .innerJoin(users, eq(servants.userId, users.id))
+    .innerJoin(sectors, eq(servants.sectorId, sectors.id))
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(
+      and(
+        eq(servants.userId, session.user.id),
+        eq(servants.sectorId, sectorId),
+        eq(servants.isCoordinator, true),
+        eq(servants.isActive, true),
+        eq(users.isActive, true),
+        eq(sectors.isActive, true),
+        eq(ministries.isActive, true),
+      ),
+    );
   if (coordination) return;
 
   throw new Error("Não autorizado a gerenciar a escala deste setor");

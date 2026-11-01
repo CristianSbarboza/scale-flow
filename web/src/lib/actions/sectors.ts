@@ -9,6 +9,14 @@ import { publicUser, getScope, requireMinistryAccess, requireSectorAccess, ledBy
 export async function createSector(name: string, ministryId: number) {
   await requireMinistryAccess(ministryId);
 
+  const [ministry] = await db
+    .select({ isActive: ministries.isActive })
+    .from(ministries)
+    .where(eq(ministries.id, ministryId));
+  if (!ministry?.isActive) {
+    throw new Error("Não é possível criar um setor em um ministério desativado");
+  }
+
   await db.insert(sectors).values({
     name,
     ministryId,
@@ -23,10 +31,12 @@ export async function getSectors() {
   const allSectors = await db.select({
     id: sectors.id,
     name: sectors.name,
+    isActive: sectors.isActive,
     ministryId: sectors.ministryId,
     ministry: {
       id: ministries.id,
-      name: ministries.name
+      name: ministries.name,
+      isActive: ministries.isActive,
     }
   })
   .from(sectors)
@@ -70,6 +80,24 @@ export async function updateSector(id: number, name: string) {
 }
 
 /**
+ * Ativa ou desativa o setor sem excluir vínculos de servo nem escalas.
+ *
+ * Enquanto desativado, o setor não aceita novas escalas, respostas de
+ * disponibilidade nas escalas existentes nem notificações pelo WhatsApp.
+ */
+export async function setSectorActive(id: number, isActive: boolean) {
+  await requireSectorAccess(id);
+
+  await db.update(sectors).set({ isActive }).where(eq(sectors.id, id));
+
+  revalidatePath("/admin/sectors");
+  revalidatePath(`/admin/sectors/${id}`);
+  revalidatePath("/admin/ministries");
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+}
+
+/**
  * Apaga o setor. Em cascata leva os vínculos de servo, as escalas do setor,
  * suas datas, disponibilidades e escalações.
  *
@@ -97,10 +125,12 @@ export async function getSectorById(id: number) {
   const [sector] = await db.select({
     id: sectors.id,
     name: sectors.name,
+    isActive: sectors.isActive,
     ministryId: sectors.ministryId,
     ministry: {
       id: ministries.id,
       name: ministries.name,
+      isActive: ministries.isActive,
       churchId: ministries.churchId,
     },
   })

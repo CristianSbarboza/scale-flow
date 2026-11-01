@@ -59,6 +59,28 @@ export async function updateMinistryDetails(id: number, name: string, descriptio
 }
 
 /**
+ * Ativa ou desativa o ministério sem apagar setores, escalas ou histórico.
+ *
+ * Enquanto desativado, novas escalas e setores não podem ser criados nele, as
+ * escalas existentes deixam de aceitar respostas de disponibilidade e o
+ * serviço `whatsapp/` suspende o envio de avisos e lembretes.
+ */
+export async function setMinistryActive(id: number, isActive: boolean) {
+  await requireMinistryAccess(id);
+
+  await db
+    .update(ministries)
+    .set({ isActive })
+    .where(eq(ministries.id, id));
+
+  revalidatePath("/admin/ministries");
+  revalidatePath(`/admin/ministries/${id}`);
+  revalidatePath("/admin/sectors");
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+}
+
+/**
  * Soma um líder ao ministério. Vários por ministério, sem limite.
  *
  * `requireMinistryAccess`, e não `requireAdmin`: um líder pode trazer outro

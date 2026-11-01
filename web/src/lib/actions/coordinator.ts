@@ -37,6 +37,8 @@ export async function getCoordinatorSchedules(): Promise<CoordinatorSchedule[]> 
     status: s.status,
     visibility: s.visibility,
     shareLink: s.shareLink,
+    ministryId: s.ministryId,
+    sectorId: s.sectorId,
     ministry: { name: s.ministry.name },
     sector: { name: s.sector.name },
     dates: s.dates.map((d) => ({ id: d.id, date: d.date, startTime: d.startTime, title: d.title })),

@@ -51,6 +51,24 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
     notFound();
   }
 
+  if (!schedule.ministry.isActive) {
+    return (
+      <BlockedNotice
+        title="Ministério desativado"
+        message={`O ministério ${schedule.ministry.name} está desativado no momento e não está recebendo respostas de disponibilidade.`}
+      />
+    );
+  }
+
+  if (!schedule.sector.isActive) {
+    return (
+      <BlockedNotice
+        title="Setor desativado"
+        message={`O setor ${schedule.sector.name} está desativado no momento e não está recebendo respostas de disponibilidade.`}
+      />
+    );
+  }
+
   const sortedDates = [...schedule.dates].sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
     if (dateCompare !== 0) return dateCompare;
@@ -94,8 +112,8 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
 
     const [me] = await db.query.servants.findMany({
       where: and(eq(servants.sectorId, schedule.sectorId), eq(servants.userId, session.user.id)),
-      columns: { id: true },
-      with: { user: { columns: { name: true } } },
+      columns: { id: true, isActive: true },
+      with: { user: { columns: { name: true, isActive: true } } },
       limit: 1,
     });
 
@@ -104,6 +122,15 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
         <BlockedNotice
           title="Escala privada"
           message={`Sua conta não está vinculada ao setor ${schedule.sector.name}. Fale com o líder do ministério para ser adicionado.`}
+        />
+      );
+    }
+
+    if (!me.isActive || !me.user.isActive) {
+      return (
+        <BlockedNotice
+          title="Cadastro desativado"
+          message={`Seu cadastro no setor ${schedule.sector.name} está desativado no momento. Fale com a liderança do ministério.`}
         />
       );
     }
@@ -124,14 +151,18 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
   }
 
   // Get servants for this sector to let them identify themselves.
-  // Só o nome vai para o cliente — esta página é pública.
-  const sectorServants = await db.query.servants.findMany({
-    where: eq(servants.sectorId, schedule.sectorId),
+  // Só o nome vai para o cliente — esta página é pública, e apenas servos
+  // ativos aparecem no seletor.
+  const rawSectorServants = await db.query.servants.findMany({
+    where: and(eq(servants.sectorId, schedule.sectorId), eq(servants.isActive, true)),
     columns: { id: true },
     with: {
-      user: { columns: { name: true } }
+      user: { columns: { name: true, isActive: true } }
     }
   });
+  const sectorServants = rawSectorServants
+    .filter((s) => s.user.isActive)
+    .map((s) => ({ id: s.id, user: { name: s.user.name } }));
 
   // Servo logado respondendo por si mesmo: a tela vem marcada com o que ele já
   // enviou, e o envio passa a substituir (ver `saveAvailability`). Visitante
@@ -140,10 +171,20 @@ export default async function PublicSchedulePage({ params, searchParams }: PageP
   const [eu] = session
     ? await db.query.servants.findMany({
         where: and(eq(servants.sectorId, schedule.sectorId), eq(servants.userId, session.user.id)),
-        columns: { id: true },
+        columns: { id: true, isActive: true },
+        with: { user: { columns: { isActive: true } } },
         limit: 1,
       })
     : [];
+
+  if (eu && (!eu.isActive || !eu.user.isActive)) {
+    return (
+      <BlockedNotice
+        title="Cadastro desativado"
+        message={`Seu cadastro no setor ${schedule.sector.name} está desativado no momento e não pode preencher a escala.`}
+      />
+    );
+  }
 
   return (
     <SchedulePage

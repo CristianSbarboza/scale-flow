@@ -48,6 +48,10 @@ export class ReminderRepository implements ReminderStore {
          left join notification_log nl
                 on nl.date_id = sd.id and nl.servant_id = sv.id and nl.kind = $1
         where sch.status = 'published'
+          and m.is_active = true
+          and s.is_active = true
+          and sv.is_active = true
+          and u.is_active = true
           and u.phone is not null
           and nl.id is null
           and sd.date between $2::date and $3::date`,
@@ -106,6 +110,10 @@ export class ReminderRepository implements ReminderStore {
          left join notification_log nl
                 on nl.schedule_id = sch.id and nl.servant_id = sv.id and nl.kind = $1
         where sch.status = 'published'
+          and m.is_active = true
+          and s.is_active = true
+          and sv.is_active = true
+          and u.is_active = true
           and sch.published_at is not null
           and sch.published_at > now() - ($2 || ' hours')::interval
           and u.phone is not null

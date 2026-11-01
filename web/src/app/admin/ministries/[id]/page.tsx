@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Users, Mail, Church, ArrowUpRight, Edit3, ShieldAlert, Copy, Check, UserPlus, X } from "lucide-react";
-import { getMinistryById, updateMinistryDetails, addMinistryLeader, removeMinistryLeader, deleteMinistry } from "@/lib/actions/ministries";
+import { getMinistryById, updateMinistryDetails, addMinistryLeader, removeMinistryLeader, deleteMinistry, setMinistryActive } from "@/lib/actions/ministries";
 import Field from "@/components/ui/Field";
 import PhoneField from "@/components/ui/PhoneField";
 import { validateStoredPhone } from "@/lib/phone";
@@ -14,6 +14,7 @@ import IconButton from "@/components/ui/IconButton";
 import Avatar from "@/components/ui/Avatar";
 import AdminCreateModal from "@/components/AdminCreateModal";
 import DeleteSection from "@/components/ui/DeleteSection";
+import Switch from "@/components/ui/Switch";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import StatsRule from "@/components/ui/StatsRule";
@@ -22,10 +23,12 @@ interface Ministry {
   id: number;
   name: string;
   description: string | null;
+  isActive: boolean;
   leaders: { userId: string; user: { name: string; email: string | null } }[];
   sectors: {
     id: number;
     name: string;
+    isActive: boolean;
     servants: { id: number; user: { name: string; username: string | null; email: string | null } }[];
   }[];
 }
@@ -57,6 +60,7 @@ export default function MinistryDetailPage() {
   const [ministry, setMinistry] = useState<Ministry | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -156,6 +160,19 @@ export default function MinistryDetailPage() {
     }
   };
 
+  const handleToggleActive = async (next: boolean) => {
+    setTogglingActive(true);
+    try {
+      await setMinistryActive(id, next);
+      await recarregar();
+      showToast(next ? "Ministério ativado." : "Ministério desativado.", "success");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação.", "error");
+    } finally {
+      setTogglingActive(false);
+    }
+  };
+
   // "Cancelar" não precisa de botão: o Salvar simplesmente não habilita.
   const semMudanca = name.trim() === ministry?.name
     && description.trim() === (ministry?.description ?? "");
@@ -212,10 +229,23 @@ export default function MinistryDetailPage() {
             )}
           </div>
         </div>
-        <Button variant="outline" onClick={abrirEdicao} className="shrink-0">
-          <Edit3 size={16} />
-          Editar
-        </Button>
+        <div className="flex flex-wrap items-center gap-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={ministry.isActive}
+              onChange={handleToggleActive}
+              label={ministry.isActive ? `Desativar ${ministry.name}` : `Ativar ${ministry.name}`}
+              disabled={togglingActive}
+            />
+            <span className="text-xs text-muted-foreground">
+              {ministry.isActive ? "Ativo" : "Desativado"}
+            </span>
+          </div>
+          <Button variant="outline" onClick={abrirEdicao} className="shrink-0">
+            <Edit3 size={16} />
+            Editar
+          </Button>
+        </div>
       </header>
 
       {/* Mesma régua de /admin e da tela do servo. Eram dois cards de 120px de

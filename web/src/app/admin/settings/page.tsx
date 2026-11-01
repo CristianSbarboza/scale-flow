@@ -5,6 +5,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import ProfileSection from "@/components/settings/ProfileSection";
 import ChurchSection from "@/components/settings/ChurchSection";
 import PersonalDataSection from "@/components/settings/PersonalDataSection";
+import AiAssistantSection from "@/components/settings/AiAssistantSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PasswordSection from "@/components/settings/PasswordSection";
 import SessionSection from "@/components/settings/SessionSection";
@@ -21,9 +22,9 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Configurações" subtitle="Gerencie seu perfil, aparência e segurança." />
+      <PageHeader title="Configurações" subtitle="Gerencie seu perfil, aparência, assistente de IA e segurança." />
 
-      <div className="grid max-w-[640px] gap-6">
+      <div className="grid max-w-160 gap-6">
         <ProfileSection
           name={session.user.name ?? ""}
           subtitle={session.user.email}
@@ -33,6 +34,7 @@ export default function AdminSettingsPage() {
         {/* Só admin renomeia a igreja. Líder gerencia o próprio ministério,
             não a conta inteira — daí a seção nem aparecer para ele. */}
         {session.user.role === "admin" && <ChurchSection />}
+        <AiAssistantSection isAdmin={session.user.role === "admin"} />
         <AppearanceSection />
         <PasswordSection />
         <SessionSection />

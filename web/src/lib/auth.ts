@@ -36,26 +36,45 @@ export const authOptions: NextAuthOptions = {
         if (credentials.username) {
           if (!credentials.church) return null;
 
-          const church = await db.query.churches.findFirst({
-            where: eq(churches.username, credentials.church.trim().toLowerCase()),
-          });
+          const [church] = await db
+            .select({ id: churches.id })
+            .from(churches)
+            .where(eq(churches.username, credentials.church.trim().toLowerCase()));
           if (!church) return null;
 
           // Minúsculo dos dois lados: o banco guarda normalizado, e quem
           // digita "Joao.Silva" no celular (com a primeira maiúscula
           // automática) precisa entrar do mesmo jeito.
-          user = await db.query.users.findFirst({
-            where: and(
-              eq(users.username, credentials.username.trim().toLowerCase()),
-              eq(users.churchId, church.id)
-            ),
-          });
+          [user] = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              email: users.email,
+              password: users.password,
+              role: users.role,
+              churchId: users.churchId,
+            })
+            .from(users)
+            .where(
+              and(
+                eq(users.username, credentials.username.trim().toLowerCase()),
+                eq(users.churchId, church.id),
+              ),
+            );
         } else if (credentials.email) {
           // Mesmo motivo do username: e-mail é case-insensitive na prática, e
           // o cadastro grava minúsculo.
-          user = await db.query.users.findFirst({
-            where: eq(users.email, credentials.email.trim().toLowerCase()),
-          });
+          [user] = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              email: users.email,
+              password: users.password,
+              role: users.role,
+              churchId: users.churchId,
+            })
+            .from(users)
+            .where(eq(users.email, credentials.email.trim().toLowerCase()));
         } else {
           return null;
         }

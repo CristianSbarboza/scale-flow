@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Edit3, Eye, Trash2, Plus, Lock, Link as LinkIcon } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Edit3, Eye, Trash2, Plus, Lock, Copy, Link as LinkIcon } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
-import { createSchedule, deleteSchedule } from "@/lib/actions/schedules";
+import {
+  createSchedule,
+  deleteSchedule,
+  publishSchedule,
+  unpublishSchedule,
+  duplicateSchedule,
+} from "@/lib/actions/schedules";
 import type { CoordinatorSchedule, CoordinatorSector, ScheduleDateInput } from "@/types/domain";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
@@ -19,6 +25,7 @@ import IconButton from "@/components/ui/IconButton";
 import ScheduleDatesField from "@/components/ui/ScheduleDatesField";
 import SearchInput from "@/components/ui/SearchInput";
 import SelectField from "@/components/ui/SelectField";
+import Switch from "@/components/ui/Switch";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 
@@ -32,9 +39,21 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
 
   const [schedules, setSchedules] = useState<CoordinatorSchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [detailsSchedule, setDetailsSchedule] = useState<CoordinatorSchedule | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<CoordinatorSchedule | null>(null);
+
+  const coordinatorMinistries = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of sectors) {
+      if (!map.has(s.ministryId)) {
+        map.set(s.ministryId, s.ministryName);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [sectors]);
 
   const [name, setName] = useState("");
   const [sectorId, setSectorId] = useState(sectors.length === 1 ? String(sectors[0].id) : "");
@@ -93,6 +112,44 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
       showToast(error instanceof Error ? error.message : "Erro ao criar escala.", "error");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleTogglePublish = async (schedule: CoordinatorSchedule, next: boolean) => {
+    if (next) {
+      const ok = await askConfirm({
+        title: "Publicar escala",
+        message:
+          `Publicar ${schedule.name}? Todos os servos de ${schedule.sector.name} com telefone ` +
+          `cadastrado receberão um aviso no WhatsApp para preencher a disponibilidade.`,
+        confirmLabel: "Publicar",
+      });
+      if (!ok) return;
+    }
+
+    setPublishingId(schedule.id);
+    try {
+      if (next) await publishSchedule(schedule.id);
+      else await unpublishSchedule(schedule.id);
+      showToast(next ? "Escala publicada." : "Escala voltou para rascunho.", "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao mudar a situação.", "error");
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const handleDuplicate = async (schedule: CoordinatorSchedule) => {
+    setDuplicatingId(schedule.id);
+    try {
+      await duplicateSchedule(schedule.id);
+      showToast("Escala duplicada como rascunho.", "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao duplicar escala.", "error");
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -208,6 +265,23 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
               cell: (s) => s.dates.length,
             },
             {
+              header: "Situação",
+              mobileRow: 1,
+              cell: (s) => (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={s.status === "published"}
+                    onChange={(next) => handleTogglePublish(s, next)}
+                    label={s.status === "published" ? `Despublicar ${s.name}` : `Publicar ${s.name}`}
+                    disabled={publishingId === s.id}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {s.status === "published" ? "Publicada" : "Rascunho"}
+                  </span>
+                </div>
+              ),
+            },
+            {
               header: "Ações",
               cell: (s) => (
                 <div className="flex gap-1">
@@ -223,6 +297,14 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
                     }}
                   >
                     <LinkIcon size={16} />
+                  </IconButton>
+                  <IconButton
+                    label="Duplicar"
+                    tone="muted"
+                    onClick={() => handleDuplicate(s)}
+                    disabled={duplicatingId === s.id}
+                  >
+                    <Copy size={16} />
                   </IconButton>
                   <IconButton label="Excluir" tone="destructive" onClick={() => handleDelete(s.id)}>
                     <Trash2 size={16} />
@@ -256,6 +338,8 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
       {editingSchedule && (
         <ScheduleEditor
           schedule={editingSchedule}
+          ministries={sectors.length > 1 ? coordinatorMinistries : undefined}
+          sectors={sectors.length > 1 ? sectors : undefined}
           onClose={() => setEditingSchedule(null)}
           onSave={load}
         />

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, Church, KeyRound, Trash2, User, Phone, Save } from "lucide-react";
 import { formatPhone, validateStoredPhone } from "@/lib/phone";
-import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, resetServantPassword, deleteServantAccount, updateServantProfile, removeServantFromMinistry } from "@/lib/actions/servants";
+import { getServantMember, addServantToSector, removeServantFromSector, setServantCoordinator, setServantActive, setServantSectorActive, resetServantPassword, deleteServantAccount, updateServantProfile, removeServantFromMinistry } from "@/lib/actions/servants";
 import { getSectors } from "@/lib/actions/sectors";
 import Select from "@/components/ui/Select";
 import StatsRule from "@/components/ui/StatsRule";
@@ -23,7 +23,8 @@ import { useConfirm } from "@/components/ConfirmDialog";
 interface SectorOption {
   id: number;
   name: string;
-  ministry: { id: number; name: string };
+  isActive?: boolean;
+  ministry: { id: number; name: string; isActive?: boolean };
 }
 
 const sectionLabelStyle: React.CSSProperties = {
@@ -65,6 +66,8 @@ export default function ServantMemberPage() {
   // Qual interruptor está salvando. Sem isso ele volta sozinho enquanto o
   // servidor responde, e parece que o clique não pegou.
   const [coordinatorLoading, setCoordinatorLoading] = useState<number | null>(null);
+  const [sectorActiveLoading, setSectorActiveLoading] = useState<number | null>(null);
+  const [memberActiveLoading, setMemberActiveLoading] = useState(false);
 
   const load = useCallback(async () => {
     const [m, sec] = await Promise.all([getServantMember(userId), getSectors()]);
@@ -87,7 +90,12 @@ export default function ServantMemberPage() {
 
   if (loading || !member) return null;
 
-  const availableSectors = sectors.filter((s) => !member.memberships.some((m) => m.sectorId === s.id));
+  const availableSectors = sectors.filter(
+    (s) =>
+      s.isActive !== false &&
+      s.ministry.isActive !== false &&
+      !member.memberships.some((m) => m.sectorId === s.id),
+  );
   // Bloqueia o envio com telefone inválido. Sem isto a pessoa corrige o nome,
   // o telefone está errado, e a recusa da action leva as duas coisas junto.
   const phoneError = validateStoredPhone(editPhone);
@@ -201,6 +209,32 @@ export default function ServantMemberPage() {
     }
   };
 
+  const handleToggleMemberActive = async (next: boolean) => {
+    setMemberActiveLoading(true);
+    try {
+      await setServantActive(member.userId, next);
+      showToast(next ? "Servo ativado." : "Servo desativado.", "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação.", "error");
+    } finally {
+      setMemberActiveLoading(false);
+    }
+  };
+
+  const handleToggleSectorActive = async (servantId: number, next: boolean) => {
+    setSectorActiveLoading(servantId);
+    try {
+      await setServantSectorActive(servantId, next);
+      showToast(next ? "Vínculo no setor ativado." : "Vínculo no setor desativado.", "success");
+      await load();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erro ao alterar situação no setor.", "error");
+    } finally {
+      setSectorActiveLoading(null);
+    }
+  };
+
   const handleChangePassword = async () => {
     if (!newPassword || !confirmingPassword) return;
     setPasswordLoading(true);
@@ -223,27 +257,40 @@ export default function ServantMemberPage() {
         <ArrowLeft size={16} /> Voltar para Servos
       </Link>
 
-      <header style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2.5rem" }}>
-        <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
-          <User size={28} />
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            <User size={28} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: "2rem" }}>{member.name}</h1>
+            <p style={{ color: "var(--muted-foreground)" }}>
+              {[member.username && `usuário: ${member.username}`, member.email]
+                .filter(Boolean).join(" · ") || "-"}
+            </p>
+            {/* Só aparece quando existe. Rótulo sem valor ao lado é pior que a
+                ausência: ocupa espaço para dizer que não há informação. */}
+            {member.phone && (
+              <a
+                href={`tel:+${member.phone}`}
+                className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+              >
+                <Phone size={14} />
+                {formatPhone(member.phone)}
+              </a>
+            )}
+          </div>
         </div>
-        <div>
-          <h1 style={{ fontSize: "2rem" }}>{member.name}</h1>
-          <p style={{ color: "var(--muted-foreground)" }}>
-            {[member.username && `usuário: ${member.username}`, member.email]
-              .filter(Boolean).join(" · ") || "-"}
-          </p>
-          {/* Só aparece quando existe. Rótulo sem valor ao lado é pior que a
-              ausência: ocupa espaço para dizer que não há informação. */}
-          {member.phone && (
-            <a
-              href={`tel:+${member.phone}`}
-              className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
-            >
-              <Phone size={14} />
-              {formatPhone(member.phone)}
-            </a>
-          )}
+        <div className="flex items-center gap-2 shrink-0">
+          <Switch
+            checked={member.isActive}
+            onChange={handleToggleMemberActive}
+            label={member.isActive ? `Desativar ${member.name}` : `Ativar ${member.name}`}
+            disabled={memberActiveLoading}
+          />
+          <span className="text-xs text-muted-foreground">
+            {member.isActive ? "Ativo" : "Desativado"}
+          </span>
         </div>
       </header>
 
@@ -367,6 +414,23 @@ export default function ServantMemberPage() {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{m.sectorName}</p>
                   <p className="truncate text-xs text-muted-foreground">{m.ministryName}</p>
+                </div>
+              ),
+            },
+            {
+              header: "Situação",
+              mobileRow: 1,
+              cell: (m) => (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={m.isActive}
+                    onChange={(next) => handleToggleSectorActive(m.servantId, next)}
+                    label={m.isActive ? `Desativar em ${m.sectorName}` : `Ativar em ${m.sectorName}`}
+                    disabled={sectorActiveLoading === m.servantId}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {m.isActive ? "Ativo" : "Desativado"}
+                  </span>
                 </div>
               ),
             },

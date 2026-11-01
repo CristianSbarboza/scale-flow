@@ -48,12 +48,14 @@ interface Schedule {
 interface Sector {
   id: number;
   name: string;
+  isActive?: boolean;
   ministryId: number;
 }
 
 interface Ministry {
   id: number;
   name: string;
+  isActive?: boolean;
 }
 
 export default function SchedulesPage() {
@@ -232,7 +234,9 @@ export default function SchedulesPage() {
             value={ministryId}
             onChange={setMinistryId}
             placeholder="Selecionar"
-            options={ministries.map(m => ({ value: m.id, label: m.name }))}
+            options={ministries
+              .filter((m) => m.isActive !== false)
+              .map((m) => ({ value: m.id, label: m.name }))}
             required
           />
           <SelectField
@@ -241,8 +245,11 @@ export default function SchedulesPage() {
             onChange={setSectorId}
             placeholder="Selecionar"
             options={sectors
-              .filter(sec => sec.ministryId === parseInt(ministryId))
-              .map(sec => ({ value: sec.id, label: sec.name }))}
+              .filter(
+                (sec) =>
+                  sec.ministryId === parseInt(ministryId) && sec.isActive !== false,
+              )
+              .map((sec) => ({ value: sec.id, label: sec.name }))}
             required
           />
         </div>

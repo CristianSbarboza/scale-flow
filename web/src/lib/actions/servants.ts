@@ -25,6 +25,18 @@ export async function createServant(
   const scope = await getScope();
   await requireSectorAccess(sectorId);
 
+  const [targetSector] = await db
+    .select({
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(eq(sectors.id, sectorId));
+  if (!targetSector?.sectorIsActive || !targetSector?.ministryIsActive) {
+    throw new Error("Não é possível cadastrar um servo em um setor ou ministério desativado");
+  }
+
   const { user, generatedPassword } = await getOrCreateUser(name, "servant", { username, email, phone }, scope.churchId);
 
   // Verifica se o usuário já é um servo neste setor para evitar duplicidade
@@ -90,9 +102,12 @@ export async function getServants(): Promise<ServantSummary[]> {
       servantId: row.id,
       sectorId: row.sector.id,
       sectorName: row.sector.name,
+      sectorIsActive: row.sector.isActive,
       ministryId: row.sector.ministry.id,
       ministryName: row.sector.ministry.name,
+      ministryIsActive: row.sector.ministry.isActive,
       isCoordinator: row.isCoordinator,
+      isActive: row.isActive,
     };
     const existing = byUser.get(row.userId);
     if (existing) {
@@ -104,6 +119,7 @@ export async function getServants(): Promise<ServantSummary[]> {
         username: row.user.username,
         email: row.user.email,
         phone: row.user.phone,
+        isActive: row.user.isActive,
         memberships: [membership],
       });
     }
@@ -129,13 +145,17 @@ export async function getServantMember(userId: string): Promise<ServantSummary |
     username: rows[0].user.username,
     email: rows[0].user.email,
     phone: rows[0].user.phone,
+    isActive: rows[0].user.isActive,
     memberships: rows.map((row) => ({
       servantId: row.id,
       sectorId: row.sector.id,
       sectorName: row.sector.name,
+      sectorIsActive: row.sector.isActive,
       ministryId: row.sector.ministry.id,
       ministryName: row.sector.ministry.name,
+      ministryIsActive: row.sector.ministry.isActive,
       isCoordinator: row.isCoordinator,
+      isActive: row.isActive,
     })),
   };
 }
@@ -205,6 +225,18 @@ export async function addServantToSector(userId: string, sectorId: number) {
   await requireServantAccess(userId);
   await requireSectorAccess(sectorId);
 
+  const [targetSector] = await db
+    .select({
+      sectorIsActive: sectors.isActive,
+      ministryIsActive: ministries.isActive,
+    })
+    .from(sectors)
+    .innerJoin(ministries, eq(sectors.ministryId, ministries.id))
+    .where(eq(sectors.id, sectorId));
+  if (!targetSector?.sectorIsActive || !targetSector?.ministryIsActive) {
+    throw new Error("Não é possível adicionar o servo a um setor ou ministério desativado");
+  }
+
   const [existing] = await db.select().from(servants).where(
     and(eq(servants.userId, userId), eq(servants.sectorId, sectorId))
   );
@@ -270,6 +302,43 @@ export async function setServantCoordinator(servantId: number, isCoordinator: bo
   await db.update(servants).set({ isCoordinator }).where(eq(servants.id, servantId));
 
   revalidatePath("/admin/servants");
+  revalidatePath("/servant");
+}
+
+/**
+ * Ativa ou desativa o cadastro global do servo (`users.is_active`) sem apagar
+ * seus vínculos, respostas passadas ou confirmações.
+ *
+ * Enquanto desativado, o servo não recebe notificações no WhatsApp, não pode
+ * preencher disponibilidade nas escalas nem ser escalado.
+ */
+export async function setServantActive(userId: string, isActive: boolean) {
+  await requireServantAccess(userId);
+
+  await db.update(users).set({ isActive }).where(eq(users.id, userId));
+
+  revalidatePath("/admin/servants");
+  revalidatePath(`/admin/servants/${userId}`);
+  revalidatePath("/admin/sectors");
+  revalidatePath("/admin/ministries");
+  revalidatePath("/admin/schedules");
+  revalidatePath("/servant");
+}
+
+/**
+ * Ativa ou desativa o vínculo do servo em um setor específico (`servants.is_active`).
+ */
+export async function setServantSectorActive(servantId: number, isActive: boolean) {
+  const [membership] = await db.select().from(servants).where(eq(servants.id, servantId));
+  if (!membership) throw new Error("Vínculo não encontrado");
+  await requireServantAccess(membership.userId);
+
+  await db.update(servants).set({ isActive }).where(eq(servants.id, servantId));
+
+  revalidatePath("/admin/servants");
+  revalidatePath(`/admin/servants/${membership.userId}`);
+  revalidatePath("/admin/sectors");
+  revalidatePath("/admin/schedules");
   revalidatePath("/servant");
 }
 

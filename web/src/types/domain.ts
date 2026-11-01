@@ -23,9 +23,12 @@ export interface ServantMembership {
   servantId: number;
   sectorId: number;
   sectorName: string;
+  sectorIsActive: boolean;
   ministryId: number;
   ministryName: string;
+  ministryIsActive: boolean;
   isCoordinator: boolean;
+  isActive: boolean;
 }
 
 export interface ServantSummary {
@@ -35,6 +38,7 @@ export interface ServantSummary {
   /** E.164 sem `+`. `null` quando a pessoa não informou — é opcional. */
   phone: string | null;
   email: string | null;
+  isActive: boolean;
   memberships: ServantMembership[];
 }
 
@@ -92,6 +96,8 @@ export interface CoordinatorSchedule {
   status: "draft" | "published";
   visibility: "public" | "private";
   shareLink: string;
+  ministryId: number;
+  sectorId: number;
   ministry: { name: string };
   sector: { name: string };
   dates: { id: number; date: string; startTime: string; title: string | null }[];
@@ -132,3 +138,48 @@ export interface PendingSwapRequest {
   requesterName: string;
   createdAt: string;
 }
+
+export type AiProviderId = "gemini" | "claude" | "openai" | "grok" | "groq" | "openrouter";
+
+export type AiPersonalityStyle = "warm" | "balanced" | "direct";
+
+export interface AiUserSettingsView {
+  /** Nome personalizado pelo usuário (`null` = usa o padrão da igreja). */
+  userAiName: string | null;
+  /** Estilo personalizado pelo usuário (`null` = usa o padrão da igreja). */
+  userAiStyle: AiPersonalityStyle | null;
+  /** Nome padrão definido pela igreja (para exibir como placeholder). */
+  churchDefaultName: string;
+  /** Estilo padrão definido pela igreja. */
+  churchDefaultStyle: AiPersonalityStyle;
+  /** Nome efetivo que a assistente usará na conversa. */
+  effectiveName: string;
+  /** Estilo efetivo que a assistente usará na conversa. */
+  effectiveStyle: AiPersonalityStyle;
+  /** Se a igreja já possui chave de API configurada (para habilitar o chat). */
+  isConfigured: boolean;
+}
+
+export interface AiChurchAdminSettingsView {
+  provider: AiProviderId;
+  model: string | null;
+  hasApiKey: boolean;
+  maskedApiKey: string | null;
+  defaultName: string;
+  defaultStyle: AiPersonalityStyle;
+}
+
+export interface AiPendingConfirmation {
+  toolName: "delete_ministry" | "delete_sector" | "delete_servant_account" | "delete_schedule";
+  args: Record<string, unknown>;
+  summary: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+  pendingConfirmation?: AiPendingConfirmation;
+}
+
