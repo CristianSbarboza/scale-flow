@@ -21,10 +21,10 @@ export default function AdminSettingsPage() {
   if (!session) return null;
 
   return (
-    <div className="animate-fade-in">
+    <div className="min-w-0 animate-fade-in">
       <PageHeader title="Configurações" subtitle="Gerencie seu perfil, aparência, assistente de IA e segurança." />
 
-      <div className="grid max-w-160 gap-6">
+      <div className="grid w-full max-w-160 min-w-0 grid-cols-1 gap-6">
         <ProfileSection
           name={session.user.name ?? ""}
           subtitle={session.user.email}

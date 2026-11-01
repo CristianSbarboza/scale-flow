@@ -51,7 +51,7 @@ export default function ChurchSection() {
 
   return (
     <SettingsSection title="Igreja" icon={<Landmark size={14} />}>
-      <form onSubmit={handleSubmit} className="grid gap-4">
+      <form onSubmit={handleSubmit} className="grid min-w-0 grid-cols-1 gap-4">
         <Field
           label="Nome da igreja"
           value={name}
@@ -60,7 +60,7 @@ export default function ChurchSection() {
           required
         />
 
-        <div>
+        <div className="min-w-0">
           <p className="text-[0.8125rem] text-muted-foreground">
             Identificador no login:{" "}
             <strong className="break-all text-foreground">{church.username}</strong>
@@ -70,7 +70,11 @@ export default function ChurchSection() {
           </p>
         </div>
 
-        <Button type="submit" disabled={loading || unchanged} className="justify-self-start">
+        <Button
+          type="submit"
+          disabled={loading || unchanged}
+          className="w-full sm:w-auto sm:justify-self-start"
+        >
           <Save size={16} />
           {loading ? "Salvando..." : "Salvar Nome"}
         </Button>

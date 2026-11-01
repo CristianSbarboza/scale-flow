@@ -24,12 +24,12 @@ export default function FieldShell({
   className?: string;
 }) {
   return (
-    <div className={cn("grid gap-2", className)}>
-      <label htmlFor={id} className={cn(hideLabel && "sr-only")}>{label}</label>
+    <div className={cn("grid min-w-0 grid-cols-1 gap-2", className)}>
+      <label htmlFor={id} className={cn("wrap-break-word", hideLabel && "sr-only")}>{label}</label>
       {children}
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && !error && <p className="wrap-break-word text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
+        <p id={`${id}-error`} className="wrap-break-word text-sm text-destructive">
           {error}
         </p>
       )}

@@ -58,7 +58,7 @@ export default function SelectField({
       hint={hint}
       className={className}
     >
-      <div className="relative">
+      <div className="relative min-w-0">
         <Select
           value={value}
           onChange={onChange}
@@ -72,7 +72,7 @@ export default function SelectField({
           required={required}
           value={value}
           onChange={() => {}}
-          className="pointer-events-none absolute inset-0 size-full opacity-0"
+          className="pointer-events-none absolute inset-0 size-full max-w-full min-w-0 opacity-0"
         >
           {items.map((o) => (
             <option key={o.value} value={o.value}>

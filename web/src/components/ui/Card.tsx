@@ -22,7 +22,7 @@ export default function Card({
   return (
     <div
       className={cn(
-        "card",
+        "card min-w-0",
         glass && "glass",
         accent === "primary" && "border-l-[3px] border-l-primary",
         accent === "success" && "border-l-[3px] border-l-success",

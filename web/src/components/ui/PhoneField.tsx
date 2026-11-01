@@ -88,7 +88,7 @@ export default function PhoneField({
       hint={hint}
       className={className}
     >
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <Select
           value={country}
           onChange={changeCountry}
@@ -102,8 +102,8 @@ export default function PhoneField({
           label="Código do país"
           // `flex-none` e não `shrink-0`: o padrão do Select é `flex-[1_1_160px]`,
           // e só um utilitário do mesmo grupo o remove no twMerge.
-          className="w-[116px] flex-none"
-          listClassName="w-max min-w-[220px]"
+          className="w-28 flex-none sm:w-29"
+          listClassName="left-0 w-max min-w-55 max-w-[calc(100vw-2.5rem)]"
         />
         <input
           id={`${id}-input`}

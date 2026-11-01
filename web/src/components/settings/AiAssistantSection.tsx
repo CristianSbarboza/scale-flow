@@ -79,6 +79,12 @@ const STYLE_LABELS: Record<AiPersonalityStyle, string> = {
   direct: "Direta e concisa (vai direto ao ponto com simpatia)",
 };
 
+const STYLE_SHORT_LABELS: Record<AiPersonalityStyle, string> = {
+  warm: "Acolhedora e calorosa",
+  balanced: "Equilibrada",
+  direct: "Direta e concisa",
+};
+
 export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: boolean }) {
   const { showToast } = useToast();
 
@@ -224,7 +230,7 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
         ) : (
-          <form onSubmit={handleSaveUserPreferences} className="grid gap-4">
+          <form onSubmit={handleSaveUserPreferences} className="grid min-w-0 grid-cols-1 gap-4">
             <Field
               label="Como você quer chamar a assistente (opcional)"
               value={customName}
@@ -241,7 +247,7 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
               options={[
                 {
                   value: "default",
-                  label: `Padrão da igreja (${STYLE_LABELS[userSettings?.churchDefaultStyle ?? "warm"]})`,
+                  label: `Padrão da igreja (${STYLE_SHORT_LABELS[userSettings?.churchDefaultStyle ?? "warm"]})`,
                 },
                 { value: "warm", label: STYLE_LABELS.warm },
                 { value: "balanced", label: STYLE_LABELS.balanced },
@@ -253,7 +259,7 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
             <Button
               type="submit"
               disabled={savingUser || userUnchanged}
-              className="justify-self-start"
+              className="w-full sm:w-auto sm:justify-self-start"
             >
               <Save size={16} />
               {savingUser ? "Salvando..." : "Salvar Preferência"}
@@ -270,17 +276,22 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
           {loading || !churchSettings ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
           ) : (
-            <form onSubmit={handleSaveChurchAi} className="grid gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+            <form onSubmit={handleSaveChurchAi} className="grid min-w-0 grid-cols-1 gap-4">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <div className="text-xs text-muted-foreground">
                   Status do chat na igreja:
                 </div>
                 {churchSettings.hasApiKey ? (
-                  <Badge tone="success" solid icon={<CheckCircle2 size={13} />}>
-                    Chave ativa ({churchSettings.maskedApiKey})
+                  <Badge
+                    tone="success"
+                    solid
+                    icon={<CheckCircle2 size={13} className="shrink-0" />}
+                    className="max-w-full min-w-0"
+                  >
+                    <span className="truncate">Chave ativa ({churchSettings.maskedApiKey})</span>
                   </Badge>
                 ) : (
-                  <Badge tone="muted" solid>
+                  <Badge tone="muted" solid className="max-w-full">
                     Sem chave configurada
                   </Badge>
                 )}
@@ -323,7 +334,7 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
                 hint="Deixe vazio para usar o modelo recomendado do provedor selecionado."
               />
 
-              <div className="grid gap-4 pt-1 sm:grid-cols-2">
+              <div className="grid min-w-0 grid-cols-1 gap-4 pt-1 sm:grid-cols-2">
                 <Field
                   label="Nome padrão na igreja"
                   value={defaultName}
@@ -344,10 +355,11 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Button
                   type="submit"
                   disabled={savingChurch || churchUnchanged || !defaultName.trim()}
+                  className="w-full sm:w-auto"
                 >
                   <Save size={16} />
                   {savingChurch ? "Salvando..." : "Salvar Configuração da Igreja"}
@@ -359,6 +371,7 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
                     variant="secondary"
                     disabled={savingChurch}
                     onClick={handleClearApiKey}
+                    className="w-full sm:w-auto"
                   >
                     <Trash2 size={16} />
                     Remover Chave

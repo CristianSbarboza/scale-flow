@@ -26,7 +26,10 @@ export default async function AdminLayout({
       <AdminTopbarProvider>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <AdminSidebar role={session.user.role} />
-          <main className="admin-main" style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+          <main
+            className="admin-main"
+            style={{ flex: 1, minWidth: 0, padding: '2rem', overflowX: 'hidden', overflowY: 'auto' }}
+          >
             {children}
           </main>
         </div>

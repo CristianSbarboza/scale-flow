@@ -133,7 +133,7 @@ export default function Select({
   };
 
   return (
-    <div ref={rootRef} className={cn("relative flex-[1_1_160px]", className)}>
+    <div ref={rootRef} className={cn("relative max-w-full min-w-0 flex-[1_1_160px]", className)}>
       <button
         ref={triggerRef}
         type="button"
@@ -146,12 +146,12 @@ export default function Select({
         onClick={() => (open ? setOpen(false) : abrir())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-lg border bg-muted px-3 py-2.5 text-left text-sm transition-colors",
+          "flex w-full min-w-0 items-center gap-2 rounded-lg border bg-muted px-3 py-2.5 text-left text-sm transition-colors",
           open ? "border-primary" : "border-border hover:border-muted-foreground",
         )}
       >
         {leading}
-        <span className="flex-1 truncate">{selected?.short ?? selected?.label}</span>
+        <span className="min-w-0 flex-1 truncate">{selected?.short ?? selected?.label}</span>
         <ChevronDown
           size={16}
           className={cn("shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
@@ -166,7 +166,7 @@ export default function Select({
           aria-label={label}
           tabIndex={-1}
           className={cn(
-            "absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg",
+            "absolute z-50 mt-1 max-h-64 w-full max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg",
             listClassName,
           )}
         >
@@ -187,7 +187,7 @@ export default function Select({
                 )}
               >
                 <Check size={14} className={cn("shrink-0", !isSelected && "opacity-0")} />
-                <span className="truncate">{o.label}</span>
+                <span className="min-w-0 truncate">{o.label}</span>
               </li>
             );
           })}

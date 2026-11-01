@@ -41,7 +41,7 @@ export default function PasswordSection() {
 
   return (
     <SettingsSection title="Segurança" icon={<KeyRound size={14} />}>
-      <form onSubmit={handleSubmit} className="grid gap-4">
+      <form onSubmit={handleSubmit} className="grid min-w-0 grid-cols-1 gap-4">
         <PasswordField
           label="Senha atual"
           value={currentPassword}
@@ -60,7 +60,7 @@ export default function PasswordSection() {
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
         />
-        <Button type="submit" disabled={loading} className="justify-self-start">
+        <Button type="submit" disabled={loading} className="w-full sm:w-auto sm:justify-self-start">
           <Save size={16} />
           {loading ? "Salvando..." : "Salvar Nova Senha"}
         </Button>

@@ -82,7 +82,7 @@ export default function PersonalDataSection() {
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : (
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <form onSubmit={handleSubmit} className="grid min-w-0 grid-cols-1 gap-4">
           <Field
             label="Nome"
             value={name}
@@ -115,7 +115,7 @@ export default function PersonalDataSection() {
           <Button
             type="submit"
             disabled={saving || semMudanca || phoneError !== null || !name.trim() || semEmailProibido}
-            className="justify-self-start"
+            className="w-full sm:w-auto sm:justify-self-start"
           >
             <Save size={16} />
             {saving ? "Salvando..." : "Salvar"}

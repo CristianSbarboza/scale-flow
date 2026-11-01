@@ -33,8 +33,8 @@ export default function AppearanceSection() {
 
   return (
     <SettingsSection title="Aparência" icon={<Palette size={14} />}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-[0.9375rem] font-semibold">Tema do sistema</p>
           <p className="text-[0.8125rem] text-muted-foreground">
             {isServant ? "Escolha entre claro, escuro ou Jess." : "Alterne entre modo claro e escuro."}
@@ -48,10 +48,14 @@ export default function AppearanceSection() {
             options={THEME_OPTIONS}
             label="Tema do sistema"
             leading={THEME_ICONS[theme]}
-            className="w-56 flex-none"
+            className="w-full flex-none sm:w-56"
           />
         ) : (
-          <Button variant="secondary" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
           </Button>

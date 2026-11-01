@@ -22,7 +22,10 @@ export default function SettingsSection({
   className?: string;
 }) {
   return (
-    <Card glass className={cn(tone === "destructive" && "border-destructive/30", className)}>
+    <Card
+      glass
+      className={cn("p-4 sm:p-6", tone === "destructive" && "border-destructive/30", className)}
+    >
       <div className="mb-4 flex items-center gap-2">
         {icon && (
           <span className={tone === "destructive" ? "text-destructive" : "text-primary"}>{icon}</span>

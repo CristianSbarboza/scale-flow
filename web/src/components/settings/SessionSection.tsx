@@ -9,9 +9,9 @@ import SettingsSection from "@/components/ui/SettingsSection";
 export default function SessionSection() {
   return (
     <SettingsSection title="Sessão" icon={<LogOut size={14} />} tone="destructive">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">Encerre sua sessão neste dispositivo.</p>
-        <Button variant="danger" onClick={() => signOut()}>
+        <Button variant="danger" className="w-full sm:w-auto" onClick={() => signOut()}>
           <LogOut size={18} /> Sair da Conta
         </Button>
       </div>

@@ -30,12 +30,12 @@ export default function Field({
 
   return (
     <FieldShell id={inputId} label={label} error={error} hint={hint}>
-      <div className={cn(trailing && "relative")}>
+      <div className={cn("min-w-0", trailing && "relative")}>
         <input
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${inputId}-error` : undefined}
-          className={cn("input", trailing && "pr-10", error && "border-destructive", className)}
+          className={cn("input min-w-0", trailing && "pr-10", error && "border-destructive", className)}
           {...rest}
         />
         {trailing && (
