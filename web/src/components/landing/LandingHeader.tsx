@@ -44,9 +44,9 @@ export default function LandingHeader() {
               width={32}
               height={32}
               priority
-              className="rounded-lg border border-card-border"
+              className="shrink-0 rounded-lg"
             />
-            <span className="font-logo text-lg tracking-wider text-primary">
+            <span className="font-logo text-2xl font-normal tracking-[1px] text-primary">
               ScaleFlow
             </span>
           </a>

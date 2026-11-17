@@ -93,14 +93,14 @@ export default function LandingFaqAndFooter() {
               <Image
                 src="/logo-mark.png"
                 alt=""
-                width={22}
-                height={22}
-                className="rounded-md border border-card-border"
+                width={26}
+                height={26}
+                className="shrink-0 rounded-md"
               />
-              <span>
-                <strong className="font-semibold text-foreground">ScaleFlow</strong>{" "}
-                · Gestão de Escalas Ministeriais · 2026
+              <span className="font-logo text-base tracking-[1px] text-primary">
+                ScaleFlow
               </span>
+              <span>· Gestão de Escalas Ministeriais · 2026</span>
             </div>
 
             <div className="flex items-center gap-6 font-mono">

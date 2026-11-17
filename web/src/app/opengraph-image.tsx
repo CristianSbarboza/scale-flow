@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt = "ScaleFlow — A escala da igreja feita em paz.";
@@ -7,7 +9,10 @@ export const size = {
 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logoBuffer = await readFile(join(process.cwd(), "public", "logo-mark.png"));
+  const logoSrc = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -33,28 +38,21 @@ export default function OpenGraphImage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-            <div
+            <img
+              src={logoSrc}
+              alt=""
+              width={54}
+              height={54}
               style={{
                 width: "54px",
                 height: "54px",
-                borderRadius: "16px",
-                backgroundColor: "#232120",
-                border: "1px solid #34312e",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#f97316",
-                fontSize: "28px",
-                fontWeight: 700,
-                fontFamily: "sans-serif",
+                borderRadius: "14px",
               }}
-            >
-              S†F
-            </div>
+            />
             <span
               style={{
-                fontSize: "28px",
-                letterSpacing: "0.06em",
+                fontSize: "32px",
+                letterSpacing: "0.04em",
                 color: "#f97316",
                 fontFamily: "sans-serif",
                 fontWeight: 700,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
@@ -220,6 +221,13 @@ export default function InteractivePhoneStage({
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
                       <Menu size={14} />
                     </span>
+                    <Image
+                      src="/logo-mark.png"
+                      alt=""
+                      width={22}
+                      height={22}
+                      className="shrink-0 rounded-md"
+                    />
                     <div>
                       <span className="block font-logo text-xs leading-none tracking-wide text-primary">
                         ScaleFlow
@@ -238,9 +246,13 @@ export default function InteractivePhoneStage({
               ) : (
                 <div className="flex items-center justify-between border-y border-border/70 bg-card/50 px-3.5 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-card-border bg-card font-mono text-[10px] font-semibold text-primary">
-                      S†F
-                    </span>
+                    <Image
+                      src="/logo-mark.png"
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="shrink-0 rounded-md"
+                    />
                     <span className="font-logo text-sm tracking-wide text-primary">
                       ScaleFlow
                     </span>
