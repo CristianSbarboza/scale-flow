@@ -10,6 +10,17 @@ import type { ScheduleDateInput } from "@/types/domain";
 /** Mesmo limite que o servidor aplica em `tituloDaData`. */
 export const DATE_TITLE_MAX = 80;
 
+/** Ordena datas cronologicamente (data crescente e, no mesmo dia, horário crescente). */
+export function sortScheduleDates<T extends { date: string; startTime: string }>(
+  list: T[],
+): T[] {
+  return [...list].sort((a, b) => {
+    const dateCmp = a.date.slice(0, 10).localeCompare(b.date.slice(0, 10));
+    if (dateCmp !== 0) return dateCmp;
+    return a.startTime.slice(0, 5).localeCompare(b.startTime.slice(0, 5));
+  });
+}
+
 /**
  * Bloco de datas e horários dos formulários de escala: escolhe data, hora e,
  * se quiser, um título; adiciona à lista, remove da lista.
@@ -34,7 +45,7 @@ export default function ScheduleDatesField({
 
   const add = () => {
     if (!date) return;
-    onChange([...value, { date, startTime, title: title.trim() || null }]);
+    onChange(sortScheduleDates([...value, { date, startTime, title: title.trim() || null }]));
     setDate("");
     setTitle("");
   };

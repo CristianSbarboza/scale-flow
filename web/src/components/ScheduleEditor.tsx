@@ -10,7 +10,7 @@ import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityTog
 import Button from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
 import SelectField from "@/components/ui/SelectField";
-import { DATE_TITLE_MAX } from "@/components/ui/ScheduleDatesField";
+import { DATE_TITLE_MAX, sortScheduleDates } from "@/components/ui/ScheduleDatesField";
 import type { ScheduleDateInput } from "@/types/domain";
 
 interface Props {
@@ -38,7 +38,9 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
   const { showToast } = useToast();
   const [name, setName] = useState(schedule.name);
   const [visibility, setVisibility] = useState<ScheduleVisibility>(schedule.visibility);
-  const [dates, setDates] = useState(schedule.dates.map(d => ({ ...d })));
+  const [dates, setDates] = useState(() =>
+    sortScheduleDates(schedule.dates.map((d) => ({ ...d }))),
+  );
 
   // Só dá para mover com as listas em mãos e sabendo de onde a escala sai.
   const podeMover =
@@ -66,7 +68,12 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
 
   const addDate = () => {
     if (!newDate) return;
-    setDates([...dates, { date: newDate, startTime: newStartTime, title: newTitle.trim() || null }]);
+    setDates(
+      sortScheduleDates([
+        ...dates,
+        { date: newDate, startTime: newStartTime, title: newTitle.trim() || null },
+      ]),
+    );
     setNewDate("");
     setNewTitle("");
   };
@@ -210,7 +217,7 @@ export default function ScheduleEditor({ schedule, ministries, sectors, onClose,
                 {dates.map((d, i) => (
                   <motion.div
                     layout
-                    key={i}
+                    key={`${d.date}-${d.startTime}-${i}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}

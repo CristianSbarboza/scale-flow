@@ -360,7 +360,9 @@ export async function getSchedules() {
     with: {
       ministry: true,
       sector: true,
-      dates: true
+      dates: {
+        orderBy: (d, { asc }) => [asc(d.date), asc(d.startTime)],
+      },
     }
   });
 }
