@@ -65,7 +65,7 @@ export default async function PublicScheduleVisualizePage({ params }: PageProps)
   const schedule = await db.query.schedules.findFirst({
     where: eq(schedules.shareLink, link),
     with: {
-      ministry: { with: { church: { columns: { name: true } } } },
+      ministry: { with: { church: { columns: { name: true, username: true } } } },
       sector: true,
       dates: {
         with: {
@@ -135,6 +135,7 @@ export default async function PublicScheduleVisualizePage({ params }: PageProps)
         id: schedule.id,
         name: schedule.name,
         churchName: schedule.ministry.church.name,
+        churchUsername: schedule.ministry.church.username,
         ministryName: schedule.ministry.name,
         sectorName: schedule.sector.name,
         dates: sortedDates,

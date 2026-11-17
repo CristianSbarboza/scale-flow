@@ -38,7 +38,7 @@ export default async function PublicChurchSchedulesPage({ params }: PageProps) {
 
   const church = await db.query.churches.findFirst({
     where: eq(churches.username, slug),
-    columns: { id: true, name: true },
+    columns: { id: true, name: true, username: true },
   });
 
   if (!church) {
@@ -136,6 +136,7 @@ export default async function PublicChurchSchedulesPage({ params }: PageProps) {
     <PublicChurchScheduleView
       data={{
         churchName: church.name,
+        churchUsername: church.username,
         ministries: ministryOptions,
         sectors: sectorOptions,
         entries,

@@ -3,19 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   Calendar,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
+  LogIn,
   MapPin,
   Moon,
   Sun,
   Users,
 } from "lucide-react";
 import { useTheme } from "@/components/Providers";
-import Button from "@/components/ui/Button";
+import Button, { buttonClass } from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
 import SearchInput from "@/components/ui/SearchInput";
 
@@ -37,6 +40,7 @@ export interface PublicScheduleViewData {
   id: number;
   name: string;
   churchName: string;
+  churchUsername: string;
   ministryName: string;
   sectorName: string;
   dates: PublicViewDate[];
@@ -54,6 +58,13 @@ export default function PublicScheduleView({
   schedule: PublicScheduleViewData;
 }) {
   const { theme, setTheme } = useTheme();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated" && Boolean(session?.user);
+  const loginHref = isAuthenticated
+    ? session?.user.role === "servant"
+      ? "/servant"
+      : "/admin"
+    : `/login?igreja=${encodeURIComponent(schedule.churchUsername)}`;
 
   // Abre direto no mês da escala: se o mês atual tiver datas nesta escala, usa
   // o mês atual; caso contrário, abre no mês da primeira data da escala.
@@ -194,6 +205,13 @@ export default function PublicScheduleView({
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
+          <Link
+            href={loginHref}
+            className={buttonClass("primary", "px-3.5 py-2 text-xs sm:text-sm")}
+          >
+            <LogIn size={16} />
+            <span>{isAuthenticated ? "Meu painel" : "Entrar no sistema"}</span>
+          </Link>
         </div>
       </header>
 

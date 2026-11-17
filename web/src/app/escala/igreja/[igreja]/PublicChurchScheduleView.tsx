@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   Calendar,
   CalendarDays,
@@ -10,13 +12,14 @@ import {
   ChevronRight,
   Church,
   Clock,
+  LogIn,
   MapPin,
   Moon,
   Sun,
   Users,
 } from "lucide-react";
 import { useTheme } from "@/components/Providers";
-import Button from "@/components/ui/Button";
+import Button, { buttonClass } from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
 import FilterSelect from "@/components/ui/FilterSelect";
 import SearchInput from "@/components/ui/SearchInput";
@@ -49,6 +52,7 @@ export interface PublicChurchDateEntry {
 
 export interface PublicChurchScheduleData {
   churchName: string;
+  churchUsername: string;
   ministries: PublicChurchMinistryOption[];
   sectors: PublicChurchSectorOption[];
   entries: PublicChurchDateEntry[];
@@ -66,6 +70,13 @@ export default function PublicChurchScheduleView({
   data: PublicChurchScheduleData;
 }) {
   const { theme, setTheme } = useTheme();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated" && Boolean(session?.user);
+  const loginHref = isAuthenticated
+    ? session?.user.role === "servant"
+      ? "/servant"
+      : "/admin"
+    : `/login?igreja=${encodeURIComponent(data.churchUsername)}`;
 
   // Abre no mês atual se houver datas nele; caso contrário, abre no mês mais
   // próximo a partir de hoje (ou no primeiro mês com datas).
@@ -250,6 +261,13 @@ export default function PublicChurchScheduleView({
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
+          <Link
+            href={loginHref}
+            className={buttonClass("primary", "px-3.5 py-2 text-xs sm:text-sm")}
+          >
+            <LogIn size={16} />
+            <span>{isAuthenticated ? "Meu painel" : "Entrar no sistema"}</span>
+          </Link>
         </div>
       </header>
 
