@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createSchedule, getSchedules, deleteSchedule, publishSchedule, unpublishSchedule, duplicateSchedule } from "@/lib/actions/schedules";
 import { getSectors } from "@/lib/actions/sectors";
 import { getMinistries } from "@/lib/actions/ministries";
-import { Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock } from "lucide-react";
+import { Link as LinkIcon, Trash2, Copy, Edit3, Eye, Plus, Lock, Check, ExternalLink, CalendarRange } from "lucide-react";
 import ScheduleManager from "@/components/ScheduleManager";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import AdminCreateModal from "@/components/AdminCreateModal";
@@ -19,6 +19,7 @@ import SearchInput from "@/components/ui/SearchInput";
 import VisibilityToggle, { ScheduleVisibility } from "@/components/VisibilityToggle";
 import PageHeader from "@/components/ui/PageHeader";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
+import { useChurch } from "@/components/ChurchContext";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import Switch from "@/components/ui/Switch";
@@ -59,11 +60,21 @@ interface Ministry {
 }
 
 export default function SchedulesPage() {
+  const church = useChurch();
   const { showToast } = useToast();
   const askConfirm = useConfirm();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
+  const [copiedGeneralLink, setCopiedGeneralLink] = useState(false);
+
+  const handleCopyGeneralLink = () => {
+    const url = `${window.location.origin}/escala/igreja/${church.username}`;
+    navigator.clipboard.writeText(url);
+    setCopiedGeneralLink(true);
+    showToast("Link da escala geral do mês copiado!", "success");
+    setTimeout(() => setCopiedGeneralLink(false), 2500);
+  };
   
   const [name, setName] = useState("");
   const [ministryId, setMinistryId] = useState("");
@@ -322,6 +333,25 @@ export default function SchedulesPage() {
                 onChange={setSearchTerm}
                 placeholder="Pesquisar escala, ministério ou setor..."
               />
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleCopyGeneralLink}
+                title="Copiar link público com todas as escalas do mês de todos os ministérios e setores"
+              >
+                {copiedGeneralLink ? <Check size={16} /> : <CalendarRange size={16} />}
+                {copiedGeneralLink ? "Link copiado!" : "Link Geral do Mês"}
+              </Button>
+              <a
+                href={`/escala/igreja/${church.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir escala geral do mês em nova aba"
+                aria-label="Abrir escala geral do mês em nova aba"
+                className="btn btn-outline px-2.5 py-2"
+              >
+                <ExternalLink size={16} />
+              </a>
             </>
           }
           rows={filteredSchedules}

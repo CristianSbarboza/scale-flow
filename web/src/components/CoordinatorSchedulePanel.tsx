@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Edit3, Eye, Trash2, Plus, Lock, Copy, Link as LinkIcon } from "lucide-react";
+import { Edit3, Eye, Trash2, Plus, Lock, Copy, Link as LinkIcon, Check, ExternalLink, CalendarRange } from "lucide-react";
 import { getCoordinatorSchedules } from "@/lib/actions/coordinator";
+import { getMyChurch } from "@/lib/actions/church";
 import {
   createSchedule,
   deleteSchedule,
@@ -38,6 +39,8 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   const askConfirm = useConfirm();
 
   const [schedules, setSchedules] = useState<CoordinatorSchedule[]>([]);
+  const [churchUsername, setChurchUsername] = useState<string | null>(null);
+  const [copiedGeneralLink, setCopiedGeneralLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState<number | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
@@ -66,10 +69,23 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
   const [filterSectorId, setFilterSectorId] = useState("all");
 
   const load = useCallback(async () => {
-    const data = await getCoordinatorSchedules();
+    const [data, church] = await Promise.all([
+      getCoordinatorSchedules(),
+      getMyChurch().catch(() => null),
+    ]);
     setSchedules(data);
+    if (church) setChurchUsername(church.username);
     setLoading(false);
   }, []);
+
+  const handleCopyGeneralLink = () => {
+    if (!churchUsername) return;
+    const url = `${window.location.origin}/escala/igreja/${churchUsername}`;
+    navigator.clipboard.writeText(url);
+    setCopiedGeneralLink(true);
+    showToast("Link da escala geral do mês copiado!", "success");
+    setTimeout(() => setCopiedGeneralLink(false), 2500);
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -234,6 +250,29 @@ export default function CoordinatorSchedulePanel({ sectors }: Props) {
                 />
               )}
               <SearchInput value={searchTerm} onChange={setSearchTerm} />
+              {churchUsername && (
+                <>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={handleCopyGeneralLink}
+                    title="Copiar link público com todas as escalas do mês de todos os ministérios e setores"
+                  >
+                    {copiedGeneralLink ? <Check size={16} /> : <CalendarRange size={16} />}
+                    {copiedGeneralLink ? "Link copiado!" : "Link Geral do Mês"}
+                  </Button>
+                  <a
+                    href={`/escala/igreja/${churchUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Abrir escala geral do mês em nova aba"
+                    aria-label="Abrir escala geral do mês em nova aba"
+                    className="btn btn-outline px-2.5 py-2"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                </>
+              )}
               <Button className="lg:hidden" onClick={() => setShowCreateModal(true)}>
                 <Plus size={16} /> Nova Escala
               </Button>
