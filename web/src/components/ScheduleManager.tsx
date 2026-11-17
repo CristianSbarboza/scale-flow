@@ -6,16 +6,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getScheduleResponses, getScheduleSectorServants } from "@/lib/actions/schedules";
 import LoadingDots from "@/components/ui/LoadingDots";
 import { assignServant, removeAssignment } from "@/lib/actions/availability";
-import { UserPlus, X, Clock, Calendar, CheckCircle2, Plus, FileDown } from "lucide-react";
+import { UserPlus, X, Clock, Calendar, CheckCircle2, Plus, FileDown, Link as LinkIcon, Check, ExternalLink } from "lucide-react";
 import { exportarEscalaPdf } from "@/lib/escalaPdf";
 import type { SectorServantOption } from "@/types/domain";
 import Button from "@/components/ui/Button";
+import CloseButton from "@/components/ui/CloseButton";
 import IconButton from "@/components/ui/IconButton";
+import { useToast } from "@/components/Toast";
 
 interface ScheduleSummary {
   id: number;
   name: string;
   status: "draft" | "published";
+  shareLink: string;
   ministry: { name: string };
   sector: { name: string };
   dates: { id: number }[];
@@ -51,10 +54,12 @@ interface ResponseDate {
 }
 
 export default function ScheduleManager({ schedule, onClose }: Props) {
+  const { showToast } = useToast();
   const [dates, setDates] = useState<ResponseDate[]>([]);
   const [sectorServants, setSectorServants] = useState<SectorServantOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [copiedViewLink, setCopiedViewLink] = useState(false);
   /** Data cujo seletor de "escalar mesmo sem resposta" está aberto. */
   const [addingFor, setAddingFor] = useState<number | null>(null);
   /** `dateId:servantId` em voo, para não escalar duas vezes no clique repetido. */
@@ -85,6 +90,22 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const handleCopyPublicViewLink = () => {
+    const url = `${window.location.origin}/escala/${schedule.shareLink}/visualizar`;
+    navigator.clipboard.writeText(url);
+    setCopiedViewLink(true);
+    showToast("Link de visualização pública copiado!", "success");
+    setTimeout(() => setCopiedViewLink(false), 2500);
+  };
+
   const handleAssign = async (dateId: number, servantId: number) => {
     setAssigning(`${dateId}:${servantId}`);
     try {
@@ -108,56 +129,74 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 p-4 bg-black/80 backdrop-blur-md"
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-md sm:p-4"
+      onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="glass w-full max-w-5xl"
+        className="glass flex max-h-[90dvh] w-full max-w-5xl min-w-0 flex-col overflow-hidden"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
           padding: 0,
-          maxHeight: '90vh',
           borderRadius: 'var(--radius)',
           border: '1px solid var(--card-border)',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
-          overflow: 'hidden',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div>
-            <h3 style={{ marginBottom: '0.25rem' }}>{schedule.name}</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-              {schedule.ministry.name} · {schedule.sector.name}
-            </p>
-            <div className="flex items-center gap-4 items-center" style={{ gap: '0.75rem', marginTop: '0.75rem' }}>
-              <span className="flex items-center gap-4 items-center" style={{ gap: '0.375rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-                <Calendar size={14} /> {schedule.dates.length} {schedule.dates.length === 1 ? 'data' : 'datas'}
-              </span>
+        {/* Header: título + X sempre visíveis na linha superior; ações quebram na linha de baixo sem empurrar o X */}
+        <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="mb-1 wrap-break-word">{schedule.name}</h3>
+              <p className="wrap-break-word text-sm text-muted-foreground">
+                {schedule.ministry.name} · {schedule.sector.name}
+              </p>
             </div>
+            <CloseButton onClick={onClose} className="shrink-0" />
           </div>
-          <div className="flex items-center gap-4 items-center" style={{ gap: '0.5rem', flexShrink: 0 }}>
-            <Button
-              variant="outline"
-              onClick={() => exportarEscalaPdf(schedule, dates)}
-              disabled={loading || totalEscalados === 0}
-              title={totalEscalados === 0 ? 'Nenhum servo confirmado para exportar' : 'Exportar os confirmados em PDF'}
-            >
-              <FileDown size={16} />
-              Exportar PDF
-            </Button>
-            <Button variant="ghost" onClick={onClose}
-              style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
-              <X size={20} />
-            </Button>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Calendar size={14} /> {schedule.dates.length} {schedule.dates.length === 1 ? 'data' : 'datas'}
+            </span>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleCopyPublicViewLink}
+                title="Copiar link público de visualização da escala (calendário e escalados)"
+              >
+                {copiedViewLink ? <Check size={16} /> : <LinkIcon size={16} />}
+                {copiedViewLink ? "Link copiado!" : "Link de Visualização"}
+              </Button>
+              <a
+                href={`/escala/${schedule.shareLink}/visualizar`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir página pública de visualização em nova aba"
+                aria-label="Abrir página pública de visualização em nova aba"
+                className="btn btn-outline px-2.5 py-2"
+              >
+                <ExternalLink size={16} />
+              </a>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => exportarEscalaPdf(schedule, dates)}
+                disabled={loading || totalEscalados === 0}
+                title={totalEscalados === 0 ? 'Nenhum servo confirmado para exportar' : 'Exportar os confirmados em PDF'}
+              >
+                <FileDown size={16} />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '1.5rem', overflowY: 'auto', scrollbarWidth: 'thin', flex: '1 1 auto', minHeight: 0 }}>
+        <div className="min-h-0 flex-[1_1_auto] overflow-y-auto p-4 sm:p-6" style={{ scrollbarWidth: 'thin' }}>
           <label style={{ display: 'block', marginBottom: '1rem' }}>Respostas e Escalação</label>
           {loading ? (
             <div className="flex justify-center py-20 text-muted-foreground">
@@ -169,7 +208,7 @@ export default function ScheduleManager({ schedule, onClose }: Props) {
               <Button variant="secondary" onClick={() => { setLoading(true); load(); }}>Tentar de novo</Button>
             </div>
           ) : (
-            <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+            <div className="grid gap-6" style={{ gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))' }}>
               <AnimatePresence mode="popLayout">
                 {dates.map((d) => {
                   const escalados = new Set(d.assignments.map((a) => a.servantId));
