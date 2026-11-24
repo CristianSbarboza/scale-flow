@@ -9,14 +9,24 @@ import {
   Calendar,
   CalendarRange,
   CheckCircle2,
+  Download,
   EyeOff,
   Link2,
+  MoreVertical,
+  PlusSquare,
+  Share,
+  Smartphone,
   Sparkles,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import CloseButton from "@/components/ui/CloseButton";
 
-const STORAGE_KEY = "scaleflow:whats-new:v2026-11-google-notif";
+const STORAGE_KEY = "scaleflow:whats-new:v2026-11-pwa-google-notif";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
 
 interface WhatsNewModalProps {
   role: "admin" | "leader" | "servant";
@@ -30,6 +40,31 @@ export default function WhatsNewModal({
   onConnectGoogleHref = "/api/google/connect",
 }: WhatsNewModalProps) {
   const [open, setOpen] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState<"ios" | "android">("ios");
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    // Detecta automaticamente iOS vs Android para já deixar a aba certa aberta
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes("android")) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setInstallPlatform("android");
+      }
+    }
+
+    const onBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setInstallPlatform("android");
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -54,6 +89,13 @@ export default function WhatsNewModal({
       // ignora erro de localStorage
     }
     setOpen(false);
+  };
+
+  const handleTriggerNativeInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
   };
 
   if (!open || typeof document === "undefined") return null;
@@ -124,7 +166,7 @@ export default function WhatsNewModal({
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-md sm:p-4"
         onClick={handleCloseTemporary}
       >
-        {/* Indicador flutuante apontando para a região do perfil / sino no topo mobile */}
+        {/* Indicador flutuante apontando para a região do perfil / sino */}
         {isServant && (
           <motion.div
             initial={{ opacity: 0, y: -16 }}
@@ -173,6 +215,153 @@ export default function WhatsNewModal({
 
           {/* Lista de Cards com animação de entrada em cascata (stagger) */}
           <div className="-mr-2 grid min-h-0 flex-[1_1_auto] grid-cols-1 gap-3.5 overflow-y-auto pr-2 sm:-mr-3 sm:pr-3">
+            {/* Card especial de Tutorial de Instalação do App (iOS & Android) */}
+            <motion.div
+              initial={{ opacity: 0, x: -20, y: 12 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{
+                delay: 0.05,
+                type: "spring",
+                stiffness: 280,
+                damping: 24,
+              }}
+              className="rounded-xl border border-primary/35 bg-primary/5 p-4"
+            >
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Smartphone size={20} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary-foreground uppercase">
+                      App no Celular · iOS &amp; Android
+                    </span>
+                    <span className="font-mono text-[11px] font-semibold text-primary">
+                      Essencial para alertas na tela bloqueada
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-foreground sm:text-base">
+                    Como instalar o aplicativo ScaleFlow no seu celular
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                    O ScaleFlow funciona como um aplicativo nativo na sua Tela de Início, sem ocupar memória e com notificações em tela bloqueada:
+                  </p>
+
+                  {/* Seletor iPhone (iOS) vs Android */}
+                  <div className="mt-3 inline-flex rounded-lg border border-border bg-card p-1">
+                    <button
+                      type="button"
+                      onClick={() => setInstallPlatform("ios")}
+                      className="rounded-md px-3 py-1 text-xs font-semibold transition-colors"
+                      style={{
+                        background:
+                          installPlatform === "ios" ? "var(--primary)" : "transparent",
+                        color:
+                          installPlatform === "ios"
+                            ? "var(--primary-foreground)"
+                            : "var(--muted-foreground)",
+                      }}
+                    >
+                      iPhone (iOS / Safari)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInstallPlatform("android")}
+                      className="rounded-md px-3 py-1 text-xs font-semibold transition-colors"
+                      style={{
+                        background:
+                          installPlatform === "android"
+                            ? "var(--primary)"
+                            : "transparent",
+                        color:
+                          installPlatform === "android"
+                            ? "var(--primary-foreground)"
+                            : "var(--muted-foreground)",
+                      }}
+                    >
+                      Android (Chrome)
+                    </button>
+                  </div>
+
+                  {installPlatform === "ios" ? (
+                    <ol className="mt-3 grid gap-2 rounded-lg border border-border bg-card/90 p-3 text-xs text-foreground">
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          1
+                        </span>
+                        <span>
+                          Abra o ScaleFlow pelo navegador <strong>Safari</strong> no iPhone.
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          2
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1">
+                          Toque no ícone de <strong>Compartilhar</strong>
+                          <Share size={13} className="inline text-primary" /> na barra inferior do Safari.
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          3
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1">
+                          Role para baixo e escolha <strong>Adicionar à Tela de Início</strong>
+                          <PlusSquare size={13} className="inline text-primary" /> › <strong>Adicionar</strong>.
+                        </span>
+                      </li>
+                    </ol>
+                  ) : (
+                    <ol className="mt-3 grid gap-2 rounded-lg border border-border bg-card/90 p-3 text-xs text-foreground">
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          1
+                        </span>
+                        <span>
+                          Abra o ScaleFlow pelo <strong>Google Chrome</strong> no Android.
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          2
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1">
+                          Toque nos <strong>3 pontinhos</strong>
+                          <MoreVertical size={13} className="inline text-primary" /> no canto superior direito do Chrome.
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
+                          3
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1">
+                          Toque em <strong>Instalar aplicativo</strong> (ou <strong>Adicionar à tela inicial</strong>)
+                          <Download size={13} className="inline text-primary" /> e confirme.
+                        </span>
+                      </li>
+                    </ol>
+                  )}
+
+                  {deferredPrompt && (
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleTriggerNativeInstall}
+                        className="px-3 py-1.5 text-xs"
+                      >
+                        <Download size={14} />
+                        Instalar aplicativo agora (1 toque)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
             {cards.map((card, index) => {
               const Icon = card.icon;
               return (
@@ -181,7 +370,7 @@ export default function WhatsNewModal({
                   initial={{ opacity: 0, x: -20, y: 12 }}
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   transition={{
-                    delay: 0.08 + index * 0.11,
+                    delay: 0.14 + index * 0.1,
                     type: "spring",
                     stiffness: 280,
                     damping: 24,
