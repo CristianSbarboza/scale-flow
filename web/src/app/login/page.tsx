@@ -72,14 +72,21 @@ function LoginForm() {
     setRevealed((prev) => (prev.has(name) ? prev : new Set(prev).add(name)));
 
   /**
-   * O `@` decide o caminho, e é por isso que não há mais abas.
-   *
-   * Quem tem e-mail entra por e-mail — inclusive servo, que pode ter e-mail
-   * cadastrado. Quem tem só usuário precisa dizer de qual igreja é, porque
-   * `maria` só é única dentro de uma igreja.
+   * O formato do identificador decide o caminho:
+   * - E-mail (contém `@`) ou Telefone (só dígitos, ex.: `987654321` sem 55 e sem DDD)
+   *   vão direto para a senha.
+   * - Nome de usuário pede a igreja (`maria` só é única dentro de uma igreja).
    */
-  const isEmail = identifier.includes("@");
-  const showChurch = revealed.has("church") && !isEmail;
+  const trimmedIdentifier = identifier.trim();
+  const isEmail = trimmedIdentifier.includes("@");
+  const phoneDigits = trimmedIdentifier.replace(/\D/g, "");
+  const isPhone =
+    !isEmail &&
+    /^[\d\s()-+]+$/.test(trimmedIdentifier) &&
+    phoneDigits.length >= 8 &&
+    phoneDigits.length <= 15;
+  const isDirectLogin = isEmail || isPhone;
+  const showChurch = revealed.has("church") && !isDirectLogin;
   const showPassword = revealed.has("password");
 
   /** Campo que acabou de ser revelado por um avanço, para receber o foco. */
@@ -99,8 +106,8 @@ function LoginForm() {
    * login de admin. No avanço explícito já se sabe qual dos dois caminhos é.
    */
   const commitIdentifier = () => {
-    if (!identifier.trim()) return;
-    const next = isEmail ? "password" : "church";
+    if (!trimmedIdentifier) return;
+    const next = isDirectLogin ? "password" : "church";
     setFocusTarget(next);
     reveal(next);
   };
@@ -108,12 +115,13 @@ function LoginForm() {
   // O botão some assim que cumpre a função. Deixá-lo depois do avanço seria um
   // controle que não faz mais nada, competindo com o "Entrar" logo abaixo.
   const showNext =
-    identifier.trim() !== "" && !revealed.has(isEmail ? "password" : "church");
+    trimmedIdentifier !== "" &&
+    !revealed.has(isDirectLogin ? "password" : "church");
 
   const canSubmit =
-    identifier.trim() !== "" &&
+    trimmedIdentifier !== "" &&
     password.trim() !== "" &&
-    (isEmail || church.trim() !== "");
+    (isDirectLogin || church.trim() !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,8 +133,9 @@ function LoginForm() {
       church: isEmail ? "" : church.trim().toLowerCase(),
       // Minúsculo nos dois: o teclado do celular capitaliza a primeira letra
       // sozinho, e "Joao.silva" não casaria com o que está gravado.
-      username: isEmail ? "" : identifier.trim().toLowerCase(),
-      email: isEmail ? identifier.trim().toLowerCase() : "",
+      username: isDirectLogin ? "" : trimmedIdentifier.toLowerCase(),
+      email: isEmail ? trimmedIdentifier.toLowerCase() : "",
+      phone: isPhone ? phoneDigits : "",
       password,
       redirect: false,
     });
@@ -135,9 +144,13 @@ function LoginForm() {
       // Uma mensagem por caminho, cobrindo todos os campos dele (RNF07).
       // Distinguir "igreja não existe" de "senha errada" transformaria esta
       // tela num jeito de descobrir quais igrejas existem e quem serve nelas.
-      setError(isEmail
-        ? "E-mail ou senha inválidos."
-        : "Igreja, usuário ou senha inválidos.");
+      setError(
+        isEmail
+          ? "E-mail ou senha inválidos."
+          : isPhone
+            ? "Telefone ou senha inválidos."
+            : "Igreja, usuário ou senha inválidos.",
+      );
       setLoading(false);
       return;
     }
@@ -212,15 +225,16 @@ function LoginForm() {
 
         <div className="mb-6 flex items-center gap-3 text-xs text-muted-foreground">
           <div className="h-px flex-1 bg-border" />
-          <span>ou com usuário / e-mail</span>
+          <span>ou com usuário, telefone ou e-mail</span>
           <div className="h-px flex-1 bg-border" />
         </div>
 
         <form onSubmit={handleSubmit}>
           <Field
-            label="Usuário ou e-mail"
+            label="Usuário, telefone ou e-mail"
             type="text"
-            placeholder="seu.usuario ou seu@email.com"
+            placeholder="seu.usuario, 987654321 ou seu@email.com"
+            hint="Se usar o telefone, digite apenas o número (ex.: 987654321, sem 55 e sem DDD)."
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             onKeyDown={(e) => {

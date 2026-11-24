@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/db";
 import { users, churches } from "@/db/schema";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, like, or } from "drizzle-orm";
 import { compare } from "bcryptjs";
 import { syncUserScheduleToGoogleCalendar } from "@/lib/google-calendar";
 
@@ -13,6 +13,7 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
+        phone: { label: "Telefone", type: "text" },
         church: { label: "Igreja", type: "text" },
         username: { label: "Usuário", type: "text" },
         password: { label: "Password", type: "password" }
@@ -32,6 +33,59 @@ export const authOptions: NextAuthOptions = {
        */
       async authorize(credentials) {
         if (!credentials?.password) return null;
+
+        const phoneDigits = (credentials.phone ?? "").replace(/\D/g, "");
+        if (phoneDigits.length >= 8 && phoneDigits.length <= 15) {
+          // Login por telefone: o banco guarda E.164 sem '+' (ex.: 5511987654321)
+          // e o usuário digita apenas o número sem 55 e sem DDD (ex.: 987654321).
+          let churchIdFilter: number | null = null;
+          if (credentials.church?.trim()) {
+            const [church] = await db
+              .select({ id: churches.id })
+              .from(churches)
+              .where(eq(churches.username, credentials.church.trim().toLowerCase()));
+            if (church) churchIdFilter = church.id;
+          }
+
+          const candidates = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              email: users.email,
+              password: users.password,
+              role: users.role,
+              churchId: users.churchId,
+            })
+            .from(users)
+            .where(
+              and(
+                like(users.phone, `%${phoneDigits}`),
+                eq(users.isActive, true),
+              ),
+            );
+
+          const ordered = churchIdFilter
+            ? [
+                ...candidates.filter((c) => c.churchId === churchIdFilter),
+                ...candidates.filter((c) => c.churchId !== churchIdFilter),
+              ]
+            : candidates;
+
+          for (const candidate of ordered) {
+            const valid = await compare(credentials.password, candidate.password);
+            if (valid) {
+              return {
+                id: candidate.id,
+                name: candidate.name,
+                email: candidate.email,
+                role: candidate.role,
+                churchId: candidate.churchId,
+              };
+            }
+          }
+
+          return null;
+        }
 
         let user;
 
