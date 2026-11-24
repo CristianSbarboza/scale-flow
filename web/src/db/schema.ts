@@ -50,6 +50,9 @@ export const users = pgTable("users", {
   // Quando `false` (spec 08), o servo fica inativo sem perder histórico: não
   // recebe WhatsApp, não preenche disponibilidade e não aparece para escalar.
   isActive: boolean("is_active").default(true).notNull(),
+  // Se o usuário aceitou receber notificações de escala (padrão true). Quando
+  // false, o app exibe o convite de aceite ao entrar.
+  notificationsEnabled: boolean("notifications_enabled").default(true).notNull(),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
@@ -273,3 +276,44 @@ export const scheduleDatesRelations = relations(scheduleDates, ({ one, many }) =
   availabilities: many(scheduleAvailability),
   assignments: many(scheduleAssignments),
 }));
+
+/**
+ * Marca quais notificações do aplicativo o servo já abriu/visualizou.
+ */
+export const servantNotificationReads = pgTable("servant_notification_reads", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  notificationKey: text("notification_key").notNull(),
+  readAt: timestamp("read_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("servant_notification_reads_unique").on(t.userId, t.notificationKey),
+]);
+
+/**
+ * Par de chaves VAPID gerado automaticamente e persistido no banco caso não
+ * esteja definido via variável de ambiente. Garante que o Web Push funcione
+ * imediatamente em produção sem exigir configuração manual na Vercel.
+ */
+export const pushVapidKeys = pgTable("push_vapid_keys", {
+  id: integer("id").default(1).primaryKey(),
+  publicKey: text("public_key").notNull(),
+  privateKey: text("private_key").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Inscrições de Web Push (Service Worker) de cada dispositivo do servo para
+ * receber notificações mesmo com o navegador fechado ou a tela bloqueada.
+ */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("push_subscriptions_endpoint_unique").on(t.endpoint),
+]);
+
+

@@ -7,6 +7,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, getSectorIdForDateId } from "@/lib/scope";
+import { sendWebPushToUsers } from "@/lib/push-server";
 import type { PendingSwapRequest } from "@/types/domain";
 
 export async function createSwapRequest(dateId: number, targetServantId: number, requesterServantId: number) {
@@ -51,6 +52,7 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
   const [target] = await db
     .select({
       id: servants.id,
+      userId: servants.userId,
       servantIsActive: servants.isActive,
       userIsActive: users.isActive,
     })
@@ -73,6 +75,14 @@ export async function createSwapRequest(dateId: number, targetServantId: number,
   if (existing) throw new Error("Você já enviou um pedido para esse dia");
 
   await db.insert(swapRequests).values({ dateId, requesterServantId, targetServantId });
+
+  void sendWebPushToUsers([target.userId], {
+    title: "Novo pedido de troca de escala",
+    body: `${session.user.name ?? "Um servo"} pediu para assumir um dos seus dias escalados.`,
+    url: "/servant",
+    tag: `swap-request-${dateId}-${targetServantId}`,
+  });
+
   revalidatePath("/servant");
 }
 

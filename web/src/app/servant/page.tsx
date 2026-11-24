@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getServantOverview } from "@/lib/actions/availability";
+import { getServantNotificationState } from "@/lib/actions/notifications";
 import { mapCoordinatorSectors } from "@/lib/scope";
 import ServantShell from "@/components/ServantShell";
 import { type ServantTab } from "@/components/ServantHome";
@@ -13,7 +14,14 @@ import { type ServantTab } from "@/components/ServantHome";
  * Abas que um link externo pode abrir. "coordinator" fica de fora: nem todo
  * servo a tem, e um link para ela cairia numa aba inexistente.
  */
-const ABAS_POR_URL: readonly ServantTab[] = ["calendar", "next", "month", "all", "assistant"];
+const ABAS_POR_URL: readonly ServantTab[] = [
+  "calendar",
+  "next",
+  "month",
+  "all",
+  "assistant",
+  "notifications",
+];
 
 export default async function ServantDashboard({
   searchParams,
@@ -46,8 +54,11 @@ export default async function ServantDashboard({
 
   const sectorNames = memberships.map((m) => m.sector.name).join(", ");
 
-  const schedules = await getServantOverview();
-  const currentUser = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
+  const [schedules, notificationState, currentUser] = await Promise.all([
+    getServantOverview(),
+    getServantNotificationState(),
+    db.query.users.findFirst({ where: eq(users.id, session.user.id) }),
+  ]);
   const ownColor = currentUser?.color ?? null;
   const ownIcon = currentUser?.avatarIcon ?? null;
 
@@ -62,6 +73,9 @@ export default async function ServantDashboard({
       schedules={schedules}
       coordinatorSectors={coordinatorSectors}
       initialTab={initialTab}
+      initialNotifications={notificationState.notifications}
+      initialNotificationsEnabled={notificationState.notificationsEnabled}
+      vapidPublicKey={notificationState.vapidPublicKey}
     />
   );
 }

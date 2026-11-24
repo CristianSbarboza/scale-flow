@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Settings } from "lucide-react";
 import ProfileSection from "@/components/settings/ProfileSection";
 import PersonalDataSection from "@/components/settings/PersonalDataSection";
+import NotificationsSection from "@/components/settings/NotificationsSection";
 import AiAssistantSection from "@/components/settings/AiAssistantSection";
 import AppearanceSection from "@/components/settings/AppearanceSection";
 import PanelStyleSection from "@/components/settings/PanelStyleSection";
@@ -55,6 +56,7 @@ export default function SettingsModal({ name, sectorName, color, icon, onClose }
         <div className="-mr-2 grid min-h-0 min-w-0 flex-[1_1_auto] grid-cols-1 gap-4 overflow-x-hidden overflow-y-auto pr-2 sm:-mr-3 sm:gap-6 sm:pr-3">
           <ProfileSection name={name} subtitle={sectorName} color={color} icon={icon} editableIcon />
           <PersonalDataSection />
+          <NotificationsSection />
           <AiAssistantSection isAdmin={false} />
           <AppearanceSection />
           <PanelStyleSection color={color} />

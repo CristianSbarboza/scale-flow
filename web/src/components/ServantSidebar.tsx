@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { ServantTab, ServantTabItem } from "@/components/ServantHome";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
 import NotificationBell from "@/components/NotificationBell";
+import ServantNotificationsButton from "@/components/ServantNotificationsButton";
 import NavLink from "@/components/ui/NavLink";
 
 interface ServantSidebarProps {
@@ -14,9 +15,19 @@ interface ServantSidebarProps {
   sectorName: string;
   color: string | null;
   icon: string | null;
+  unreadNotificationsCount: number;
 }
 
-export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorName, color, icon }: ServantSidebarProps) {
+export default function ServantSidebar({
+  tabs,
+  tab,
+  onTabChange,
+  name,
+  sectorName,
+  color,
+  icon,
+  unreadNotificationsCount,
+}: ServantSidebarProps) {
   return (
     <aside className="glass servant-sidebar">
       <div style={{ marginBottom: "2.5rem", padding: "0 0.5rem", display: "flex", alignItems: "center", gap: "0.625rem" }}>
@@ -68,6 +79,11 @@ export default function ServantSidebar({ tabs, tab, onTabChange, name, sectorNam
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <NotificationBell placement="top" />
+          <ServantNotificationsButton
+            unreadCount={unreadNotificationsCount}
+            active={tab === "notifications"}
+            onClick={() => onTabChange("notifications")}
+          />
           <ServantProfileMenu name={name} sectorName={sectorName} color={color} icon={icon} />
         </div>
       </div>

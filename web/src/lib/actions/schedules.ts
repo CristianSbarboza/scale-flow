@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { eq, and, exists, inArray, sql } from "drizzle-orm";
 import { publicUser, getScope, requireScheduleSectorAccess, getSectorIdForScheduleId, ledBy } from "@/lib/scope";
+import { sendWebPushToUsers } from "@/lib/push-server";
 import type { CalendarSchedule, ScheduleDateInput, SectorServantOption } from "@/types/domain";
 import type { Scope } from "@/types/scope";
 
@@ -338,6 +339,30 @@ export async function publishSchedule(id: number) {
   await db.update(schedules)
     .set({ status: "published", publishedAt: sql`coalesce(${schedules.publishedAt}, now())` })
     .where(eq(schedules.id, id));
+
+  // Dispara Web Push para os celulares inscritos dos servos ativos do setor
+  const [publishedSchedule, sectorServants] = await Promise.all([
+    db.query.schedules.findFirst({
+      where: eq(schedules.id, id),
+      with: { ministry: true, sector: true },
+    }),
+    db
+      .select({ userId: servants.userId })
+      .from(servants)
+      .where(and(eq(servants.sectorId, sectorId), eq(servants.isActive, true))),
+  ]);
+
+  if (publishedSchedule && sectorServants.length > 0) {
+    void sendWebPushToUsers(
+      sectorServants.map((s) => s.userId),
+      {
+        title: `Escala aberta: ${publishedSchedule.name}`,
+        body: `${publishedSchedule.ministry.name} · ${publishedSchedule.sector.name} — Informe os dias em que você pode servir.`,
+        url: "/servant?aba=notifications",
+        tag: `schedule-published-${id}`,
+      },
+    );
+  }
 
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");

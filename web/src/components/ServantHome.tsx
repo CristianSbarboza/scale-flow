@@ -1,14 +1,22 @@
 "use client";
 
 import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList, Sparkles } from "lucide-react";
-import type { ServantOverviewSchedule, CoordinatorSector } from "@/types/domain";
+import type { ServantOverviewSchedule, CoordinatorSector, ServantNotificationItem } from "@/types/domain";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
 import AssistantChat from "@/components/AssistantChat";
+import ServantNotificationsPage from "@/components/ServantNotificationsPage";
 import PageHeader from "@/components/ui/PageHeader";
 
-export type ServantTab = "calendar" | "next" | "month" | "all" | "coordinator" | "assistant";
+export type ServantTab =
+  | "calendar"
+  | "next"
+  | "month"
+  | "all"
+  | "coordinator"
+  | "assistant"
+  | "notifications";
 
 export interface ServantTabItem {
   value: ServantTab;
@@ -72,9 +80,25 @@ interface ServantHomeProps {
   userName?: string;
   tab: ServantTab;
   onTabChange: (tab: ServantTab) => void;
+  notifications: ServantNotificationItem[];
+  notificationsEnabled: boolean;
+  onToggleNotificationsEnabled: (next: boolean) => Promise<void>;
+  onMarkNotificationAsRead: (key: string) => Promise<void>;
+  onMarkAllNotificationsAsRead: () => Promise<void>;
 }
 
-export default function ServantHome({ schedules, coordinatorSectors, userName = "", tab, onTabChange }: ServantHomeProps) {
+export default function ServantHome({
+  schedules,
+  coordinatorSectors,
+  userName = "",
+  tab,
+  onTabChange,
+  notifications,
+  notificationsEnabled,
+  onToggleNotificationsEnabled,
+  onMarkNotificationAsRead,
+  onMarkAllNotificationsAsRead,
+}: ServantHomeProps) {
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const isCoordinator = coordinatorSectors.length > 0;
@@ -88,6 +112,13 @@ export default function ServantHome({ schedules, coordinatorSectors, userName = 
           o cabeçalho é o que nomeia a aba aberta. */}
       {current && tab !== "assistant" && (
         <PageHeader className="mb-4 hidden sm:flex" title={current.label} subtitle={current.subtitle} />
+      )}
+      {tab === "notifications" && (
+        <PageHeader
+          className="mb-4 hidden sm:flex"
+          title="Notificações"
+          subtitle="Avisos de escalas abertas, confirmações e lembretes de culto."
+        />
       )}
 
       <nav className="servant-tabbar">
@@ -160,6 +191,16 @@ export default function ServantHome({ schedules, coordinatorSectors, userName = 
             role="servant"
             isCoordinator={isCoordinator}
             userName={userName}
+          />
+        )}
+        {tab === "notifications" && (
+          <ServantNotificationsPage
+            notifications={notifications}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotificationsEnabled={onToggleNotificationsEnabled}
+            onMarkAsRead={onMarkNotificationAsRead}
+            onMarkAllAsRead={onMarkAllNotificationsAsRead}
+            onNavigateTab={onTabChange}
           />
         )}
       </div>

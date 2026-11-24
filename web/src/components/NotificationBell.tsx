@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { Repeat, Check, X } from "lucide-react";
 import { getPendingSwapRequests, respondToSwapRequest } from "@/lib/actions/swaps";
 import type { PendingSwapRequest } from "@/types/domain";
 import { useToast } from "@/components/Toast";
@@ -68,9 +68,10 @@ export default function NotificationBell({
           position: "relative",
           color: "var(--foreground)",
         }}
-        aria-label="Notificações"
+        aria-label="Pedidos de troca"
+        title="Pedidos de troca"
       >
-        <Bell size={20} />
+        <Repeat size={19} />
         {requests.length > 0 && (
           <span
             style={{

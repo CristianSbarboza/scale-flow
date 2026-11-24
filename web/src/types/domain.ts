@@ -183,3 +183,33 @@ export interface AiChatMessage {
   pendingConfirmation?: AiPendingConfirmation;
 }
 
+export type ServantNotificationKind =
+  | "schedule_published"
+  | "assigned"
+  | "day_before"
+  | "two_hours"
+  | "swap";
+
+export interface ServantNotificationItem {
+  key: string;
+  kind: ServantNotificationKind;
+  title: string;
+  preview: string;
+  ministryName: string;
+  sectorName: string;
+  scheduleName: string;
+  scheduleShareLink?: string;
+  servantId?: number;
+  serviceDate?: string;
+  serviceTime?: string;
+  dateTitle?: string | null;
+  greeting: string;
+  headline: string;
+  details: { label: string; value: string }[];
+  callToActionText?: string;
+  verse: { text: string; reference: string };
+  createdAt: string;
+  read: boolean;
+}
+
+

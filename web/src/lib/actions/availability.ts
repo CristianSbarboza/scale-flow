@@ -7,6 +7,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, requireScheduleSectorAccess, getSectorIdForDateId, getSectorIdForAssignmentId } from "@/lib/scope";
+import { sendWebPushToUsers } from "@/lib/push-server";
 import type { ServantOverviewSchedule } from "@/types/domain";
 
 // Returns every schedule for the logged-in servant's sector, with each date
@@ -90,6 +91,7 @@ export async function assignServant(dateId: number, servantId: number) {
   const [servant] = await db
     .select({
       id: servants.id,
+      userId: servants.userId,
       servantIsActive: servants.isActive,
       userIsActive: users.isActive,
       sectorIsActive: sectors.isActive,
@@ -121,6 +123,26 @@ export async function assignServant(dateId: number, servantId: number) {
     dateId,
     servantId,
   });
+
+  const assignedDate = await db.query.scheduleDates.findFirst({
+    where: eq(scheduleDates.id, dateId),
+    with: {
+      schedule: { with: { ministry: true, sector: true } },
+    },
+  });
+
+  if (assignedDate) {
+    const cleanDate = assignedDate.date.slice(0, 10);
+    const diaMes = `${cleanDate.slice(8, 10)}/${cleanDate.slice(5, 7)}`;
+    const hora = assignedDate.startTime.slice(0, 5);
+    void sendWebPushToUsers([servant.userId], {
+      title: `Você foi escalado(a) · ${diaMes} às ${hora}`,
+      body: `${assignedDate.schedule.ministry.name} · ${assignedDate.schedule.sector.name} (${assignedDate.schedule.name})${assignedDate.title ? ` — ${assignedDate.title}` : ""}`,
+      url: "/servant?aba=notifications",
+      tag: `assigned-${dateId}-${servantId}`,
+    });
+  }
+
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
 }
