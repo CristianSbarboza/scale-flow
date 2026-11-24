@@ -50,9 +50,9 @@ export const users = pgTable("users", {
   // Quando `false` (spec 08), o servo fica inativo sem perder histórico: não
   // recebe WhatsApp, não preenche disponibilidade e não aparece para escalar.
   isActive: boolean("is_active").default(true).notNull(),
-  // Se o usuário aceitou receber notificações de escala (padrão true). Quando
-  // false, o app exibe o convite de aceite ao entrar.
-  notificationsEnabled: boolean("notifications_enabled").default(true).notNull(),
+  // Se o usuário já aceitou receber notificações de escala (inicia false para
+  // que o convite apareça ao entrar no app e o clique registre o Web Push).
+  notificationsEnabled: boolean("notifications_enabled").default(false).notNull(),
   // Vínculo com conta Google (OAuth 2.0) para login e sincronização com Google Agenda.
   googleId: text("google_id").unique(),
   googleEmail: text("google_email"),
