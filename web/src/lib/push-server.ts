@@ -1,6 +1,10 @@
 import "server-only";
 
-import webpush from "web-push";
+import {
+  generateVAPIDKeys,
+  sendNotification,
+  setVapidDetails,
+} from "web-push";
 import { db } from "@/db";
 import { pushSubscriptions, pushVapidKeys, users } from "@/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
@@ -38,7 +42,7 @@ export async function getOrCreateVapidKeys(): Promise<{
     return cachedVapidKeys;
   }
 
-  const generated = webpush.generateVAPIDKeys();
+  const generated = generateVAPIDKeys();
   await db
     .insert(pushVapidKeys)
     .values({
@@ -102,7 +106,7 @@ export async function sendWebPushToUsers(
     if (subs.length === 0) return 0;
 
     const vapid = await getOrCreateVapidKeys();
-    webpush.setVapidDetails(
+    setVapidDetails(
       "mailto:contato@flowintic.com.br",
       vapid.publicKey,
       vapid.privateKey,
@@ -119,7 +123,7 @@ export async function sendWebPushToUsers(
     await Promise.all(
       subs.map(async (sub) => {
         try {
-          await webpush.sendNotification(
+          await sendNotification(
             {
               endpoint: sub.endpoint,
               keys: {
