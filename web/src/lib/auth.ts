@@ -1,9 +1,11 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/db";
 import { users, churches } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { compare } from "bcryptjs";
+import { syncUserScheduleToGoogleCalendar } from "@/lib/google-calendar";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -92,9 +94,78 @@ export const authOptions: NextAuthOptions = {
           churchId: user.churchId,
         };
       }
-    })
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "unconfigured",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "unconfigured",
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/calendar.events",
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        const googleId = account.providerAccountId;
+        const email = profile?.email?.trim().toLowerCase() ?? null;
+        if (!googleId) return "/login?error=GoogleNotLinked";
+
+        // 1. Prioridade: usuário que já vinculou esta conta Google nas Configurações
+        let [dbUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.googleId, googleId));
+
+        // 2. Caso ainda não tenha vinculado pelo ID, permite entrar se o e-mail
+        // já foi liberado/cadastrado previamente pelo administrador ou líder
+        if (!dbUser && email) {
+          [dbUser] = await db
+            .select()
+            .from(users)
+            .where(or(eq(users.googleEmail, email), eq(users.email, email)));
+        }
+
+        if (!dbUser || !dbUser.isActive) {
+          return "/login?error=GoogleNotLinked";
+        }
+
+        const expiresAt = account.expires_at
+          ? new Date(account.expires_at * 1000)
+          : new Date(Date.now() + 3500 * 1000);
+
+        await db
+          .update(users)
+          .set({
+            googleId,
+            ...(email ? { googleEmail: email } : {}),
+            ...(account.access_token
+              ? {
+                  googleAccessToken: account.access_token,
+                  googleTokenExpiresAt: expiresAt,
+                }
+              : {}),
+            ...(account.refresh_token
+              ? { googleRefreshToken: account.refresh_token }
+              : {}),
+          })
+          .where(eq(users.id, dbUser.id));
+
+        user.id = dbUser.id;
+        user.name = dbUser.name;
+        user.email = dbUser.email;
+        user.role = dbUser.role;
+        user.churchId = dbUser.churchId;
+
+        void syncUserScheduleToGoogleCalendar(dbUser.id);
+        return true;
+      }
+      return true;
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.role = user.role;

@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, getSectorIdForDateId } from "@/lib/scope";
 import { sendWebPushToUsers } from "@/lib/push-server";
+import { syncServantScheduleToGoogleCalendar } from "@/lib/google-calendar";
 import type { PendingSwapRequest } from "@/types/domain";
 
 export async function createSwapRequest(dateId: number, targetServantId: number, requesterServantId: number) {
@@ -173,4 +174,9 @@ export async function respondToSwapRequest(id: number, accept: boolean) {
 
   revalidatePath("/servant");
   revalidatePath("/admin/schedules");
+
+  if (accept) {
+    void syncServantScheduleToGoogleCalendar(request.targetServantId);
+    void syncServantScheduleToGoogleCalendar(request.requesterServantId);
+  }
 }

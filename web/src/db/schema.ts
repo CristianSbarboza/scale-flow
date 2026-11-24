@@ -53,6 +53,13 @@ export const users = pgTable("users", {
   // Se o usuário aceitou receber notificações de escala (padrão true). Quando
   // false, o app exibe o convite de aceite ao entrar.
   notificationsEnabled: boolean("notifications_enabled").default(true).notNull(),
+  // Vínculo com conta Google (OAuth 2.0) para login e sincronização com Google Agenda.
+  googleId: text("google_id").unique(),
+  googleEmail: text("google_email"),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiresAt: timestamp("google_token_expires_at"),
+  googleCalendarSync: boolean("google_calendar_sync").default(true).notNull(),
   churchId: integer("church_id").references(() => churches.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
@@ -315,5 +322,24 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 }, (t) => [
   uniqueIndex("push_subscriptions_endpoint_unique").on(t.endpoint),
 ]);
+
+/**
+ * Mapeia cada escalação (`schedule_assignments`) ao evento correspondente criado
+ * no Google Agenda do usuário. `assignment_id` usa `onDelete: "set null"` para
+ * que, quando uma escalação for removida, o sincronizador saiba apagar o evento
+ * também lá no Google Agenda antes de limpar esta linha.
+ */
+export const googleCalendarEvents = pgTable("google_calendar_events", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  assignmentId: integer("assignment_id").references(() => scheduleAssignments.id, { onDelete: "set null" }),
+  googleEventId: text("google_event_id").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("google_calendar_events_user_assignment_unique")
+    .on(t.userId, t.assignmentId)
+    .where(sql`${t.assignmentId} is not null`),
+]);
+
 
 

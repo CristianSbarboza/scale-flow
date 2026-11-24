@@ -14,6 +14,7 @@ import ServantSidebar from "@/components/ServantSidebar";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
 import NotificationBell from "@/components/NotificationBell";
 import ServantNotificationsButton from "@/components/ServantNotificationsButton";
+import WhatsNewModal from "@/components/WhatsNewModal";
 import Button from "@/components/ui/Button";
 import {
   getServantNotificationState,
@@ -282,6 +283,12 @@ export default function ServantShell({
           </div>,
           document.body,
         )}
+
+      <WhatsNewModal
+        role="servant"
+        onOpenNotifications={() => setTab("notifications")}
+        onConnectGoogleHref="/api/google/connect?returnTo=%2Fservant"
+      />
     </div>
   );
 }

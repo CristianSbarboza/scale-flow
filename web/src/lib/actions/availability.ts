@@ -8,6 +8,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { publicUser, requireScheduleSectorAccess, getSectorIdForDateId, getSectorIdForAssignmentId } from "@/lib/scope";
 import { sendWebPushToUsers } from "@/lib/push-server";
+import {
+  syncServantScheduleToGoogleCalendar,
+  syncUserScheduleToGoogleCalendar,
+} from "@/lib/google-calendar";
 import type { ServantOverviewSchedule } from "@/types/domain";
 
 // Returns every schedule for the logged-in servant's sector, with each date
@@ -145,14 +149,23 @@ export async function assignServant(dateId: number, servantId: number) {
 
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
+  void syncUserScheduleToGoogleCalendar(servant.userId);
 }
 
 export async function removeAssignment(assignmentId: number) {
   await requireScheduleSectorAccess(await getSectorIdForAssignmentId(assignmentId));
 
+  const [existing] = await db
+    .select({ servantId: scheduleAssignments.servantId })
+    .from(scheduleAssignments)
+    .where(eq(scheduleAssignments.id, assignmentId));
+
   await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, assignmentId));
   revalidatePath("/admin/schedules");
   revalidatePath("/servant");
+  if (existing) {
+    void syncServantScheduleToGoogleCalendar(existing.servantId);
+  }
 }
 
 /**

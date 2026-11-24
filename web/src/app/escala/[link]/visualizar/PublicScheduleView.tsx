@@ -47,6 +47,7 @@ export interface PublicScheduleViewData {
 }
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
+const DEFAULT_SERVANT_COLOR = "#f97316";
 
 function toDateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -265,7 +266,7 @@ export default function PublicScheduleView({
                 </button>
                 {uniqueAssignees.map((servant) => {
                   const active = highlightedServantId === servant.servantId;
-                  const dotColor = servant.color || "var(--primary)";
+                  const dotColor = servant.color || DEFAULT_SERVANT_COLOR;
                   return (
                     <button
                       key={servant.servantId}
@@ -346,7 +347,9 @@ export default function PublicScheduleView({
                 highlightedServantId !== null ? !!highlightedAssignee : hasConfirmed;
 
               const accentColor =
-                (highlightedAssignee?.color ?? allAssignees[0]?.color) || "var(--primary)";
+                (highlightedAssignee?.color ??
+                  allAssignees.find((a) => a.color)?.color) ||
+                DEFAULT_SERVANT_COLOR;
 
               return (
                 <button
@@ -464,7 +467,7 @@ export default function PublicScheduleView({
                           {d.assignees.map((assignee) => {
                             const isSelectedServant =
                               highlightedServantId === assignee.servantId;
-                            const dotColor = assignee.color || "var(--primary)";
+                            const dotColor = assignee.color || DEFAULT_SERVANT_COLOR;
                             return (
                               <div
                                 key={assignee.servantId}
@@ -615,7 +618,7 @@ export default function PublicScheduleView({
                                 width: "8px",
                                 height: "8px",
                                 borderRadius: "50%",
-                                background: assignee.color || "var(--primary)",
+                                background: assignee.color || DEFAULT_SERVANT_COLOR,
                                 flexShrink: 0,
                               }}
                             />

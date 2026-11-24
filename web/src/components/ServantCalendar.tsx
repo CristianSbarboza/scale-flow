@@ -28,6 +28,8 @@ interface DayEntry {
 }
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
+/** Cor padrão ("Padrão" em PanelStyleSection) de quem não escolheu cor personalizada. */
+const DEFAULT_SERVANT_COLOR = "#f97316";
 
 function toDateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -153,9 +155,13 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
               const isConfirmed = !!entries?.length;
               const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
               const selfAssignee = allAssignees.find((a) => a.isSelf);
-              const otherAssignee = allAssignees.find((a) => !a.isSelf);
+              const otherAssignee =
+                allAssignees.find((a) => !a.isSelf && a.color) ??
+                allAssignees.find((a) => !a.isSelf);
               const isSelfConfirmed = !!selfAssignee;
-              const accentColor = (isSelfConfirmed ? selfAssignee?.color : otherAssignee?.color) || "var(--primary)";
+              const accentColor = isSelfConfirmed
+                ? selfAssignee?.color || "var(--primary)"
+                : otherAssignee?.color || DEFAULT_SERVANT_COLOR;
               return (
                 <button
                   key={i}
@@ -272,7 +278,17 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                           }}
                         >
                           <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", fontWeight: assignee.isSelf ? 700 : 500 }}>
-                            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: assignee.color || "var(--primary)", flexShrink: 0 }} />
+                            <span
+                              style={{
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                background:
+                                  assignee.color ||
+                                  (assignee.isSelf ? "var(--primary)" : DEFAULT_SERVANT_COLOR),
+                                flexShrink: 0,
+                              }}
+                            />
                             {assignee.name}
                             {assignee.isSelf && " (você)"}
                           </span>

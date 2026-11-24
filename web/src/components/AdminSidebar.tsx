@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useChurch } from "@/components/ChurchContext";
+import WhatsNewModal from "@/components/WhatsNewModal";
 import NavLink from "@/components/ui/NavLink";
 import MenuToggle from "@/components/ui/MenuToggle";
 
@@ -191,6 +192,11 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
           <Sparkles size={22} />
         </Link>
       )}
+
+      <WhatsNewModal
+        role={role}
+        onConnectGoogleHref="/api/google/connect?returnTo=%2Fadmin%2Fsettings"
+      />
     </>
   );
 }
