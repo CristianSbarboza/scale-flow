@@ -287,6 +287,7 @@ export default function ServantShell({
       <WhatsNewModal
         role="servant"
         onOpenNotifications={() => setTab("notifications")}
+        onOpenAssistant={() => setTab("assistant")}
         onConnectGoogleHref="/api/google/connect?returnTo=%2Fservant"
       />
     </div>
