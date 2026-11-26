@@ -2,37 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
   Bell,
-  Bot,
   Calendar,
-  CalendarRange,
-  CheckCircle2,
+  Check,
   Download,
-  EyeOff,
-  Link2,
-  MoreVertical,
   PlusSquare,
-  Settings,
   Share,
-  SlidersHorizontal,
-  Smartphone,
   Sparkles,
+  X,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
-import CloseButton from "@/components/ui/CloseButton";
+import type { GlobalInstallPromptEvent } from "@/components/Providers";
+import { useToast } from "@/components/Toast";
 
-const STORAGE_KEY = "scaleflow:whats-new:v2026-11-ai-pwa-v2";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
+const STORAGE_KEY = "scaleflow:whats-new:v2026-11-editorial-v3";
 
 interface WhatsNewModalProps {
   role: "admin" | "leader" | "servant";
@@ -42,40 +30,82 @@ interface WhatsNewModalProps {
   onConnectGoogleHref?: string;
 }
 
+const AI_PREVIEW_STYLES = {
+  warm: {
+    label: "Acolhedora",
+    sample:
+      "“Paz, irmão! Vi que você está confirmado no domingo às 19h. Que culto abençoado vamos ter!”",
+  },
+  balanced: {
+    label: "Equilibrada",
+    sample:
+      "“Olá! Sua próxima escala confirmada é neste domingo, às 19:00, na equipe de Mídia.”",
+  },
+  direct: {
+    label: "Direta",
+    sample: "“Próxima escala: Domingo, 19:00 · Ministério de Comunicação.”",
+  },
+} as const;
+
 export default function WhatsNewModal({
   role,
   onOpenNotifications,
   onOpenAssistant,
-  onOpenSettings,
   onConnectGoogleHref = "/api/google/connect",
 }: WhatsNewModalProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
-  // Passo 0 = Card dedicado de instalação do App (Android & iPhone) ANTES das novidades
-  // Passo 1 = Showcase moderno e animado das Novidades (incluindo IA configurável)
-  const [stage, setStage] = useState<"install" | "news">("install");
-  const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  // 0 = Tela dedicada de Instalar App (1 botão que aperta e instala)
+  // 1 = IA Personalizável nas Configurações
+  // 2 = Google Agenda + Login com Google / Telefone
+  // 3 = Notificações estilo WhatsApp & Quadro Público do Mês
+  const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] =
+    useState<GlobalInstallPromptEvent | null>(null);
+  const [isIos, setIsIos] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [aiTonePreview, setAiTonePreview] =
+    useState<keyof typeof AI_PREVIEW_STYLES>("warm");
 
   useEffect(() => {
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    if (typeof window === "undefined") return;
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    const iosDevice = /iphone|ipad|ipod/.test(ua);
+    setIsIos(iosDevice);
+
+    // Se já estiver rodando como PWA instalado na tela inicial, pula a tela 0 de instalação
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone ===
+        true;
+
+    if (isStandalone) {
+      setStep(1);
+    }
+
+    if (window.__scaleflowInstallPrompt) {
+      setInstallPrompt(window.__scaleflowInstallPrompt);
+    }
+
+    const onReady = () => {
+      if (window.__scaleflowInstallPrompt) {
+        setInstallPrompt(window.__scaleflowInstallPrompt);
+      }
     };
 
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    };
+    window.addEventListener("scaleflow:install-ready", onReady);
+    return () => window.removeEventListener("scaleflow:install-ready", onReady);
   }, []);
 
   useEffect(() => {
     try {
       const dismissed = window.localStorage.getItem(STORAGE_KEY);
       if (!dismissed) {
-        const timer = window.setTimeout(() => setOpen(true), 320);
+        const timer = window.setTimeout(() => setOpen(true), 280);
         return () => window.clearTimeout(timer);
       }
     } catch {
@@ -83,159 +113,56 @@ export default function WhatsNewModal({
     }
   }, []);
 
-  const handleCloseTemporary = () => {
-    setOpen(false);
-  };
+  const handleCloseTemporary = () => setOpen(false);
 
   const handleDontShowAgain = () => {
     try {
       window.localStorage.setItem(STORAGE_KEY, "dismissed");
     } catch {
-      // ignora erro de localStorage
+      // ignora
     }
     setOpen(false);
   };
 
-  const handleTriggerNativeInstall = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
+  const goNext = (nextStep: number) => {
+    setDirection(nextStep > step ? 1 : -1);
+    setStep(nextStep);
+  };
+
+  const handleOneClickInstall = async () => {
+    if (installPrompt) {
+      setInstalling(true);
+      try {
+        await installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        window.__scaleflowInstallPrompt = null;
+        setInstallPrompt(null);
+        if (choice.outcome === "accepted") {
+          showToast("Aplicativo instalado na sua tela inicial!", "success");
+          goNext(1);
+        }
+      } finally {
+        setInstalling(false);
+      }
+      return;
+    }
+
+    if (isIos) {
+      setShowIosGuide(true);
+      return;
+    }
+
+    showToast(
+      "No menu do seu navegador (⋮), toque em 'Instalar aplicativo' para adicionar à tela inicial.",
+      "success",
+    );
+    goNext(1);
   };
 
   if (!open || typeof document === "undefined") return null;
 
   const isServant = role === "servant";
-
-  const newsItems = [
-    {
-      id: "ai-assistant",
-      badge: "Destaque · Inteligência Artificial",
-      icon: Bot,
-      title: "Assistente de IA que você personaliza nas Configurações",
-      subtitle: "Mude o nome e o jeito de falar da IA com você",
-      description:
-        "O ScaleFlow conta com uma Assistente Ministerial de IA integrada para consultar escalas, organizar cultos e tirar dúvidas conversando naturalmente.",
-      highlights: [
-        "Nas Configurações › Assistente Ministerial (IA), você escolhe como quer chamar a assistente (ou usa o nome padrão da igreja).",
-        "Mude a personalidade e o tom das respostas para você: Acolhedora e calorosa, Equilibrada ou Direta e concisa.",
-        ...(role === "admin"
-          ? [
-              "Como Administrador, você também escolhe o provedor de IA da igreja (Gemini, Claude, OpenAI, Groq, Grok ou OpenRouter) e o tom padrão!",
-            ]
-          : []),
-      ],
-      pointerLabel: isServant
-        ? "↗ Avatar de Perfil › Configurações › Assistente Ministerial (IA)"
-        : "↙ Barra lateral › Assistente IA e Configurações",
-      primaryAction: {
-        label: "Conversar com a IA agora",
-        icon: Sparkles,
-        onClick: () => {
-          setOpen(false);
-          if (onOpenAssistant) {
-            onOpenAssistant();
-          } else {
-            router.push(isServant ? "/servant?aba=assistant" : "/admin/assistant");
-          }
-        },
-      },
-      secondaryAction: onOpenSettings
-        ? {
-            label: "Personalizar IA nas Configurações",
-            icon: SlidersHorizontal,
-            onClick: () => {
-              setOpen(false);
-              onOpenSettings();
-            },
-          }
-        : !isServant
-          ? {
-              label: "Configurar IA",
-              icon: Settings,
-              onClick: () => {
-                setOpen(false);
-                router.push("/admin/settings");
-              },
-            }
-          : undefined,
-    },
-    {
-      id: "google-calendar",
-      badge: "Novo · Google Agenda & Login Rápido",
-      icon: Calendar,
-      title: "Login com Google, Telefone e Sincronização com Google Agenda",
-      subtitle: "Seus dias escalados aparecem sozinhos na agenda do seu celular",
-      description:
-        "Conecte sua conta Google nas Configurações para entrar com 1 clique e sincronizar automaticamente todas as datas em que você estiver escalado(a) direto na sua Google Agenda.",
-      highlights: [
-        "Ao ser escalado(a) ou trocar de dia, o evento é criado ou atualizado automaticamente na sua Google Agenda.",
-        "Agora você também pode fazer login digitando apenas o seu número de telefone (9 dígitos, sem 55 e sem DDD)!",
-        "Coloque o Widget do Google Agenda na tela inicial do seu celular para ver sempre seu próximo culto.",
-      ],
-      pointerLabel: isServant
-        ? "↗ Avatar de Perfil › Configurações › Google & Google Agenda"
-        : "↙ Menu Configurações › Google & Google Agenda",
-      primaryAction: {
-        label: "Conectar conta Google agora",
-        icon: Link2,
-        onClick: () => {
-          window.location.href = onConnectGoogleHref;
-        },
-      },
-    },
-    ...(isServant
-      ? [
-          {
-            id: "notifications",
-            badge: "Novo · Central de Avisos & Web Push",
-            icon: Bell,
-            title: "Notificações estilo WhatsApp & Tela Bloqueada",
-            subtitle: "Veja o título, a prévia e toque para ler a mensagem completa com versículo",
-            description:
-              "Ao lado da sua foto de perfil e do botão de trocas, agora fica o ícone da sua página de Notificações com o contador exato de mensagens não vistas.",
-            highlights: [
-              "Lista igual ao WhatsApp: mostra o título e o início da mensagem; ao clicar, abre a notificação completa com versículo bíblico.",
-              "Com o Web Push ativado, os avisos de nova escala aberta e confirmação chegam mesmo com a tela do celular apagada!",
-            ],
-            pointerLabel: "↗ Ícone do Sino 🔔 ao lado do seu Perfil e do botão de Trocas",
-            primaryAction: {
-              label: "Abrir minhas notificações",
-              icon: Bell,
-              onClick: () => {
-                setOpen(false);
-                onOpenNotifications?.();
-              },
-            },
-          },
-        ]
-      : []),
-    {
-      id: "public-links",
-      badge: "Novo · Quadro Público do Mês",
-      icon: CalendarRange,
-      title: "Links Públicos de Visualização da Escala e do Mês",
-      subtitle: "Calendário interativo e lista completa sem precisar de login",
-      description:
-        "Compartilhe a escala pronta com a equipe em modo somente leitura — separado do link de preenchimento de disponibilidade.",
-      highlights: [
-        "Dentro do olho (Ver detalhes) de cada escala, use o botão 'Link de Visualização'.",
-        "Na lista de Escalas, use 'Link Geral do Mês' para compartilhar todas as escalas de todos os ministérios e setores do mês.",
-        "Qualquer servo pode tocar no próprio nome na página pública para destacar seus dias no calendário!",
-      ],
-      pointerLabel: isServant
-        ? "★ Toque no seu nome no quadro público para filtrar seus dias"
-        : "↗ Em Escalas › Link Geral do Mês ou Ver detalhes (👁)",
-    },
-  ];
-
-  const currentNews = newsItems[activeNewsIndex] ?? newsItems[0];
-  const CurrentNewsIcon = currentNews.icon;
-
-  const goToNewsSlide = (nextIndex: number) => {
-    setDirection(nextIndex > activeNewsIndex ? 1 : -1);
-    setActiveNewsIndex(nextIndex);
-  };
+  const totalSteps = 4;
 
   return createPortal(
     <AnimatePresence>
@@ -243,460 +170,451 @@ export default function WhatsNewModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-md sm:p-4"
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl"
         onClick={handleCloseTemporary}
       >
-        {/* Indicador flutuante apontando para os ícones reais no topo */}
-        {isServant && (
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: [0, -6, 0] }}
-            transition={{
-              opacity: { duration: 0.35 },
-              y: { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
-            }}
-            className="pointer-events-none fixed top-3 right-3 z-50 hidden items-center gap-2 rounded-full border border-primary bg-card px-3.5 py-1.5 text-xs font-semibold text-primary shadow-xl sm:flex"
-          >
-            <span>Notificações 🔔 e Perfil ⚙️ ficam ao lado do botão de trocas</span>
-            <ArrowUpRight size={15} />
-          </motion.div>
-        )}
-
         <motion.div
-          layout
-          initial={{ scale: 0.9, opacity: 0, y: 28 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.94, opacity: 0, y: 16 }}
-          transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          initial={{ opacity: 0, scale: 0.94, y: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28 }}
           onClick={(e) => e.stopPropagation()}
-          className="card glass relative flex max-h-[92dvh] w-full max-w-2xl min-w-0 flex-col overflow-hidden p-4 sm:p-6"
+          className="relative flex max-h-[90dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-3xl border border-card-border bg-card shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
         >
-          {/* Brilho ambiente decorativo */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-24 size-56 rounded-full bg-primary/15 blur-3xl"
-          />
+          {/* Botão discreto de fechar no canto */}
+          <button
+            type="button"
+            onClick={handleCloseTemporary}
+            aria-label="Fechar"
+            className="absolute top-4 right-4 z-20 flex size-8 items-center justify-center rounded-full bg-background/60 text-muted-foreground backdrop-blur-md transition-colors hover:text-foreground"
+          >
+            <X size={16} />
+          </button>
 
-          {/* Topo com seletor de etapa: 1. Instalar App (Antes das novidades) -> 2. Novidades */}
-          <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border pb-3.5">
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/70 p-1">
-              <button
-                type="button"
-                onClick={() => setStage("install")}
-                className="relative flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors"
-                style={{
-                  color:
-                    stage === "install"
-                      ? "var(--primary-foreground)"
-                      : "var(--muted-foreground)",
-                }}
+          <AnimatePresence mode="wait" custom={direction}>
+            {/* ==================== TELA 0: PÁGINA DE INSTALAÇÃO EM 1 CLIQUE ==================== */}
+            {step === 0 && (
+              <motion.div
+                key="screen-install"
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -40 }}
+                transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                className="flex flex-col overflow-y-auto"
               >
-                {stage === "install" && (
-                  <motion.span
-                    layoutId="whatsNewStagePill"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="absolute inset-0 rounded-full bg-primary"
+                {/* Palco Visual Hero */}
+                <div className="relative flex flex-col items-center justify-center overflow-hidden bg-background px-6 pt-12 pb-8 text-center">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(249,115,22,0.24),transparent_68%)]"
                   />
-                )}
-                <Smartphone size={13} className="relative z-10" />
-                <span className="relative z-10">1. Instalar o App</span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => setStage("news")}
-                className="relative flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors"
-                style={{
-                  color:
-                    stage === "news"
-                      ? "var(--primary-foreground)"
-                      : "var(--muted-foreground)",
-                }}
-              >
-                {stage === "news" && (
-                  <motion.span
-                    layoutId="whatsNewStagePill"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="absolute inset-0 rounded-full bg-primary"
-                  />
-                )}
-                <Sparkles size={13} className="relative z-10" />
-                <span className="relative z-10">
-                  2. Novidades ({newsItems.length})
-                </span>
-              </button>
-            </div>
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{
+                      duration: 3.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="relative"
+                  >
+                    <div className="absolute -inset-4 rounded-3xl bg-primary/20 blur-xl" />
+                    <Image
+                      src="/logo-mark.png"
+                      alt="ScaleFlow"
+                      width={84}
+                      height={84}
+                      className="relative rounded-2xl shadow-2xl"
+                    />
+                  </motion.div>
 
-            <CloseButton onClick={handleCloseTemporary} />
-          </div>
+                  <span className="mt-5 font-mono text-[11px] tracking-widest text-primary uppercase">
+                    Aplicativo Oficial
+                  </span>
 
-          {/* CONTEÚDO PRINCIPAL ANIMADO */}
-          <div className="-mr-2 min-h-0 flex-[1_1_auto] overflow-x-hidden overflow-y-auto pr-2 sm:-mr-3 sm:pr-3">
-            <AnimatePresence mode="wait">
-              {stage === "install" ? (
-                /* ==================== ETAPA 1: CARD ESPECÍFICO DE INSTALAÇÃO (ANDROID & IPHONE) ==================== */
-                <motion.div
-                  key="stage-install"
-                  initial={{ opacity: 0, x: -28, scale: 0.98 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -28, scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 26 }}
-                  className="space-y-4"
-                >
-                  <div className="flex items-start gap-3.5">
-                    <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{
-                        duration: 2.2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner"
+                  <h2 className="mt-2 font-display text-3xl leading-[1.08] font-normal tracking-tight text-foreground">
+                    Tenha o ScaleFlow na sua{" "}
+                    <em className="text-accent italic">tela inicial.</em>
+                  </h2>
+
+                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                    Acesse suas escalas em 1 toque e receba avisos de culto na
+                    tela bloqueada, sem ocupar a memória do celular.
+                  </p>
+                </div>
+
+                {/* Área do Botão Único de Instalação */}
+                <div className="flex flex-col gap-3 p-6">
+                  {!showIosGuide ? (
+                    <button
+                      type="button"
+                      disabled={installing}
+                      onClick={handleOneClickInstall}
+                      className="flex min-h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-[0_8px_24px_rgba(249,115,22,0.35)] transition-transform active:scale-98"
                     >
-                      <Smartphone size={24} />
-                    </motion.div>
-                    <div className="min-w-0 flex-1">
-                      <span className="inline-block rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary uppercase">
-                        Passo recomendado antes de começar
+                      <Download size={18} />
+                      <span>
+                        {installing
+                          ? "Instalando..."
+                          : "Instalar Aplicativo Agora"}
                       </span>
-                      <h2 className="mt-1 text-lg font-bold sm:text-xl">
-                        Instale o ScaleFlow na tela inicial do seu celular
-                      </h2>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                        Tenha acesso em 1 toque como aplicativo nativo e receba alertas de escala na tela bloqueada — sem ocupar a memória do aparelho:
+                    </button>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-2xl border border-primary/40 bg-muted/70 p-4 text-xs leading-relaxed text-foreground"
+                    >
+                      <p className="mb-2 font-semibold text-primary">
+                        No iPhone, confirme em 2 toques no Safari:
                       </p>
+                      <p className="flex items-center gap-2">
+                        <span>1. Toque em</span>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-card px-2 py-0.5 font-semibold text-primary">
+                          <Share size={13} /> Compartilhar
+                        </span>
+                        <span>na barra do Safari</span>
+                      </p>
+                      <p className="mt-1.5 flex items-center gap-2">
+                        <span>2. Escolha</span>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-card px-2 py-0.5 font-semibold text-primary">
+                          <PlusSquare size={13} /> Adicionar à Tela de Início
+                        </span>
+                      </p>
+                    </motion.div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => goNext(1)}
+                    className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <span>Continuar e ver as novidades</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ==================== TELA 1: ASSISTENTE DE IA PERSONALIZÁVEL ==================== */}
+            {step === 1 && (
+              <motion.div
+                key="screen-ai"
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -40 }}
+                transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                className="flex flex-col overflow-y-auto"
+              >
+                {/* Palco Visual Interativo da IA */}
+                <div className="relative overflow-hidden bg-background px-6 pt-10 pb-6">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(249,115,22,0.2),transparent_65%)]"
+                  />
+
+                  <div className="relative rounded-2xl border border-card-border bg-card p-4 shadow-xl">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                          <Sparkles size={16} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-foreground">
+                            Assistente Cale · IA
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Toque abaixo para testar o jeito de falar:
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Dois cards lado a lado: Android e iPhone */}
-                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                    {/* Card Android */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.08, type: "spring", stiffness: 280, damping: 24 }}
-                      className="flex flex-col justify-between rounded-2xl border border-card-border bg-muted/60 p-4"
-                    >
-                      <div>
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-                            No Android (Chrome)
-                          </span>
-                          <span className="font-mono text-[11px] text-muted-foreground">
-                            3 passos
-                          </span>
-                        </div>
-
-                        <ol className="space-y-2.5 text-xs leading-relaxed text-foreground">
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              1
-                            </span>
-                            <span>
-                              Abra este site pelo navegador <strong>Google Chrome</strong>.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              2
-                            </span>
-                            <span>
-                              Toque nos <strong>3 pontinhos</strong>{" "}
-                              <MoreVertical size={13} className="inline text-primary" /> no canto superior direito.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              3
-                            </span>
-                            <span>
-                              Toque em <strong>Instalar aplicativo</strong> (ou{" "}
-                              <strong>Adicionar à tela inicial</strong>){" "}
-                              <Download size={13} className="inline text-primary" /> e confirme.
-                            </span>
-                          </li>
-                        </ol>
-                      </div>
-
-                      {deferredPrompt && (
-                        <div className="mt-4 border-t border-border pt-3">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            onClick={handleTriggerNativeInstall}
-                            className="w-full py-2 text-xs"
-                          >
-                            <Download size={14} />
-                            Instalar no Android agora (1 toque)
-                          </Button>
-                        </div>
-                      )}
-                    </motion.div>
-
-                    {/* Card iPhone (iOS) */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.16, type: "spring", stiffness: 280, damping: 24 }}
-                      className="flex flex-col justify-between rounded-2xl border border-card-border bg-muted/60 p-4"
-                    >
-                      <div>
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-                            No iPhone (Safari / iOS)
-                          </span>
-                          <span className="font-mono text-[11px] text-muted-foreground">
-                            3 passos
-                          </span>
-                        </div>
-
-                        <ol className="space-y-2.5 text-xs leading-relaxed text-foreground">
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              1
-                            </span>
-                            <span>
-                              Abra este site pelo navegador <strong>Safari</strong> no iPhone.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              2
-                            </span>
-                            <span>
-                              Toque no botão <strong>Compartilhar</strong>{" "}
-                              <Share size={13} className="inline text-primary" /> na barra inferior.
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2.5">
-                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">
-                              3
-                            </span>
-                            <span>
-                              Role o menu e toque em{" "}
-                              <strong>Adicionar à Tela de Início</strong>{" "}
-                              <PlusSquare size={13} className="inline text-primary" /> ›{" "}
-                              <strong>Adicionar</strong>.
-                            </span>
-                          </li>
-                        </ol>
-                      </div>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              ) : (
-                /* ==================== ETAPA 2: CARROSSEL MODERNO DAS NOVIDADES ==================== */
-                <motion.div
-                  key="stage-news"
-                  initial={{ opacity: 0, x: 28, scale: 0.98 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 28, scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 26 }}
-                  className="space-y-4"
-                >
-                  {/* Barra de pílulas das novidades */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {newsItems.map((item, idx) => {
-                        const active = idx === activeNewsIndex;
-                        const TabIcon = item.icon;
+                    {/* Seletor ao vivo do tom da IA */}
+                    <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-xl bg-muted p-1">
+                      {(
+                        Object.keys(AI_PREVIEW_STYLES) as Array<
+                          keyof typeof AI_PREVIEW_STYLES
+                        >
+                      ).map((key) => {
+                        const active = aiTonePreview === key;
                         return (
                           <button
-                            key={item.id}
+                            key={key}
                             type="button"
-                            onClick={() => goToNewsSlide(idx)}
-                            className="relative flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all"
+                            onClick={() => setAiTonePreview(key)}
+                            className="rounded-lg py-1.5 text-[11px] font-semibold transition-all"
                             style={{
-                              borderColor: active
-                                ? "var(--primary)"
-                                : "var(--border)",
                               background: active
-                                ? "color-mix(in oklab, var(--primary) 16%, var(--card))"
-                                : "var(--card)",
-                              color: active
                                 ? "var(--primary)"
+                                : "transparent",
+                              color: active
+                                ? "var(--primary-foreground)"
                                 : "var(--muted-foreground)",
                             }}
                           >
-                            <TabIcon size={13} />
-                            <span>
-                              {idx + 1}/{newsItems.length}
-                            </span>
+                            {AI_PREVIEW_STYLES[key].label}
                           </button>
                         );
                       })}
                     </div>
 
-                    <motion.span
-                      key={currentNews.pointerLabel}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: [0, 4, 0] }}
-                      transition={{
-                        opacity: { duration: 0.25 },
-                        x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" },
-                      }}
-                      className="font-mono text-[11px] font-semibold text-primary"
+                    <motion.p
+                      key={aiTonePreview}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 rounded-xl bg-muted/60 p-3 text-xs leading-relaxed text-foreground italic"
                     >
-                      {currentNews.pointerLabel}
-                    </motion.span>
+                      {AI_PREVIEW_STYLES[aiTonePreview].sample}
+                    </motion.p>
                   </div>
+                </div>
 
-                  {/* Card da novidade ativa com transição suave spring */}
-                  <AnimatePresence mode="wait" custom={direction}>
-                    <motion.div
-                      key={currentNews.id}
-                      custom={direction}
-                      initial={{ opacity: 0, x: direction * 36, scale: 0.97 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      exit={{ opacity: 0, x: direction * -36, scale: 0.97 }}
-                      transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                      className="rounded-2xl border border-primary/30 bg-muted/60 p-4 sm:p-5"
-                    >
-                      <div className="flex items-start gap-3.5">
-                        <motion.div
-                          initial={{ scale: 0.7, rotate: -12 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ type: "spring", stiffness: 340, damping: 18 }}
-                          className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md"
-                        >
-                          <CurrentNewsIcon size={24} />
-                        </motion.div>
+                {/* Texto Editorial */}
+                <div className="flex flex-col gap-3 p-6">
+                  <span className="font-mono text-[11px] tracking-widest text-primary uppercase">
+                    Novidade 01 · Inteligência Artificial
+                  </span>
+                  <h2 className="font-display text-2xl leading-[1.12] font-normal tracking-tight text-foreground sm:text-3xl">
+                    Uma assistente de IA com o{" "}
+                    <em className="text-accent italic">seu jeito.</em>
+                  </h2>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Consulte e organize escalas conversando. Nas{" "}
+                    <strong className="text-foreground">Configurações</strong>,
+                    você pode mudar o <strong className="text-foreground">nome</strong>{" "}
+                    da assistente e escolher a{" "}
+                    <strong className="text-foreground">personalidade</strong> com
+                    que ela responde para você.
+                  </p>
 
-                        <div className="min-w-0 flex-1">
-                          <span className="inline-block rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary uppercase">
-                            {currentNews.badge}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      if (onOpenAssistant) {
+                        onOpenAssistant();
+                      } else {
+                        router.push(
+                          isServant ? "/servant?aba=assistant" : "/admin/assistant",
+                        );
+                      }
+                    }}
+                    className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+                  >
+                    <Sparkles size={14} />
+                    <span>Experimentar a Assistente IA agora →</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ==================== TELA 2: GOOGLE AGENDA & LOGIN RÁPIDO ==================== */}
+            {step === 2 && (
+              <motion.div
+                key="screen-google"
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -40 }}
+                transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                className="flex flex-col overflow-y-auto"
+              >
+                {/* Palco Visual do Evento na Google Agenda */}
+                <div className="relative overflow-hidden bg-background px-6 pt-10 pb-6">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(249,115,22,0.2),transparent_65%)]"
+                  />
+
+                  <div className="relative rounded-2xl border border-card-border bg-card p-4 shadow-xl">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="font-mono uppercase">Google Agenda</span>
+                      <span className="inline-flex items-center gap-1 text-success">
+                        <Check size={12} /> Sincronizado
+                      </span>
+                    </div>
+                    <div className="mt-3 rounded-xl border-l-4 border-primary bg-muted/70 p-3">
+                      <p className="text-xs font-bold text-foreground">
+                        ⛪ Escala: Louvor &amp; Mídia
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Domingo · 19:00 – 21:00 · Lembrete automático
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Texto Editorial */}
+                <div className="flex flex-col gap-3 p-6">
+                  <span className="font-mono text-[11px] tracking-widest text-primary uppercase">
+                    Novidade 02 · Google Agenda &amp; Login
+                  </span>
+                  <h2 className="font-display text-2xl leading-[1.12] font-normal tracking-tight text-foreground sm:text-3xl">
+                    Seus dias escalados direto na{" "}
+                    <em className="text-accent italic">Google Agenda.</em>
+                  </h2>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Conecte sua conta Google nas{" "}
+                    <strong className="text-foreground">Configurações</strong> para
+                    entrar com 1 clique (ou use apenas os 9 dígitos do seu
+                    telefone!) e ter cada culto confirmado salvo automaticamente na
+                    sua agenda.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = onConnectGoogleHref;
+                    }}
+                    className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+                  >
+                    <Calendar size={14} />
+                    <span>Conectar minha conta Google agora →</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ==================== TELA 3: NOTIFICAÇÕES & QUADRO PÚBLICO ==================== */}
+            {step === 3 && (
+              <motion.div
+                key="screen-notifications"
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -40 }}
+                transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                className="flex flex-col overflow-y-auto"
+              >
+                {/* Palco Visual do Sino com Contador */}
+                <div className="relative overflow-hidden bg-background px-6 pt-10 pb-6">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(249,115,22,0.22),transparent_65%)]"
+                  />
+
+                  <div className="relative rounded-2xl border border-card-border bg-card p-4 shadow-xl">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                          <Bell size={18} />
+                          <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                            2
                           </span>
-                          <h3 className="mt-1 text-base font-bold text-foreground sm:text-lg">
-                            {currentNews.title}
-                          </h3>
-                          <p className="text-xs font-medium text-primary">
-                            {currentNews.subtitle}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-foreground">
+                            Você foi escalado(a) · Dom às 19:00
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            “Sirvam uns aos outros mediante o amor.” — Gl 5:13
                           </p>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
 
-                      <p className="mt-3.5 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                        {currentNews.description}
-                      </p>
+                {/* Texto Editorial */}
+                <div className="flex flex-col gap-3 p-6">
+                  <span className="font-mono text-[11px] tracking-widest text-primary uppercase">
+                    Novidade 03 · Avisos &amp; Quadro do Mês
+                  </span>
+                  <h2 className="font-display text-2xl leading-[1.12] font-normal tracking-tight text-foreground sm:text-3xl">
+                    Avisos no estilo WhatsApp e{" "}
+                    <em className="text-accent italic">quadro público.</em>
+                  </h2>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Toque no sino <strong className="text-foreground">🔔</strong>{" "}
+                    ao lado do seu perfil para ler seus avisos completos com
+                    versículo — e use o novo{" "}
+                    <strong className="text-foreground">Link Geral do Mês</strong>{" "}
+                    para visualizar todas as escalas da igreja com filtro rápido por
+                    nome.
+                  </p>
 
-                      <ul className="mt-3.5 space-y-2 rounded-xl border border-border bg-card/85 p-3.5 text-xs leading-relaxed text-foreground">
-                        {currentNews.highlights.map((h, i) => (
-                          <motion.li
-                            key={h}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.06 + i * 0.07 }}
-                            className="flex items-start gap-2"
-                          >
-                            <CheckCircle2
-                              size={15}
-                              className="mt-0.5 shrink-0 text-primary"
-                            />
-                            <span>{h}</span>
-                          </motion.li>
-                        ))}
-                      </ul>
-
-                      {(currentNews.primaryAction || currentNews.secondaryAction) && (
-                        <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                          {currentNews.primaryAction && (
-                            <Button
-                              type="button"
-                              variant="primary"
-                              onClick={currentNews.primaryAction.onClick}
-                              className="px-3.5 py-2 text-xs"
-                            >
-                              <currentNews.primaryAction.icon size={15} />
-                              {currentNews.primaryAction.label}
-                            </Button>
-                          )}
-                          {currentNews.secondaryAction && (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              onClick={currentNews.secondaryAction.onClick}
-                              className="px-3.5 py-2 text-xs"
-                            >
-                              <currentNews.secondaryAction.icon size={15} />
-                              {currentNews.secondaryAction.label}
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Rodapé com navegação entre Instalar App / Novidades e Não mostrar novamente */}
-          <div className="mt-4 flex shrink-0 flex-col-reverse gap-2.5 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleDontShowAgain}
-              className="w-full text-xs text-muted-foreground hover:text-foreground sm:w-auto"
-            >
-              <EyeOff size={15} />
-              Não mostrar novamente
-            </Button>
-
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {stage === "install" ? (
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => {
-                    setStage("news");
-                    setActiveNewsIndex(0);
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  <span>Ver as Novidades</span>
-                  <ArrowRight size={16} />
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      if (activeNewsIndex > 0) {
-                        goToNewsSlide(activeNewsIndex - 1);
-                      } else {
-                        setStage("install");
-                      }
-                    }}
-                    className="px-3 py-2 text-xs"
-                  >
-                    <ArrowLeft size={15} />
-                    Anterior
-                  </Button>
-
-                  {activeNewsIndex < newsItems.length - 1 ? (
-                    <Button
+                  {isServant && onOpenNotifications && (
+                    <button
                       type="button"
-                      variant="primary"
-                      onClick={() => goToNewsSlide(activeNewsIndex + 1)}
+                      onClick={() => {
+                        setOpen(false);
+                        onOpenNotifications();
+                      }}
+                      className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                     >
-                      <span>Próxima novidade</span>
-                      <ArrowRight size={16} />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="primary"
-                      onClick={handleCloseTemporary}
-                    >
-                      <CheckCircle2 size={16} />
-                      Começar a usar
-                    </Button>
+                      <Bell size={14} />
+                      <span>Abrir página de notificações →</span>
+                    </button>
                   )}
-                </>
-              )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Rodapé minimalista (apenas nos passos 1, 2 e 3) */}
+          {step > 0 && (
+            <div className="flex items-center justify-between gap-3 border-t border-border bg-card px-6 py-4">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => goNext(step - 1)}
+                  aria-label="Voltar"
+                  className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ArrowLeft size={15} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDontShowAgain}
+                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Não mostrar novamente
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Indicadores de progresso minimalistas */}
+                <div className="hidden items-center gap-1 sm:flex">
+                  {[1, 2, 3].map((idx) => (
+                    <span
+                      key={idx}
+                      className="h-1.5 rounded-full transition-all"
+                      style={{
+                        width: step === idx ? "18px" : "6px",
+                        background:
+                          step === idx ? "var(--primary)" : "var(--border)",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {step < totalSteps - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => goNext(step + 1)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground transition-transform active:scale-95"
+                  >
+                    <span>Próximo</span>
+                    <ArrowRight size={14} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCloseTemporary}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-5 text-xs font-bold text-primary-foreground transition-transform active:scale-95"
+                  >
+                    <span>Começar</span>
+                    <Check size={14} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>,

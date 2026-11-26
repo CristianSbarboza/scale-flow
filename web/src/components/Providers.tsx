@@ -7,6 +7,17 @@ import { ConfirmProvider } from "@/components/ConfirmDialog";
 
 export type Theme = "dark" | "light" | "jess";
 
+export interface GlobalInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+declare global {
+  interface Window {
+    __scaleflowInstallPrompt?: GlobalInstallPromptEvent | null;
+  }
+}
+
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -28,13 +39,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("theme") as Theme | "amada" | null;
     setTimeout(() => {
       if (savedTheme) {
-        // "amada" era o nome antigo deste tema. Quem já o escolhera tem o valor
-        // velho gravado no navegador, e sem esta troca cairia num tema que não
-        // existe mais — classe sem regra nenhuma no CSS.
         setThemeState(savedTheme === "amada" ? "jess" : savedTheme);
       }
       setMounted(true);
     }, 0);
+
+    // Registra o Service Worker cedo para que o navegador habilite o prompt de
+    // instalação PWA ("beforeinstallprompt") em 1 clique.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    const onBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      window.__scaleflowInstallPrompt = e as GlobalInstallPromptEvent;
+      window.dispatchEvent(new Event("scaleflow:install-ready"));
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+    };
   }, []);
 
   const setTheme = (newTheme: Theme) => {
@@ -54,25 +79,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Aplica o tema no <html> e garante que "jess" (exclusivo do servo) nunca
- * fique de pé para outro papel — o mesmo navegador pode logar como servo e
- * depois como admin/líder, e o valor salvo em localStorage não sabe disso.
- * Fica dentro do SessionProvider por precisar de useSession.
- */
 function ThemeSync({ theme, mounted }: { theme: Theme; mounted: boolean }) {
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (!mounted) return;
     const isServant = session?.user.role === "servant";
-    const effective: Theme = theme === "jess" && status === "authenticated" && !isServant ? "dark" : theme;
+    const effective: Theme =
+      theme === "jess" && status === "authenticated" && !isServant
+        ? "dark"
+        : theme;
 
     const root = window.document.documentElement;
     root.classList.remove("light", "dark", "jess");
     root.classList.add(effective);
-    // colorScheme só entende light/dark — "jess" é um tema claro para
-    // efeito de scrollbar e controles nativos do navegador.
     root.style.colorScheme = effective === "dark" ? "dark" : "light";
   }, [theme, mounted, session, status]);
 
