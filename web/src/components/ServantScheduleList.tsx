@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
 import type { ServantOverviewSchedule } from "@/types/domain";
 import ServantScheduleDetailModal from "@/components/ServantScheduleDetailModal";
@@ -32,12 +33,21 @@ export default function ServantScheduleList({ schedules, monthFilter, emptyMessa
           {emptyMessage}
         </div>
       )}
-      {visibleSchedules.map((schedule) => {
+      {visibleSchedules.map((schedule, index) => {
         const filled = schedule.dates.some((d) => d.available);
         return (
-          <button
+          <motion.button
             key={schedule.id}
             type="button"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              delay: index * 0.04,
+              duration: 0.24,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => {
               if (filled) {
                 setSelectedSchedule(schedule);
@@ -45,7 +55,7 @@ export default function ServantScheduleList({ schedules, monthFilter, emptyMessa
                 router.push(`/escala/${schedule.shareLink}?from=servant&servantId=${schedule.servantId}`);
               }
             }}
-            className="card glass"
+            className="card glass transition-colors hover:border-primary/40"
             style={{ width: "100%", textAlign: "left", cursor: "pointer" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
@@ -73,7 +83,7 @@ export default function ServantScheduleList({ schedules, monthFilter, emptyMessa
                 {filled ? "Preenchido" : "Pendente"}
               </span>
             </div>
-          </button>
+          </motion.button>
         );
       })}
 

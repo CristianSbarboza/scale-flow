@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Clock, CalendarDays, PencilLine } from "lucide-react";
 import type { ServantOverviewSchedule } from "@/types/domain";
 import CloseButton from "@/components/ui/CloseButton";
@@ -21,12 +22,18 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
   const sortedDates = [...schedule.dates].sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center gap-4 items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
       onClick={onClose}
     >
-      <div
-        className="glass w-full max-w-lg max-h-[85vh]"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 340, damping: 26 }}
+        className="glass max-h-[85vh] w-full max-w-lg"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -101,7 +108,7 @@ export default function ServantScheduleDetailModal({ schedule, onClose }: Servan
             Editar disponibilidade
           </Link>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

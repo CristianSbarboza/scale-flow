@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Bell,
@@ -348,9 +349,14 @@ export default function ServantNotificationsPage({
             const isUnread = !item.read;
 
             return (
-              <button
+              <motion.button
                 key={item.key}
                 type="button"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => handleOpenNotification(item)}
                 className="card glass flex w-full items-start justify-between gap-3.5 text-left transition-colors hover:border-primary/50"
                 style={{
@@ -409,7 +415,7 @@ export default function ServantNotificationsPage({
                   size={18}
                   className="mt-2 shrink-0 text-muted-foreground"
                 />
-              </button>
+              </motion.button>
             );
           })}
         </div>

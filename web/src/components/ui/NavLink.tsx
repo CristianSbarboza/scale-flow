@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 interface BaseProps {
@@ -12,16 +13,6 @@ interface BaseProps {
   className?: string;
 }
 
-/**
- * Item de navegação da sidebar.
- *
- * Existia em três cópias do mesmo bloco: os itens do menu do admin, o link de
- * Configurações logo abaixo (copy-paste do primeiro) e as abas do servo, que
- * são botões em vez de links.
- *
- * Aceita `href` (vira Link) ou `onClick` (vira button) — é a única diferença
- * real entre os três, e não valia dois componentes.
- */
 type NavLinkProps =
   | (BaseProps & { href: string; onClick?: never })
   | (BaseProps & { onClick: () => void; href?: never });
@@ -36,17 +27,23 @@ export default function NavLink({
   onClick,
 }: NavLinkProps) {
   const classes = cn(
-    "btn w-full overflow-hidden rounded-none border-b-2 bg-transparent transition-all duration-200",
+    "btn group relative w-full overflow-hidden rounded-xl border-b-2 bg-transparent transition-all duration-200 active:scale-[0.98]",
     collapsed ? "justify-center px-0 py-3" : "justify-start px-4 py-2.5",
     active
-      ? "border-b-primary text-primary"
-      : "border-b-transparent text-muted-foreground hover:text-foreground",
+      ? "border-b-primary bg-primary/10 text-primary"
+      : "border-b-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
     className,
   );
 
   const content = (
     <>
-      <Icon size={20} className="min-w-5" />
+      <motion.span
+        animate={{ scale: active ? 1.08 : 1 }}
+        transition={{ type: "spring", stiffness: 360, damping: 22 }}
+        className="inline-flex shrink-0"
+      >
+        <Icon size={20} className="min-w-5" />
+      </motion.span>
       {!collapsed && <span className="whitespace-nowrap">{children}</span>}
     </>
   );
@@ -60,7 +57,12 @@ export default function NavLink({
   }
 
   return (
-    <button type="button" onClick={onClick} className={classes} aria-current={active ? "page" : undefined}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={classes}
+      aria-current={active ? "page" : undefined}
+    >
       {content}
     </button>
   );

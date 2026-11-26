@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList, Sparkles } from "lucide-react";
 import type { ServantOverviewSchedule, CoordinatorSector, ServantNotificationItem } from "@/types/domain";
 import ServantCalendar from "@/components/ServantCalendar";
@@ -132,6 +133,7 @@ export default function ServantHome({
               style={{
                 flex: 1,
                 minWidth: 0,
+                position: "relative",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -141,10 +143,24 @@ export default function ServantHome({
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 color: isActive ? "var(--primary)" : "var(--muted-foreground)",
+                transition: "color 180ms ease",
               }}
             >
-              <t.icon size={20} />
-              <span className="max-w-full truncate">{t.label}</span>
+              {isActive && (
+                <motion.span
+                  layoutId="servantMobileTabActiveBg"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  className="pointer-events-none absolute inset-0 rounded-xl bg-primary/12"
+                />
+              )}
+              <motion.span
+                animate={{ scale: isActive ? 1.1 : 1, y: isActive ? -1 : 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                className="relative z-10 inline-flex"
+              >
+                <t.icon size={20} />
+              </motion.span>
+              <span className="relative z-10 max-w-full truncate">{t.label}</span>
             </button>
           );
         })}
@@ -165,44 +181,54 @@ export default function ServantHome({
       )}
 
       <div style={{ marginTop: "1.5rem" }}>
-        {tab === "calendar" && <ServantCalendar schedules={schedules} />}
-        {tab === "next" && (
-          <ServantScheduleList
-            schedules={schedules}
-            monthFilter={{ year: nextMonth.getFullYear(), month: nextMonth.getMonth() }}
-            emptyMessage="Nenhuma escala aberta para o mês que vem ainda."
-          />
-        )}
-        {tab === "month" && (
-          <ServantScheduleList
-            schedules={schedules}
-            monthFilter={{ year: today.getFullYear(), month: today.getMonth() }}
-            emptyMessage="Nenhuma escala do seu setor com datas neste mês."
-          />
-        )}
-        {tab === "all" && (
-          <ServantScheduleList schedules={schedules} emptyMessage="Nenhuma escala encontrada para o seu setor." />
-        )}
-        {tab === "coordinator" && isCoordinator && (
-          <CoordinatorSchedulePanel sectors={coordinatorSectors} />
-        )}
-        {tab === "assistant" && (
-          <AssistantChat
-            role="servant"
-            isCoordinator={isCoordinator}
-            userName={userName}
-          />
-        )}
-        {tab === "notifications" && (
-          <ServantNotificationsPage
-            notifications={notifications}
-            notificationsEnabled={notificationsEnabled}
-            onToggleNotificationsEnabled={onToggleNotificationsEnabled}
-            onMarkAsRead={onMarkNotificationAsRead}
-            onMarkAllAsRead={onMarkAllNotificationsAsRead}
-            onNavigateTab={onTabChange}
-          />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {tab === "calendar" && <ServantCalendar schedules={schedules} />}
+            {tab === "next" && (
+              <ServantScheduleList
+                schedules={schedules}
+                monthFilter={{ year: nextMonth.getFullYear(), month: nextMonth.getMonth() }}
+                emptyMessage="Nenhuma escala aberta para o mês que vem ainda."
+              />
+            )}
+            {tab === "month" && (
+              <ServantScheduleList
+                schedules={schedules}
+                monthFilter={{ year: today.getFullYear(), month: today.getMonth() }}
+                emptyMessage="Nenhuma escala do seu setor com datas neste mês."
+              />
+            )}
+            {tab === "all" && (
+              <ServantScheduleList schedules={schedules} emptyMessage="Nenhuma escala encontrada para o seu setor." />
+            )}
+            {tab === "coordinator" && isCoordinator && (
+              <CoordinatorSchedulePanel sectors={coordinatorSectors} />
+            )}
+            {tab === "assistant" && (
+              <AssistantChat
+                role="servant"
+                isCoordinator={isCoordinator}
+                userName={userName}
+              />
+            )}
+            {tab === "notifications" && (
+              <ServantNotificationsPage
+                notifications={notifications}
+                notificationsEnabled={notificationsEnabled}
+                onToggleNotificationsEnabled={onToggleNotificationsEnabled}
+                onMarkAsRead={onMarkNotificationAsRead}
+                onMarkAllAsRead={onMarkAllNotificationsAsRead}
+                onNavigateTab={onTabChange}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

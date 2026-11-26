@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Clock, MapPin, Repeat, Check } from "lucide-react";
 import type { ServantOverviewSchedule, ServantOverviewAssignee } from "@/types/domain";
 import { createSwapRequest } from "@/lib/actions/swaps";
@@ -39,6 +40,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [monthDir, setMonthDir] = useState<1 | -1>(1);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [negotiating, setNegotiating] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -93,6 +95,7 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   while (cells.length < 42) cells.push(null);
 
   const goToMonth = (offset: number) => {
+    setMonthDir(offset >= 0 ? 1 : -1);
     const next = new Date(viewYear, viewMonth + offset, 1);
     setViewYear(next.getFullYear());
     setViewMonth(next.getMonth());
@@ -131,57 +134,77 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
   return (
     <div>
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div className="card glass">
+        <div className="card glass overflow-hidden">
           <div className="mb-6 flex items-center justify-between">
-            <Button variant="ghost" className="p-2" onClick={() => goToMonth(-1)}  aria-label="Mês anterior">
+            <Button variant="ghost" className="p-2" onClick={() => goToMonth(-1)} aria-label="Mês anterior">
               <ChevronLeft size={20} />
             </Button>
-            <h3 className="capitalize">{monthLabel}</h3>
-            <Button variant="ghost" className="p-2" onClick={() => goToMonth(1)}  aria-label="Próximo mês">
+            <AnimatePresence mode="wait" custom={monthDir}>
+              <motion.h3
+                key={`${viewYear}-${viewMonth}-label`}
+                initial={{ opacity: 0, x: monthDir * 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: monthDir * -16 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="capitalize"
+              >
+                {monthLabel}
+              </motion.h3>
+            </AnimatePresence>
+            <Button variant="ghost" className="p-2" onClick={() => goToMonth(1)} aria-label="Próximo mês">
               <ChevronRight size={20} />
             </Button>
           </div>
 
-          <div className="servant-calendar-grid mx-auto max-w-[560px]">
-            {WEEKDAY_LABELS.map((label, i) => (
-              <div key={i} className="mb-2 text-center text-xs font-semibold text-muted-foreground">
-                {label}
-              </div>
-            ))}
-            {cells.map((day, i) => {
-              if (day === null) return <div key={i} />;
-              const key = toDateKey(viewYear, viewMonth, day);
-              const entries = confirmedByDay.get(key);
-              const isConfirmed = !!entries?.length;
-              const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
-              const selfAssignee = allAssignees.find((a) => a.isSelf);
-              const otherAssignee =
-                allAssignees.find((a) => !a.isSelf && a.color) ??
-                allAssignees.find((a) => !a.isSelf);
-              const isSelfConfirmed = !!selfAssignee;
-              const accentColor = isSelfConfirmed
-                ? selfAssignee?.color || "var(--primary)"
-                : otherAssignee?.color || DEFAULT_SERVANT_COLOR;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={!isConfirmed}
-                  onClick={() => setSelectedDay(key)}
-                  className="servant-calendar-cell"
-                  style={{
-                    background: isSelfConfirmed ? accentColor : "transparent",
-                    borderColor: isConfirmed ? accentColor : "var(--foreground)",
-                    color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? accentColor : "var(--foreground)",
-                    fontWeight: isConfirmed ? 700 : 400,
-                    cursor: isConfirmed ? "pointer" : "default",
-                  }}
-                >
-                  {day}
-                </button>
-              );
-            })}
-          </div>
+          <AnimatePresence mode="wait" custom={monthDir}>
+            <motion.div
+              key={`${viewYear}-${viewMonth}-grid`}
+              initial={{ opacity: 0, x: monthDir * 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: monthDir * -24 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="servant-calendar-grid mx-auto max-w-[560px]"
+            >
+              {WEEKDAY_LABELS.map((label, i) => (
+                <div key={i} className="mb-2 text-center text-xs font-semibold text-muted-foreground">
+                  {label}
+                </div>
+              ))}
+              {cells.map((day, i) => {
+                if (day === null) return <div key={i} />;
+                const key = toDateKey(viewYear, viewMonth, day);
+                const entries = confirmedByDay.get(key);
+                const isConfirmed = !!entries?.length;
+                const allAssignees = entries?.flatMap((e) => e.assignees) ?? [];
+                const selfAssignee = allAssignees.find((a) => a.isSelf);
+                const otherAssignee =
+                  allAssignees.find((a) => !a.isSelf && a.color) ??
+                  allAssignees.find((a) => !a.isSelf);
+                const isSelfConfirmed = !!selfAssignee;
+                const accentColor = isSelfConfirmed
+                  ? selfAssignee?.color || "var(--primary)"
+                  : otherAssignee?.color || DEFAULT_SERVANT_COLOR;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!isConfirmed}
+                    onClick={() => setSelectedDay(key)}
+                    className="servant-calendar-cell transition-transform duration-150 active:scale-90"
+                    style={{
+                      background: isSelfConfirmed ? accentColor : "transparent",
+                      borderColor: isConfirmed ? accentColor : "var(--foreground)",
+                      color: isSelfConfirmed ? "var(--primary-foreground)" : isConfirmed ? accentColor : "var(--foreground)",
+                      fontWeight: isConfirmed ? 700 : 400,
+                      cursor: isConfirmed ? "pointer" : "default",
+                    }}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <DataPanel
@@ -223,11 +246,17 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
       </div>
 
       {selectedDay && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center gap-4 items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
           onClick={() => setSelectedDay(null)}
         >
-          <div
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 340, damping: 26 }}
             className="card glass"
             style={{ width: "100%", maxWidth: "360px", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
             onClick={(e) => e.stopPropagation()}
@@ -313,8 +342,8 @@ export default function ServantCalendar({ schedules }: ServantCalendarProps) {
                 </div>
               ))}
             </div>
-          </div>
-        </div>,
+          </motion.div>
+        </motion.div>,
         document.body
       )}
     </div>
