@@ -16,8 +16,9 @@ export default async function AdminQuizRankingPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Ranking do Desafio"
-        subtitle="Acompanhe a pontuação mensal e a constância diária de todos os servos no desafio bíblico."
+        className="mb-2"
+        title="Ranking"
+        subtitle={`Temporada de ${data.monthLabel}`}
       />
       <QuizRankingBoard data={data} showSelfHighlight={false} />
     </div>

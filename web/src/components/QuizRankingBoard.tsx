@@ -1,119 +1,80 @@
 "use client";
 
-import { motion } from "framer-motion";
-import {
-  Crown,
-  Flame,
-  Gift,
-  Medal,
-  Sparkles,
-  Trophy,
-  CalendarClock,
-  CheckCircle2,
-} from "lucide-react";
+import { Crown, Flame, Trophy, Calendar, Users } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import Panel from "@/components/ui/Panel";
+import ListRow from "@/components/ui/ListRow";
+import StatsRule, { type StatItem } from "@/components/ui/StatsRule";
+import EmptyState from "@/components/ui/EmptyState";
 import type { QuizDashboardData, QuizRankingEntry } from "@/lib/actions/quiz";
 
 interface QuizRankingBoardProps {
   data: QuizDashboardData;
   showSelfHighlight?: boolean;
+  hideStatsRule?: boolean;
 }
 
 export default function QuizRankingBoard({
   data,
   showSelfHighlight = true,
+  hideStatsRule = false,
 }: QuizRankingBoardProps) {
   const first = data.ranking[0] ?? null;
   const second = data.ranking[1] ?? null;
   const third = data.ranking[2] ?? null;
 
+  const stats: StatItem[] = [
+    {
+      icon: Calendar,
+      label: `Temporada (${data.monthLabel})`,
+      value: `01 a ${data.totalDaysInMonth}`,
+    },
+    {
+      icon: Trophy,
+      label: data.daysRemaining === 1 ? "dia restante" : "dias restantes",
+      value: data.daysRemaining,
+    },
+    {
+      icon: Users,
+      label: data.ranking.length === 1 ? "servo participando" : "servos",
+      value: data.ranking.length,
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-5">
-      {/* Banner da Temporada Mensal */}
-      <div className="card glass relative overflow-hidden p-4 sm:p-5">
+    <div className="flex flex-col gap-6">
+      {!hideStatsRule && <StatsRule items={stats} className="mb-0" />}
+
+      {/* Palco em Círculo dos 3 Primeiros */}
+      <div className="card glass relative overflow-hidden px-4 py-8 sm:px-8 sm:py-10">
+        {/* Círculos concêntricos do palco */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-20 -right-20 size-52 rounded-full opacity-20 blur-3xl"
-          style={{ background: "var(--primary)" }}
-        />
-        <div className="relative z-10 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div className="flex flex-col gap-1">
-            <div className="inline-flex items-center gap-2 text-xs font-bold tracking-wider text-primary uppercase">
-              <Sparkles size={14} />
-              <span>Temporada · {data.monthLabel}</span>
-            </div>
-            <h3 className="text-base font-extrabold text-foreground sm:text-lg">
-              Ciclo Mensal: Dia 01 ao dia {data.totalDaysInMonth}
-            </h3>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              O ranking reúne todos os servos da igreja e reinicia todo dia 1º. Se ficar 1 dia sem entrar, os pontos acumulados zeram.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/70 px-3 py-1.5 text-xs font-semibold text-foreground">
-              <CalendarClock size={14} className="text-primary" />
-              <span>
-                {data.daysRemaining === 0
-                  ? "Último dia do mês!"
-                  : `Faltam ${data.daysRemaining} ${data.daysRemaining === 1 ? "dia" : "dias"}`}
-              </span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-              <Gift size={14} />
-              <span>Prêmios do mês em breve</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Palco em Círculo dos 3 Primeiros Colocados */}
-      <div className="card glass relative overflow-hidden px-3 py-6 sm:px-6 sm:py-8">
-        {/* Foco de luz circular de palco atrás do Top 3 */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25 blur-3xl"
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/15"
           style={{
-            width: "340px",
-            height: "340px",
+            width: "320px",
+            height: "320px",
             background:
-              "radial-gradient(circle, var(--primary) 0%, transparent 72%)",
+              "radial-gradient(circle, color-mix(in oklab, var(--primary) 16%, transparent) 0%, transparent 70%)",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute top-6 left-1/2 -translate-x-1/2 rounded-full border border-primary/15"
-          style={{ width: "310px", height: "310px" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-14 left-1/2 -translate-x-1/2 rounded-full border border-primary/10"
-          style={{ width: "230px", height: "230px" }}
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10"
+          style={{ width: "220px", height: "220px" }}
         />
 
-        <div className="relative z-10 mb-6 flex flex-col items-center text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-bold tracking-wider text-primary uppercase">
-            <Trophy size={13} />
-            Palco dos 3 Primeiros
-          </span>
-        </div>
-
-        <div className="relative z-10 mx-auto grid max-w-xl grid-cols-3 items-end gap-2 sm:gap-6">
-          {/* 2º Lugar (Esquerda) */}
+        <div className="relative z-10 mx-auto grid max-w-lg grid-cols-3 items-end gap-3 sm:gap-6">
           <PodiumCircleSpot
             place={2}
             entry={second}
             showSelfHighlight={showSelfHighlight}
           />
-
-          {/* 1º Lugar (Centro em destaque elevado) */}
           <PodiumCircleSpot
             place={1}
             entry={first}
             showSelfHighlight={showSelfHighlight}
           />
-
-          {/* 3º Lugar (Direita) */}
           <PodiumCircleSpot
             place={3}
             entry={third}
@@ -122,126 +83,86 @@ export default function QuizRankingBoard({
         </div>
       </div>
 
-      {/* Lista Completa do Ranking entre Todos os Servos */}
-      <div className="card glass overflow-hidden p-0">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3.5 sm:px-5">
-          <div className="flex items-center gap-2">
-            <Medal size={18} className="text-primary" />
-            <h4 className="text-sm font-bold text-foreground sm:text-base">
-              Classificação Geral dos Servos ({data.ranking.length})
-            </h4>
-          </div>
-          <span className="text-xs font-medium text-muted-foreground">
-            Pontos no mês
+      {/* Classificação Geral usando o Panel + ListRow nativos do app */}
+      <Panel
+        title="Classificação"
+        action={
+          <span className="text-xs text-muted-foreground">
+            {data.monthLabel}
           </span>
-        </div>
-
+        }
+      >
         {data.ranking.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            Nenhum servo ativo encontrado nesta igreja.
-          </div>
+          <EmptyState>Nenhum servo ativo no momento.</EmptyState>
         ) : (
-          <div className="divide-y divide-border/60">
-            {data.ranking.map((entry, idx) => {
-              const highlightSelf = showSelfHighlight && entry.isSelf;
-              const isTop3 = entry.position <= 3;
-
+          <div className="flex flex-col">
+            {data.ranking.map((entry) => {
+              const isSelf = showSelfHighlight && entry.isSelf;
               return (
-                <motion.div
+                <ListRow
                   key={entry.userId}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.2,
-                    delay: Math.min(idx * 0.025, 0.25),
-                  }}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 transition-colors sm:px-5 ${
-                    highlightSelf
-                      ? "bg-primary/12"
-                      : "hover:bg-secondary/40"
-                  }`}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    {/* Medalha/Posição Circular */}
-                    <div
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${
-                        entry.position === 1
-                          ? "bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/50"
-                          : entry.position === 2
-                            ? "bg-slate-300/20 text-slate-200 ring-1 ring-slate-300/50"
-                            : entry.position === 3
-                              ? "bg-amber-700/25 text-amber-400 ring-1 ring-amber-600/50"
-                              : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {entry.position}º
+                  className={
+                    isSelf
+                      ? "-mx-3 rounded-lg bg-primary/10 px-3"
+                      : undefined
+                  }
+                  leading={
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-6 text-center text-xs font-bold"
+                        style={{
+                          color:
+                            entry.position <= 3
+                              ? "var(--primary)"
+                              : "var(--muted-foreground)",
+                        }}
+                      >
+                        {entry.position}º
+                      </span>
+                      <Avatar
+                        name={entry.name}
+                        color={entry.color}
+                        icon={entry.avatarIcon}
+                        size="sm"
+                      />
                     </div>
-
-                    <Avatar
-                      name={entry.name}
-                      color={entry.color}
-                      icon={entry.avatarIcon}
-                      size="md"
-                      className={
-                        isTop3
-                          ? "ring-2 ring-primary/50"
-                          : "ring-1 ring-border"
-                      }
-                    />
-
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="truncate text-sm font-bold text-foreground">
-                          {entry.name}
+                  }
+                  title={
+                    <span className="inline-flex items-center gap-2">
+                      <span>{entry.name}</span>
+                      {isSelf && (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                          Você
                         </span>
-                        {highlightSelf && (
-                          <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground">
-                            Você
-                          </span>
-                        )}
-                        {entry.playedToday && (
-                          <span
-                            title="Entrou hoje"
-                            className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
-                          >
-                            <CheckCircle2 size={10} />
-                            Hoje
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span className="truncate">{entry.sectorSummary}</span>
-                        <span>·</span>
-                        <span className="inline-flex items-center gap-0.5 text-amber-400">
-                          <Flame size={12} />
+                      )}
+                    </span>
+                  }
+                  subtitle={entry.sectorSummary}
+                  trailing={
+                    <div className="flex items-center gap-3">
+                      {entry.streakDays > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                          title={`${entry.streakDays} dias seguidos`}
+                        >
+                          <Flame size={13} />
                           {entry.streakDays}d
                         </span>
-                        <span className="hidden sm:inline">
-                          · {entry.correctCount}{" "}
-                          {entry.correctCount === 1 ? "acerto" : "acertos"}
+                      )}
+                      <span className="text-sm font-bold text-foreground">
+                        {entry.points}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          pts
                         </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    <div className="text-sm font-extrabold text-foreground sm:text-base">
-                      {entry.points}{" "}
-                      <span className="text-xs font-semibold text-primary">
-                        pts
                       </span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground sm:hidden">
-                      {entry.correctCount}{" "}
-                      {entry.correctCount === 1 ? "acerto" : "acertos"}
-                    </div>
-                  </div>
-                </motion.div>
+                  }
+                />
               );
             })}
           </div>
         )}
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -257,66 +178,30 @@ function PodiumCircleSpot({
 }) {
   const isFirst = place === 1;
 
-  const ringStyle =
-    place === 1
-      ? {
-          borderColor: "#fbbf24",
-          boxShadow:
-            "0 0 0 4px rgba(251, 191, 36, 0.22), 0 0 32px rgba(251, 191, 36, 0.45)",
-        }
-      : place === 2
-        ? {
-            borderColor: "#cbd5e1",
-            boxShadow:
-              "0 0 0 3px rgba(203, 213, 225, 0.18), 0 0 22px rgba(203, 213, 225, 0.25)",
-          }
-        : {
-            borderColor: "#d97706",
-            boxShadow:
-              "0 0 0 3px rgba(217, 119, 6, 0.18), 0 0 22px rgba(217, 119, 6, 0.25)",
-          };
-
-  const badgeBg =
-    place === 1
-      ? "bg-amber-400 text-slate-950"
-      : place === 2
-        ? "bg-slate-200 text-slate-950"
-        : "bg-amber-600 text-white";
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9, y: 12 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 320,
-        damping: 24,
-        delay: place === 1 ? 0.05 : place === 2 ? 0.12 : 0.18,
-      }}
+    <div
       className={`flex flex-col items-center text-center ${
         isFirst ? "-translate-y-3 sm:-translate-y-4" : ""
       }`}
     >
-      {/* Coroa do 1º Lugar */}
-      <div className="mb-2 flex h-6 items-center justify-center">
-        {isFirst && (
-          <motion.div
-            animate={{ y: [0, -3, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-flex items-center justify-center rounded-full bg-amber-400/20 p-1.5 text-amber-300 ring-1 ring-amber-400/40"
-          >
-            <Crown size={18} />
-          </motion.div>
-        )}
+      <div className="mb-1.5 flex h-6 items-center justify-center">
+        {isFirst && <Crown size={20} className="text-primary" />}
       </div>
 
-      {/* Palco Circular com Halo Luminoso */}
+      {/* Círculo no palco */}
       <div className="relative mb-3 flex items-center justify-center">
         <div
-          className={`relative flex items-center justify-center rounded-full border-2 bg-card/80 p-1.5 transition-transform ${
-            isFirst ? "size-24 sm:size-28" : "size-19 sm:size-22"
+          className={`relative flex items-center justify-center rounded-full bg-card p-1.5 ${
+            isFirst ? "size-24 sm:size-28" : "size-18 sm:size-21"
           }`}
-          style={ringStyle}
+          style={{
+            border: isFirst
+              ? "2px solid var(--primary)"
+              : "1.5px solid var(--border)",
+            boxShadow: isFirst
+              ? "0 0 0 4px color-mix(in oklab, var(--primary) 20%, transparent), 0 12px 28px rgba(0,0,0,0.28)"
+              : "0 6px 16px rgba(0,0,0,0.18)",
+          }}
         >
           {entry ? (
             <Avatar
@@ -327,72 +212,57 @@ function PodiumCircleSpot({
               className={
                 isFirst
                   ? "size-20! text-2xl! sm:size-24!"
-                  : "size-15! text-lg! sm:size-18!"
+                  : "size-14! text-base! sm:size-17!"
               }
             />
           ) : (
-            <div className="flex size-full items-center justify-center rounded-full bg-secondary/60 text-xs font-bold text-muted-foreground">
+            <div className="flex size-full items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
               —
             </div>
           )}
 
-          {/* Selo circular do 1º / 2º / 3º lugar */}
           <span
-            className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-xs font-black shadow-md ${badgeBg}`}
+            className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm"
+            style={{
+              background: isFirst ? "var(--primary)" : "var(--muted)",
+              color: isFirst
+                ? "var(--primary-foreground)"
+                : "var(--foreground)",
+              border: isFirst ? "none" : "1px solid var(--border)",
+            }}
           >
             {place}º
           </span>
         </div>
       </div>
 
-      {/* Nome, Setor e Pontuação */}
       {entry ? (
         <div className="mt-1 flex max-w-full flex-col items-center">
-          <div className="flex max-w-[110px] items-center gap-1 sm:max-w-[150px]">
-            <span
-              className={`truncate font-extrabold text-foreground ${
-                isFirst ? "text-sm sm:text-base" : "text-xs sm:text-sm"
-              }`}
-              title={entry.name}
-            >
-              {entry.name}
-            </span>
-          </div>
+          <span
+            className={`max-w-[105px] truncate font-bold text-foreground sm:max-w-[145px] ${
+              isFirst ? "text-sm sm:text-base" : "text-xs sm:text-sm"
+            }`}
+            title={entry.name}
+          >
+            {entry.name}
+            {showSelfHighlight && entry.isSelf ? " (você)" : ""}
+          </span>
 
-          {showSelfHighlight && entry.isSelf && (
-            <span className="mt-0.5 rounded-full bg-primary/20 px-2 py-0.2 text-[10px] font-bold text-primary">
-              Você
-            </span>
-          )}
-
-          <span className="mt-0.5 max-w-[105px] truncate text-[11px] text-muted-foreground sm:max-w-[145px]">
+          <span className="max-w-[100px] truncate text-[11px] text-muted-foreground sm:max-w-[140px]">
             {entry.sectorSummary}
           </span>
 
-          <div
-            className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-extrabold ${
-              isFirst
-                ? "border-amber-400/40 bg-amber-400/15 text-xs text-amber-300 sm:text-sm"
-                : "border-border bg-secondary/70 text-xs text-foreground"
+          <span
+            className={`mt-1.5 font-bold ${
+              isFirst ? "text-sm text-primary" : "text-xs text-foreground"
             }`}
           >
-            <span>{entry.points}</span>
-            <span className="text-[10px] font-bold opacity-80">pts</span>
-          </div>
-
-          <span className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-amber-400/90">
-            <Flame size={11} />
-            {entry.streakDays}d seguidos
+            {entry.points} pts
           </span>
         </div>
       ) : (
-        <div className="mt-1 flex flex-col items-center">
-          <span className="text-xs font-semibold text-muted-foreground">
-            Vaga aberta
-          </span>
-          <span className="mt-1 text-[11px] text-muted-foreground/70">0 pts</span>
-        </div>
+        <span className="mt-1 text-xs text-muted-foreground">—</span>
       )}
-    </motion.div>
+    </div>
   );
 }

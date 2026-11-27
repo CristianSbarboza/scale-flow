@@ -112,11 +112,8 @@ export default function GoogleAccountSection({
         <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : !status.connected ? (
         <div className="grid min-w-0 grid-cols-1 gap-4">
-          <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">
-            Conecte sua conta Google para poder{" "}
-            <strong className="text-foreground">entrar com 1 clique pelo Google</strong>{" "}
-            e fazer com que todas as datas em que você estiver escalado(a) apareçam
-            automaticamente na sua <strong className="text-foreground">Google Agenda</strong>.
+          <p className="text-[0.8125rem] text-muted-foreground">
+            Vincule sua conta para entrar com o Google e sincronizar suas escalas com a Google Agenda.
           </p>
 
           {!status.isConfiguredOnServer && (
@@ -162,15 +159,13 @@ export default function GoogleAccountSection({
           <div className="flex min-w-0 flex-wrap items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-[0.9375rem] font-semibold">
-                Sincronizar escalas com o Google Agenda
+                Sincronizar com Google Agenda
               </p>
               <p className="text-[0.8125rem] text-muted-foreground">
-                Cria e atualiza automaticamente na sua agenda os dias em que você
-                for confirmado(a) ({status.syncedEventsCount}{" "}
+                {status.syncedEventsCount}{" "}
                 {status.syncedEventsCount === 1
                   ? "data sincronizada"
                   : "datas sincronizadas"}
-                ).
               </p>
             </div>
 

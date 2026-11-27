@@ -270,11 +270,9 @@ export default function ServantNotificationsPage({
             {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-bold">Notificações de Escala</h2>
+            <h2 className="text-base font-bold">Notificações</h2>
             <p className="text-xs text-muted-foreground">
-              {notificationsEnabled
-                ? "Você está recebendo avisos de escalas abertas, confirmações e lembretes."
-                : "Suas notificações estão pausadas no momento."}
+              {notificationsEnabled ? "Ativadas" : "Pausadas"}
             </p>
           </div>
         </div>
@@ -324,9 +322,6 @@ export default function ServantNotificationsPage({
         <div className="card glass py-12 text-center">
           <BellOff size={32} className="mx-auto mb-3 text-muted-foreground" />
           <p className="font-semibold">Notificações desativadas</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Ative as notificações acima para visualizar seus lembretes de escala e avisos de abertura de disponibilidade.
-          </p>
           <Button
             variant="primary"
             type="button"
@@ -335,7 +330,7 @@ export default function ServantNotificationsPage({
             className="mt-4"
           >
             <Bell size={16} />
-            Aceitar notificações
+            Ativar
           </Button>
         </div>
       ) : notifications.length === 0 ? (

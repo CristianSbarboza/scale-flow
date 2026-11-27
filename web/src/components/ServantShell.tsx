@@ -9,6 +9,7 @@ import type {
   CoordinatorSector,
   ServantNotificationItem,
 } from "@/types/domain";
+import type { QuizDashboardData } from "@/lib/actions/quiz";
 import ServantHome, { getServantTabs, type ServantTab } from "@/components/ServantHome";
 import ServantSidebar from "@/components/ServantSidebar";
 import ServantProfileMenu from "@/components/ServantProfileMenu";
@@ -44,6 +45,7 @@ interface ServantShellProps {
   initialNotifications: ServantNotificationItem[];
   initialNotificationsEnabled: boolean;
   vapidPublicKey: string;
+  initialQuizData: QuizDashboardData;
 }
 
 export default function ServantShell({
@@ -57,6 +59,7 @@ export default function ServantShell({
   initialNotifications,
   initialNotificationsEnabled,
   vapidPublicKey,
+  initialQuizData,
 }: ServantShellProps) {
   const { showToast } = useToast();
   // Só o estado inicial vem de fora; trocar de aba depois é estado local.
@@ -241,6 +244,7 @@ export default function ServantShell({
             onToggleNotificationsEnabled={handleToggleNotificationsEnabled}
             onMarkNotificationAsRead={handleMarkAsRead}
             onMarkAllNotificationsAsRead={handleMarkAllAsRead}
+            initialQuizData={initialQuizData}
           />
         </main>
       </div>

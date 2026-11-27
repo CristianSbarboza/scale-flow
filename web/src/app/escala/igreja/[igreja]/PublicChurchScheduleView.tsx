@@ -328,9 +328,6 @@ export default function PublicChurchScheduleView({
           {/* Chips de filtro rápido por servo */}
           {uniqueMonthAssignees.length > 0 && (
             <div className="mt-4 border-t border-border pt-4">
-              <p className="mb-2 text-xs text-muted-foreground">
-                Toque no seu nome para destacar seus dias no calendário e filtrar a lista:
-              </p>
               <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto pr-1">
                 <button
                   type="button"
@@ -462,20 +459,12 @@ export default function PublicChurchScheduleView({
               );
             })}
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Toque em um dia destacado no calendário para ver todas as escalas daquele dia.
-          </p>
         </section>
 
         {/* 2. Lista com todos os escalados do mês abaixo */}
         <section className="animate-fade-in">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Todos os Escalados do Mês</h2>
-              <p className="text-xs text-muted-foreground">
-                Datas, ministérios, setores e servos confirmados em {monthLabel}.
-              </p>
-            </div>
+            <h2 className="text-lg font-semibold">Escalados do Mês</h2>
             <div className="w-full sm:max-w-xs">
               <SearchInput
                 value={searchTerm}

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList, Sparkles, Trophy } from "lucide-react";
 import type { ServantOverviewSchedule, CoordinatorSector, ServantNotificationItem } from "@/types/domain";
+import type { QuizDashboardData } from "@/lib/actions/quiz";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
@@ -68,14 +69,14 @@ const MINIGAME_TAB: ServantTabItem = {
   value: "minigame",
   label: "Desafio",
   icon: Trophy,
-  subtitle: "Responda a pergunta do dia e dispute o ranking mensal entre todos os servos.",
+  subtitle: "Pergunta do dia e ranking mensal.",
 };
 
 const ASSISTANT_TAB: ServantTabItem = {
   value: "assistant",
   label: "Assistente",
   icon: Sparkles,
-  subtitle: "Converse com a assistente ministerial para consultar e organizar suas escalas.",
+  subtitle: "Assistente ministerial.",
 };
 
 export function getServantTabs(isCoordinator: boolean): ServantTabItem[] {
@@ -95,6 +96,7 @@ interface ServantHomeProps {
   onToggleNotificationsEnabled: (next: boolean) => Promise<void>;
   onMarkNotificationAsRead: (key: string) => Promise<void>;
   onMarkAllNotificationsAsRead: () => Promise<void>;
+  initialQuizData: QuizDashboardData;
 }
 
 export default function ServantHome({
@@ -108,6 +110,7 @@ export default function ServantHome({
   onToggleNotificationsEnabled,
   onMarkNotificationAsRead,
   onMarkAllNotificationsAsRead,
+  initialQuizData,
 }: ServantHomeProps) {
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
@@ -127,7 +130,6 @@ export default function ServantHome({
         <PageHeader
           className="mb-4 hidden sm:flex"
           title="Notificações"
-          subtitle="Avisos de escalas abertas, confirmações e lembretes de culto."
         />
       )}
 
@@ -233,7 +235,7 @@ export default function ServantHome({
             {tab === "coordinator" && isCoordinator && (
               <CoordinatorSchedulePanel sectors={coordinatorSectors} />
             )}
-            {tab === "minigame" && <ServantQuizPage />}
+            {tab === "minigame" && <ServantQuizPage initialData={initialQuizData} />}
             {tab === "assistant" && (
               <AssistantChat
                 role="servant"

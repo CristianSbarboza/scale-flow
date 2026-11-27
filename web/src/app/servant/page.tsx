@@ -6,6 +6,7 @@ import { servants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getServantOverview } from "@/lib/actions/availability";
 import { getServantNotificationState } from "@/lib/actions/notifications";
+import { getQuizDashboard } from "@/lib/actions/quiz";
 import { mapCoordinatorSectors } from "@/lib/scope";
 import ServantShell from "@/components/ServantShell";
 import { type ServantTab } from "@/components/ServantHome";
@@ -55,10 +56,11 @@ export default async function ServantDashboard({
 
   const sectorNames = memberships.map((m) => m.sector.name).join(", ");
 
-  const [schedules, notificationState, currentUser] = await Promise.all([
+  const [schedules, notificationState, currentUser, quizData] = await Promise.all([
     getServantOverview(),
     getServantNotificationState(),
     db.query.users.findFirst({ where: eq(users.id, session.user.id) }),
+    getQuizDashboard(),
   ]);
   const ownColor = currentUser?.color ?? null;
   const ownIcon = currentUser?.avatarIcon ?? null;
@@ -77,6 +79,7 @@ export default async function ServantDashboard({
       initialNotifications={notificationState.notifications}
       initialNotificationsEnabled={notificationState.notificationsEnabled}
       vapidPublicKey={notificationState.vapidPublicKey}
+      initialQuizData={quizData}
     />
   );
 }

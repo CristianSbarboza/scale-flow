@@ -232,28 +232,26 @@ export default function AiAssistantSection({ isAdmin = false }: { isAdmin?: bool
         ) : (
           <form onSubmit={handleSaveUserPreferences} className="grid min-w-0 grid-cols-1 gap-4">
             <Field
-              label="Como você quer chamar a assistente (opcional)"
+              label="Nome da assistente"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
-              placeholder={`Padrão da igreja: ${userSettings?.churchDefaultName ?? "Cale"}`}
+              placeholder={`Padrão: ${userSettings?.churchDefaultName ?? "Cale"}`}
               maxLength={40}
-              hint="Deixe em branco para usar o nome padrão definido pela igreja."
             />
 
             <SelectField
-              label="Personalidade e jeito de falar com você"
+              label="Estilo de resposta"
               value={customStyle}
               onChange={setCustomStyle}
               options={[
                 {
                   value: "default",
-                  label: `Padrão da igreja (${STYLE_SHORT_LABELS[userSettings?.churchDefaultStyle ?? "warm"]})`,
+                  label: `Padrão (${STYLE_SHORT_LABELS[userSettings?.churchDefaultStyle ?? "warm"]})`,
                 },
-                { value: "warm", label: STYLE_LABELS.warm },
-                { value: "balanced", label: STYLE_LABELS.balanced },
-                { value: "direct", label: STYLE_LABELS.direct },
+                { value: "warm", label: STYLE_SHORT_LABELS.warm },
+                { value: "balanced", label: STYLE_SHORT_LABELS.balanced },
+                { value: "direct", label: STYLE_SHORT_LABELS.direct },
               ]}
-              hint="Ajusta se as respostas para você serão mais calorosas ou mais diretas ao ponto."
             />
 
             <Button
