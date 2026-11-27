@@ -1,13 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList, Sparkles } from "lucide-react";
+import { CalendarDays, CalendarRange, CalendarPlus, ListChecks, ClipboardList, Sparkles, Trophy } from "lucide-react";
 import type { ServantOverviewSchedule, CoordinatorSector, ServantNotificationItem } from "@/types/domain";
 import ServantCalendar from "@/components/ServantCalendar";
 import ServantScheduleList from "@/components/ServantScheduleList";
 import CoordinatorSchedulePanel from "@/components/CoordinatorSchedulePanel";
 import AssistantChat from "@/components/AssistantChat";
 import ServantNotificationsPage from "@/components/ServantNotificationsPage";
+import ServantQuizPage from "@/components/ServantQuizPage";
 import PageHeader from "@/components/ui/PageHeader";
 
 export type ServantTab =
@@ -16,6 +17,7 @@ export type ServantTab =
   | "month"
   | "all"
   | "coordinator"
+  | "minigame"
   | "assistant"
   | "notifications";
 
@@ -62,6 +64,13 @@ const COORDINATOR_TAB: ServantTabItem = {
   subtitle: "Gerencie as escalas dos setores que você coordena.",
 };
 
+const MINIGAME_TAB: ServantTabItem = {
+  value: "minigame",
+  label: "Desafio",
+  icon: Trophy,
+  subtitle: "Responda a pergunta do dia e dispute o ranking mensal entre todos os servos.",
+};
+
 const ASSISTANT_TAB: ServantTabItem = {
   value: "assistant",
   label: "Assistente",
@@ -71,8 +80,8 @@ const ASSISTANT_TAB: ServantTabItem = {
 
 export function getServantTabs(isCoordinator: boolean): ServantTabItem[] {
   return isCoordinator
-    ? [...BASE_TABS, COORDINATOR_TAB, ASSISTANT_TAB]
-    : [...BASE_TABS, ASSISTANT_TAB];
+    ? [...BASE_TABS, COORDINATOR_TAB, MINIGAME_TAB, ASSISTANT_TAB]
+    : [...BASE_TABS, MINIGAME_TAB, ASSISTANT_TAB];
 }
 
 interface ServantHomeProps {
@@ -104,7 +113,7 @@ export default function ServantHome({
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const isCoordinator = coordinatorSectors.length > 0;
   const tabs = getServantTabs(isCoordinator);
-  const mobileBarTabs = tabs.filter((t) => t.value !== "assistant");
+  const mobileBarTabs = tabs.filter((t) => t.value !== "assistant" && t.value !== "minigame");
   const current = tabs.find((t) => t.value === tab);
 
   return (
@@ -166,6 +175,20 @@ export default function ServantHome({
         })}
       </nav>
 
+      {/* No celular, o botão do mini game flutua logo acima do botão da assistente IA
+          (apenas para os servos). */}
+      {tab !== "minigame" && (
+        <button
+          type="button"
+          onClick={() => onTabChange("minigame")}
+          aria-label="Abrir Desafio e Ranking"
+          title="Desafio & Ranking"
+          className="fixed right-4 bottom-38 z-40 flex size-13 items-center justify-center rounded-full border border-primary/50 bg-card text-primary shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 sm:hidden"
+        >
+          <Trophy size={22} />
+        </button>
+      )}
+
       {/* No celular, o botão da assistente flutua no canto inferior direito
           acima da barra de navegação. */}
       {tab !== "assistant" && (
@@ -210,6 +233,7 @@ export default function ServantHome({
             {tab === "coordinator" && isCoordinator && (
               <CoordinatorSchedulePanel sectors={coordinatorSectors} />
             )}
+            {tab === "minigame" && <ServantQuizPage />}
             {tab === "assistant" && (
               <AssistantChat
                 role="servant"

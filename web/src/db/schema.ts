@@ -341,5 +341,60 @@ export const googleCalendarEvents = pgTable("google_calendar_events", {
     .where(sql`${t.assignmentId} is not null`),
 ]);
 
+/**
+ * Perguntas do mini game diário (1 por dia do mês, 5 opções cada).
+ */
+export const quizQuestions = pgTable("quiz_questions", {
+  id: serial("id").primaryKey(),
+  dayOfMonth: integer("day_of_month").unique(),
+  question: text("question").notNull(),
+  optionA: text("option_a").notNull(),
+  optionB: text("option_b").notNull(),
+  optionC: text("option_c").notNull(),
+  optionD: text("option_d").notNull(),
+  optionE: text("option_e").notNull(),
+  correctOption: integer("correct_option").notNull(),
+  explanation: text("explanation").notNull(),
+  points: integer("points").default(100).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Pontuação e ranking mensal de cada servo (começa dia 1 e termina no último
+ * dia do mês; se o servo não entrar todo dia, perde os pontos acumulados).
+ */
+export const quizRankings = pgTable("quiz_rankings", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  churchId: integer("church_id").references(() => churches.id, { onDelete: "cascade" }).notNull(),
+  monthKey: text("month_key").notNull(),
+  points: integer("points").default(0).notNull(),
+  streakDays: integer("streak_days").default(0).notNull(),
+  correctCount: integer("correct_count").default(0).notNull(),
+  answeredCount: integer("answered_count").default(0).notNull(),
+  lastActiveDate: date("last_active_date"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("quiz_rankings_user_month_unique").on(t.userId, t.monthKey),
+]);
+
+/**
+ * Resposta diária do servo à pergunta do dia (máximo 1 por dia).
+ */
+export const quizDailyAnswers = pgTable("quiz_daily_answers", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  questionId: integer("question_id").references(() => quizQuestions.id, { onDelete: "cascade" }).notNull(),
+  answerDate: date("answer_date").notNull(),
+  monthKey: text("month_key").notNull(),
+  selectedOption: integer("selected_option").notNull(),
+  isCorrect: boolean("is_correct").notNull(),
+  pointsEarned: integer("points_earned").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("quiz_daily_answers_user_date_unique").on(t.userId, t.answerDate),
+]);
+
+
 
 

@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  Sparkles
+  Sparkles,
+  Trophy
 } from "lucide-react";
 import { useAdminTopbar } from "@/components/AdminTopbarContext";
 import { useChurch } from "@/components/ChurchContext";
@@ -29,6 +30,7 @@ const menuItems = [
   { icon: Users, label: "Servos", href: "/admin/servants" },
   { icon: Calendar, label: "Escalas", href: "/admin/schedules" },
   { icon: CalendarDays, label: "Calendário", href: "/admin/calendar" },
+  { icon: Trophy, label: "Ranking", href: "/admin/ranking" },
   { icon: Sparkles, label: "Assistente IA", href: "/admin/assistant" },
 ];
 

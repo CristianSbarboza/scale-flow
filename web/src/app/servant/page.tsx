@@ -19,6 +19,7 @@ const ABAS_POR_URL: readonly ServantTab[] = [
   "next",
   "month",
   "all",
+  "minigame",
   "assistant",
   "notifications",
 ];
